@@ -57,19 +57,34 @@ private final class DimView: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
+        let radius = min(CGFloat(settings.borderRadius), min(region.width, region.height) / 2)
         if settings.dimmingEnabled && settings.dimOpacity > 0 {
             let path = NSBezierPath(rect: bounds)
-            path.append(NSBezierPath(rect: region))
+            path.append(NSBezierPath(roundedRect: region, xRadius: radius, yRadius: radius))
             path.windingRule = .evenOdd
             NSColor.black.withAlphaComponent(settings.dimOpacity).setFill()
             path.fill()
         }
         if settings.showRegionBorder {
             // Stroke sits fully outside the region so no border pixel could
-            // ever reach the captured area.
-            let border = NSBezierPath(rect: region.insetBy(dx: -2, dy: -2))
-            border.lineWidth = 3
-            NSColor.controlAccentColor.setStroke()
+            // ever reach the captured area; the outer radius is concentric
+            // with the cutout's.
+            let thickness = CGFloat(settings.borderThickness)
+            let outset = thickness / 2 + 1
+            let outerRadius = radius > 0 ? radius + outset : 0
+            let border = NSBezierPath(roundedRect: region.insetBy(dx: -outset, dy: -outset),
+                                      xRadius: outerRadius, yRadius: outerRadius)
+            border.lineWidth = thickness
+            switch settings.borderStyle {
+            case .solid:
+                break
+            case .dashed:
+                border.setLineDash([thickness * 3, thickness * 2], count: 2, phase: 0)
+            case .dotted:
+                border.lineCapStyle = .round
+                border.setLineDash([0.01, thickness * 2.2], count: 2, phase: 0)
+            }
+            settings.borderColor.setStroke()
             border.stroke()
         }
     }
