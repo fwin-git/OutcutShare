@@ -14,10 +14,41 @@ extension ShareMode {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let session = ShareSession()
     private var statusBar: StatusBarController?
+    private var permissions: PermissionsWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        statusBar = StatusBarController(session: session)
+        let permissions = PermissionsWindowController()
+        self.permissions = permissions
+        session.onPermissionsNeeded = { permissions.show() }
+        statusBar = StatusBarController(session: session, permissions: permissions)
+
+        if CommandLine.arguments.contains("--permissions-test") {
+            Task { @MainActor in
+                await permissions.model.refresh()
+                let s = permissions.model.status
+                print("PERM screenRecording=\(s.screenRecordingGranted ? 1 : 0) "
+                    + "captureWorks=\(s.captureWorks ? 1 : 0) "
+                    + "virtualDisplay=\(s.virtualDisplayAvailable ? 1 : 0) "
+                    + "showOnLaunch=\(s.allSatisfied ? 0 : 1)")
+                exit(0)
+            }
+            return
+        }
+        if CommandLine.arguments.contains("--show-permissions") {
+            permissions.show()
+            return
+        }
         runShareTestIfRequested()
+
+        // Guided onboarding: appears whenever the app can't capture yet.
+        if !CommandLine.arguments.contains(where: { $0.hasPrefix("--share-test=") }) {
+            Task { @MainActor in
+                await permissions.model.refresh()
+                if !permissions.model.status.allSatisfied {
+                    permissions.show()
+                }
+            }
+        }
     }
 
     /// Debug mode: `--share-test=x,y,w,h,seconds[,vd|window]` shares a fixed
