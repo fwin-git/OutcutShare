@@ -15,13 +15,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let session = ShareSession()
     private var statusBar: StatusBarController?
     private var permissions: PermissionsWindowController?
+    private var hotkeys: HotkeyManager?
+    private var debugSettingsWindow: SettingsWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let permissions = PermissionsWindowController()
         self.permissions = permissions
         session.onPermissionsNeeded = { permissions.show() }
         statusBar = StatusBarController(session: session, permissions: permissions)
+        hotkeys = HotkeyManager { [session] action in
+            switch action {
+            case .selectRegion: session.startSelection()
+            case .adjustRegion: session.startAdjust()
+            case .stopSharing: session.stop()
+            }
+        }
 
+        if CommandLine.arguments.contains("--hotkeys-test") {
+            let lines = (hotkeys?.registered ?? [])
+                .map { "\($0.action.rawValue)=\($0.combo.displayString)" }
+            print("HOTKEYS " + lines.joined(separator: " "))
+            exit(0)
+        }
         if CommandLine.arguments.contains("--permissions-test") {
             Task { @MainActor in
                 await permissions.model.refresh()
@@ -36,6 +51,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if CommandLine.arguments.contains("--show-permissions") {
             permissions.show()
+            return
+        }
+        if let arg = CommandLine.arguments.first(where: { $0.hasPrefix("--show-settings") }) {
+            let tab = SettingsTab(rawValue: String(arg.dropFirst("--show-settings=".count)))
+            let controller = SettingsWindowController(settings: .shared)
+            debugSettingsWindow = controller
+            controller.show(tab: tab)
             return
         }
         runShareTestIfRequested()

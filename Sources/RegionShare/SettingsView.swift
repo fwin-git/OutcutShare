@@ -1,7 +1,36 @@
 import AppKit
 import SwiftUI
 
+enum SettingsTab: String {
+    case general, appearance, shortcuts
+}
+
 struct SettingsView: View {
+    @ObservedObject var settings: SettingsStore
+    @State private var selection: SettingsTab
+
+    init(settings: SettingsStore, initialTab: SettingsTab = .general) {
+        self.settings = settings
+        _selection = State(initialValue: initialTab)
+    }
+
+    var body: some View {
+        TabView(selection: $selection) {
+            GeneralPage(settings: settings)
+                .tabItem { Label("General", systemImage: "gearshape") }
+                .tag(SettingsTab.general)
+            AppearancePage(settings: settings)
+                .tabItem { Label("Appearance", systemImage: "paintbrush") }
+                .tag(SettingsTab.appearance)
+            ShortcutsPage(settings: settings)
+                .tabItem { Label("Shortcuts", systemImage: "keyboard") }
+                .tag(SettingsTab.shortcuts)
+        }
+        .frame(width: 470, height: 470)
+    }
+}
+
+private struct GeneralPage: View {
     @ObservedObject var settings: SettingsStore
 
     var body: some View {
@@ -18,6 +47,23 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            Section("Capture") {
+                Picker("Frame rate", selection: $settings.frameRate) {
+                    Text("30 fps").tag(30)
+                    Text("60 fps").tag(60)
+                }
+                .pickerStyle(.segmented)
+            }
+        }
+        .formStyle(.grouped)
+    }
+}
+
+private struct AppearancePage: View {
+    @ObservedObject var settings: SettingsStore
+
+    var body: some View {
+        Form {
             Section("Dimming") {
                 Toggle("Dim screen outside region", isOn: $settings.dimmingEnabled)
                 HStack {
@@ -46,16 +92,8 @@ struct SettingsView: View {
                 labeledSlider("Corner radius", value: $settings.borderRadius, range: 0...30)
                     .disabled(!settings.showRegionBorder)
             }
-            Section("Capture") {
-                Picker("Frame rate", selection: $settings.frameRate) {
-                    Text("30 fps").tag(30)
-                    Text("60 fps").tag(60)
-                }
-                .pickerStyle(.segmented)
-            }
         }
         .formStyle(.grouped)
-        .frame(width: 380, height: 540)
     }
 
     private var borderColorBinding: Binding<Color> {
@@ -83,15 +121,20 @@ final class SettingsWindowController {
         self.settings = settings
     }
 
-    func show() {
-        if window == nil {
-            let hosting = NSHostingController(rootView: SettingsView(settings: settings))
-            let window = NSWindow(contentViewController: hosting)
-            window.title = "RegionShare Settings"
-            window.styleMask = [.titled, .closable]
-            window.isReleasedWhenClosed = false
-            window.center()
-            self.window = window
+    func show(tab: SettingsTab? = nil) {
+        if window == nil || tab != nil {
+            let hosting = NSHostingController(
+                rootView: SettingsView(settings: settings, initialTab: tab ?? .general))
+            if let window {
+                window.contentViewController = hosting
+            } else {
+                let window = NSWindow(contentViewController: hosting)
+                window.title = "RegionShare Settings"
+                window.styleMask = [.titled, .closable]
+                window.isReleasedWhenClosed = false
+                window.center()
+                self.window = window
+            }
         }
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
