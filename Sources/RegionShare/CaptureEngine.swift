@@ -65,11 +65,19 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
         self.config = config
     }
 
-    /// Re-points the running stream at a new region (same size) without
-    /// interrupting the share.
-    func updateSourceRect(_ sourceRectTopLeft: CGRect) async throws {
+    /// Re-points (and optionally re-sizes) the running stream without
+    /// interrupting the share. Pass pixel dimensions to change the output
+    /// size (hidden-window resize); omit them to keep the current output and
+    /// let the stream scale the new sourceRect into it (virtual-display
+    /// aspect-locked resize).
+    func updateCapture(sourceRectTopLeft: CGRect,
+                       pixelWidth: Int? = nil, pixelHeight: Int? = nil) async throws {
         guard let stream, let config else { return }
         config.sourceRect = sourceRectTopLeft
+        if let pixelWidth, let pixelHeight {
+            config.width = pixelWidth
+            config.height = pixelHeight
+        }
         try await stream.updateConfiguration(config)
     }
 

@@ -24,8 +24,10 @@ final class ShareSession {
     private var settingsObserver: NSObjectProtocol?
     private var mover: RegionMover?
     private var moveBackupRect: CGRect?
-    private var pendingSourceRect: CGRect?
-    private var sourceRectUpdateInFlight = false
+    private var activeAspect: CGFloat?
+    private var activeOutputPixelSize: (width: Int, height: Int) = (0, 0)
+    private var pendingCaptureUpdate: (rect: CGRect, pixelWidth: Int?, pixelHeight: Int?)?
+    private var captureUpdateInFlight = false
 
     nonisolated init(settings: SettingsStore = .shared) {
         self.settings = settings
@@ -69,19 +71,21 @@ final class ShareSession {
 
     var currentRegionRect: CGRect? { currentRegion?.rect }
 
-    /// Enters interactive move mode: drag the region to a new spot, arrow
-    /// keys nudge, Esc reverts.
-    func startMove() {
+    /// Enters interactive adjust mode: drag the region to move it, drag its
+    /// corners to resize (aspect-locked in virtual-display mode), arrow keys
+    /// nudge, Esc reverts.
+    func startAdjust() {
         guard state == .active, let region = currentRegion, mover == nil else { return }
         moveBackupRect = region.rect
         let mover = RegionMover()
         self.mover = mover
-        mover.begin(region: region.rect, screen: region.screen) { [weak self] origin in
-            self?.moveRegion(to: origin)
+        mover.begin(region: region.rect, screen: region.screen,
+                    aspect: activeAspect) { [weak self] rect in
+            self?.setRegionRect(rect)
         } onEnd: { [weak self] cancelled in
             guard let self else { return }
             if cancelled, let backup = self.moveBackupRect {
-                self.moveRegion(to: backup.origin)
+                self.setRegionRect(backup)
             }
             self.moveBackupRect = nil
             self.mover = nil
@@ -89,34 +93,65 @@ final class ShareSession {
     }
 
     /// Moves the active region (same size) to a new origin, clamped to its
-    /// screen. Dim overlay and the running capture stream follow live; the
-    /// virtual display / hidden window are position-independent.
+    /// screen (debug/testing entry).
     func moveRegion(to proposedOrigin: CGPoint) {
-        guard state == .active, let region = currentRegion else { return }
+        guard let region = currentRegion else { return }
         let origin = Geometry.clampedRegionOrigin(proposedOrigin,
                                                   regionSize: region.rect.size,
                                                   screenFrame: region.screen.frame)
-        let newRect = CGRect(origin: origin, size: region.rect.size)
-        guard newRect != region.rect else { return }
-        currentRegion = SelectedRegion(rect: newRect, screen: region.screen)
-        overlay?.update(region: newRect)
-        scheduleSourceRectUpdate(newRect, screen: region.screen)
+        setRegionRect(CGRect(origin: origin, size: region.rect.size))
+    }
+
+    /// Grows/shrinks the region from its bottom-left corner, honoring the
+    /// mode's aspect constraint (debug/testing entry).
+    func resizeRegion(byWidth dw: CGFloat, height dh: CGFloat) {
+        guard let region = currentRegion else { return }
+        let r = region.rect
+        setRegionRect(Geometry.resizedRegion(anchor: r.origin,
+                                             dragged: CGPoint(x: r.maxX + dw, y: r.maxY + dh),
+                                             aspect: activeAspect,
+                                             screenFrame: region.screen.frame))
+    }
+
+    /// Applies a moved and/or resized region to the live session: dim overlay
+    /// follows immediately; the capture stream is re-pointed on the fly. On
+    /// resize, hidden-window mode also resizes the mirror window and the
+    /// capture output, while virtual-display mode keeps its display
+    /// resolution and scales the (aspect-identical) region into it.
+    func setRegionRect(_ rect: CGRect) {
+        guard state == .active, let region = currentRegion, rect != region.rect else { return }
+        let sizeChanged = rect.size != region.rect.size
+        currentRegion = SelectedRegion(rect: rect, screen: region.screen)
+        overlay?.update(region: rect)
+        var pixelSize: (width: Int, height: Int)? = nil
+        if sizeChanged && activeShareMode == .hiddenWindow {
+            output?.resize(to: Geometry.hiddenWindowFrame(regionSize: rect.size,
+                                                          screenFrame: region.screen.frame))
+            pixelSize = Geometry.capturePixelSize(region: rect,
+                                                  scale: region.screen.backingScaleFactor)
+            activeOutputPixelSize = pixelSize!
+        }
+        scheduleCaptureUpdate(rect, screen: region.screen, pixelSize: pixelSize)
     }
 
     /// Coalesces rapid drag updates: at most one updateConfiguration call is
-    /// in flight; the newest pending rect wins.
-    private func scheduleSourceRectUpdate(_ rect: CGRect, screen: NSScreen) {
-        pendingSourceRect = Geometry.displayLocalTopLeftRect(appKitGlobal: rect,
-                                                             screenFrame: screen.frame)
-        guard !sourceRectUpdateInFlight else { return }
-        sourceRectUpdateInFlight = true
+    /// in flight; the newest pending update wins.
+    private func scheduleCaptureUpdate(_ rect: CGRect, screen: NSScreen,
+                                       pixelSize: (width: Int, height: Int)?) {
+        let local = Geometry.displayLocalTopLeftRect(appKitGlobal: rect,
+                                                     screenFrame: screen.frame)
+        pendingCaptureUpdate = (local, pixelSize?.width, pixelSize?.height)
+        guard !captureUpdateInFlight else { return }
+        captureUpdateInFlight = true
         Task {
-            while let next = pendingSourceRect {
-                pendingSourceRect = nil
+            while let next = pendingCaptureUpdate {
+                pendingCaptureUpdate = nil
                 guard let capture else { break }
-                try? await capture.updateSourceRect(next)
+                try? await capture.updateCapture(sourceRectTopLeft: next.rect,
+                                                 pixelWidth: next.pixelWidth,
+                                                 pixelHeight: next.pixelHeight)
             }
-            sourceRectUpdateInFlight = false
+            captureUpdateInFlight = false
         }
     }
 
@@ -159,6 +194,9 @@ final class ShareSession {
             currentRegion = region
             activeFrameRate = settings.frameRate
             activeShareMode = mode
+            activeAspect = mode == .virtualDisplay
+                ? region.rect.width / region.rect.height : nil
+            activeOutputPixelSize = (pw, ph)
             observeSettingsChanges()
             state = .active
         } catch {
@@ -201,12 +239,11 @@ final class ShareSession {
               let region = currentRegion, let capture else { return }
         activeFrameRate = settings.frameRate
         let fps = activeFrameRate
+        let (pw, ph) = activeOutputPixelSize
         Task {
             await capture.stop()
-            let sourceScale = region.screen.backingScaleFactor
             let sourceRect = Geometry.displayLocalTopLeftRect(appKitGlobal: region.rect,
                                                              screenFrame: region.screen.frame)
-            let (pw, ph) = Geometry.capturePixelSize(region: region.rect, scale: sourceScale)
             do {
                 try await capture.start(displayID: region.displayID, sourceRectTopLeft: sourceRect,
                                         pixelWidth: pw, pixelHeight: ph, fps: fps)
@@ -229,7 +266,7 @@ final class ShareSession {
         mover?.close()
         mover = nil
         moveBackupRect = nil
-        pendingSourceRect = nil
+        pendingCaptureUpdate = nil
         if let settingsObserver {
             NotificationCenter.default.removeObserver(settingsObserver)
             self.settingsObserver = nil

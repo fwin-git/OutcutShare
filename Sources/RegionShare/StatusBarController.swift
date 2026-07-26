@@ -8,7 +8,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     private let selectItem = NSMenuItem(title: "Select Region & Share",
                                         action: #selector(selectRegion), keyEquivalent: "s")
-    private let moveItem = NSMenuItem(title: "Move Region",
+    private let moveItem = NSMenuItem(title: "Move / Resize Region",
                                       action: #selector(moveRegion), keyEquivalent: "m")
     private let stopItem = NSMenuItem(title: "Stop Sharing",
                                       action: #selector(stopSharing), keyEquivalent: ".")
@@ -56,7 +56,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     }
 
     @objc private func moveRegion() {
-        session.startMove()
+        session.startAdjust()
     }
 
     @objc private func stopSharing() {

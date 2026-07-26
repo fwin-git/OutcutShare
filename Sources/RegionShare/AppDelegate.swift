@@ -52,6 +52,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
+        // --resize-by=dw,dh grows the region (bottom-left anchored) at 2/3 of
+        // the test run; the mode's aspect constraint applies.
+        if let resizeArg = CommandLine.arguments.first(where: { $0.hasPrefix("--resize-by=") }) {
+            let delta = resizeArg.dropFirst("--resize-by=".count).split(separator: ",").compactMap { Double($0) }
+            if delta.count == 2 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + parts[4] * 2 / 3) { [session] in
+                    session.resizeRegion(byWidth: delta[0], height: delta[1])
+                    print("SHARE-TEST resized region to \(session.currentRegionRect.map(String.init(describing:)) ?? "?")")
+                }
+            }
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + parts[4]) { [session] in
             let frames = session.receivedFrameCount
             let active = session.isActive

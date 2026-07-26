@@ -1,23 +1,25 @@
 import AppKit
 
-/// Interactive move mode for the active region: a transparent overlay on the
-/// region's screen. Drag the region to reposition it, arrow keys nudge
+/// Interactive adjust mode for the active region: a transparent overlay on
+/// the region's screen. Drag inside the region to move it, drag a corner
+/// handle to resize (aspect-locked when `aspect` is given), arrow keys nudge
 /// (Shift = 10 pt), mouse-up or Return commits, Esc cancels. The dim overlay
-/// underneath follows live via the onChange callback.
+/// underneath follows live via the onChange callback (global AppKit rect).
 @MainActor
 final class RegionMover {
     private var window: MoverWindow?
     private var onEnd: ((_ cancelled: Bool) -> Void)?
 
-    func begin(region: CGRect, screen: NSScreen,
-               onChange: @escaping (CGPoint) -> Void,
+    func begin(region: CGRect, screen: NSScreen, aspect: CGFloat?,
+               onChange: @escaping (CGRect) -> Void,
                onEnd: @escaping (_ cancelled: Bool) -> Void) {
         guard window == nil else {
             onEnd(true)
             return
         }
         self.onEnd = onEnd
-        let window = MoverWindow(screen: screen, region: region, onChange: onChange) { [weak self] cancelled in
+        let window = MoverWindow(screen: screen, region: region, aspect: aspect,
+                                 onChange: onChange) { [weak self] cancelled in
             self?.finish(cancelled: cancelled)
         }
         self.window = window
@@ -40,8 +42,8 @@ final class RegionMover {
 }
 
 private final class MoverWindow: NSWindow {
-    init(screen: NSScreen, region: CGRect,
-         onChange: @escaping (CGPoint) -> Void,
+    init(screen: NSScreen, region: CGRect, aspect: CGFloat?,
+         onChange: @escaping (CGRect) -> Void,
          onFinish: @escaping (_ cancelled: Bool) -> Void) {
         super.init(contentRect: screen.frame, styleMask: .borderless,
                    backing: .buffered, defer: false)
@@ -50,33 +52,43 @@ private final class MoverWindow: NSWindow {
         backgroundColor = .clear
         hasShadow = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        contentView = MoveView(frame: NSRect(origin: .zero, size: screen.frame.size),
-                               screenFrame: screen.frame, region: region,
-                               onChange: onChange, onFinish: onFinish)
+        contentView = AdjustView(frame: NSRect(origin: .zero, size: screen.frame.size),
+                                 screenFrame: screen.frame, region: region, aspect: aspect,
+                                 onChange: onChange, onFinish: onFinish)
     }
 
     override var canBecomeKey: Bool { true }
 
     override func cancelOperation(_ sender: Any?) {
-        (contentView as? MoveView)?.finish(cancelled: true)
+        (contentView as? AdjustView)?.finish(cancelled: true)
     }
 }
 
-private final class MoveView: NSView {
+private final class AdjustView: NSView {
+    private enum Drag {
+        case move(grabOffset: CGPoint)
+        case resize(anchor: CGPoint) // opposite corner, local coordinates
+    }
+
+    private static let handleHitRadius: CGFloat = 12
+    private static let handleSize: CGFloat = 9
+
     private let screenFrame: CGRect
     private var region: CGRect // window-local coordinates
-    private let onChange: (CGPoint) -> Void
+    private let aspect: CGFloat?
+    private let onChange: (CGRect) -> Void
     private let onFinish: (_ cancelled: Bool) -> Void
-    private var grabOffset: CGPoint?
+    private var drag: Drag?
     private var finished = false
 
-    init(frame: NSRect, screenFrame: CGRect, region: CGRect,
-         onChange: @escaping (CGPoint) -> Void,
+    init(frame: NSRect, screenFrame: CGRect, region: CGRect, aspect: CGFloat?,
+         onChange: @escaping (CGRect) -> Void,
          onFinish: @escaping (_ cancelled: Bool) -> Void) {
         self.screenFrame = screenFrame
         self.region = CGRect(x: region.minX - screenFrame.minX,
                              y: region.minY - screenFrame.minY,
                              width: region.width, height: region.height)
+        self.aspect = aspect
         self.onChange = onChange
         self.onFinish = onFinish
         super.init(frame: frame)
@@ -92,18 +104,50 @@ private final class MoveView: NSView {
         onFinish(cancelled)
     }
 
-    private func move(to localOrigin: CGPoint) {
-        let clamped = Geometry.clampedRegionOrigin(
-            CGPoint(x: localOrigin.x + screenFrame.minX, y: localOrigin.y + screenFrame.minY),
-            regionSize: region.size, screenFrame: screenFrame)
-        region.origin = CGPoint(x: clamped.x - screenFrame.minX, y: clamped.y - screenFrame.minY)
+    private var corners: [CGPoint] {
+        [CGPoint(x: region.minX, y: region.minY), CGPoint(x: region.maxX, y: region.minY),
+         CGPoint(x: region.minX, y: region.maxY), CGPoint(x: region.maxX, y: region.maxY)]
+    }
+
+    private func oppositeCorner(of corner: CGPoint) -> CGPoint {
+        CGPoint(x: corner.x == region.minX ? region.maxX : region.minX,
+                y: corner.y == region.minY ? region.maxY : region.minY)
+    }
+
+    private func apply(localRect: CGRect) {
+        region = localRect
         window?.invalidateCursorRects(for: self)
         needsDisplay = true
-        onChange(clamped)
+        onChange(CGRect(x: localRect.minX + screenFrame.minX,
+                        y: localRect.minY + screenFrame.minY,
+                        width: localRect.width, height: localRect.height))
+    }
+
+    private func toGlobal(_ p: CGPoint) -> CGPoint {
+        CGPoint(x: p.x + screenFrame.minX, y: p.y + screenFrame.minY)
+    }
+
+    private func toLocal(_ r: CGRect) -> CGRect {
+        CGRect(x: r.minX - screenFrame.minX, y: r.minY - screenFrame.minY,
+               width: r.width, height: r.height)
+    }
+
+    private func move(to localOrigin: CGPoint) {
+        let clamped = Geometry.clampedRegionOrigin(toGlobal(localOrigin),
+                                                   regionSize: region.size,
+                                                   screenFrame: screenFrame)
+        apply(localRect: CGRect(origin: CGPoint(x: clamped.x - screenFrame.minX,
+                                                y: clamped.y - screenFrame.minY),
+                                size: region.size))
     }
 
     override func resetCursorRects() {
-        addCursorRect(region, cursor: grabOffset == nil ? .openHand : .closedHand)
+        addCursorRect(region, cursor: .openHand)
+        for corner in corners {
+            let rect = CGRect(x: corner.x - Self.handleHitRadius, y: corner.y - Self.handleHitRadius,
+                              width: Self.handleHitRadius * 2, height: Self.handleHitRadius * 2)
+            addCursorRect(rect.intersection(bounds), cursor: .crosshair)
+        }
     }
 
     override func keyDown(with event: NSEvent) {
@@ -122,25 +166,49 @@ private final class MoveView: NSView {
     override func mouseDown(with event: NSEvent) {
         window?.makeKey()
         let point = convert(event.locationInWindow, from: nil)
-        guard region.contains(point) else { return }
-        grabOffset = CGPoint(x: point.x - region.minX, y: point.y - region.minY)
-        window?.invalidateCursorRects(for: self)
+        if let corner = corners.first(where: { hypot($0.x - point.x, $0.y - point.y) <= Self.handleHitRadius }) {
+            drag = .resize(anchor: oppositeCorner(of: corner))
+        } else if region.contains(point) {
+            drag = .move(grabOffset: CGPoint(x: point.x - region.minX, y: point.y - region.minY))
+        }
     }
 
     override func mouseDragged(with event: NSEvent) {
-        guard let grabOffset else { return }
         let point = convert(event.locationInWindow, from: nil)
-        move(to: CGPoint(x: point.x - grabOffset.x, y: point.y - grabOffset.y))
+        switch drag {
+        case .move(let grabOffset):
+            move(to: CGPoint(x: point.x - grabOffset.x, y: point.y - grabOffset.y))
+        case .resize(let anchor):
+            let global = Geometry.resizedRegion(anchor: toGlobal(anchor),
+                                                dragged: toGlobal(point),
+                                                aspect: aspect, screenFrame: screenFrame)
+            apply(localRect: toLocal(global))
+        case nil:
+            break
+        }
     }
 
     override func mouseUp(with event: NSEvent) {
-        guard grabOffset != nil else { return }
-        grabOffset = nil
+        guard drag != nil else { return }
+        drag = nil
         finish(cancelled: false)
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        let text = "Drag the region to move it — arrow keys nudge, Return commits, Esc cancels"
+        for corner in corners {
+            let handle = CGRect(x: corner.x - Self.handleSize / 2,
+                                y: corner.y - Self.handleSize / 2,
+                                width: Self.handleSize, height: Self.handleSize)
+            NSColor.white.setFill()
+            NSBezierPath(rect: handle).fill()
+            NSColor.black.setStroke()
+            let outline = NSBezierPath(rect: handle)
+            outline.lineWidth = 1
+            outline.stroke()
+        }
+
+        let resizeHint = aspect == nil ? "corners resize" : "corners resize (aspect locked)"
+        let text = "Drag to move — \(resizeHint) — arrows nudge, Return commits, Esc cancels"
         let attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: 15, weight: .medium),
             .foregroundColor: NSColor.white,

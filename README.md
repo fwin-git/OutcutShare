@@ -38,10 +38,14 @@ Requires Xcode command line tools on macOS 14+ (developed on macOS 26).
      region live; pick it in your sharing app's *window* list. Nothing floats
      on your screen — the window keeps exactly one pixel in the bottom-right
      screen corner (macOS stops rendering fully offscreen windows).
-5. **Move Region** (⌘M in the menu) lets you drag the region somewhere else
-   while sharing — viewers see the content pan live, the share never
-   interrupts. Arrow keys nudge (Shift = 10 pt), Return commits, Esc puts the
-   region back.
+5. **Move / Resize Region** (⌘M in the menu) adjusts the region while
+   sharing — viewers see the content follow live, the share never interrupts.
+   Drag inside the region to move it, drag a corner handle to resize; arrow
+   keys nudge (Shift = 10 pt), Return commits, Esc puts the region back.
+   Resizing is free in Hidden Window mode; in Virtual Display mode it is
+   locked to the region's aspect ratio (the virtual display keeps its
+   resolution and the content scales into it, so the sharing app never sees a
+   display change).
 6. **Stop Sharing** removes the virtual display / hidden window and the
    dimming.
 
@@ -87,8 +91,11 @@ styles what you see locally.)
   display's position in *System Settings → Displays* while sharing. The
   Hidden Window mode avoids all of this — use it if the extra display gets in
   your way.
-- One region at a time. Moving works live via **Move Region**; to change the
-  region's *size*, stop sharing and select again.
+- One region at a time. Moving and resizing work live via **Move / Resize
+  Region**. In Virtual Display mode, growing the region means macOS renders
+  more content into the same display resolution — if viewers need more
+  detail at the larger size, reselect so the display is recreated at the new
+  size.
 - Changing "Share as" while sharing restarts the session — re-pick the
   screen/window in your sharing app afterwards.
 
@@ -102,4 +109,5 @@ with end-to-end verification without clicking through the UI:
 .build/debug/RegionShare --share-test=100,100,800,600,8        # full pipeline, 8 s
 .build/debug/RegionShare --share-test=100,100,800,600,8,window # hidden-window mode
 .build/debug/RegionShare --share-test=100,100,800,600,12,vd --move-by=700,300 # live move mid-run
+.build/debug/RegionShare --share-test=100,100,800,600,12,window --resize-by=200,100 # live resize mid-run
 ```

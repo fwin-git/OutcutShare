@@ -36,6 +36,17 @@ final class LiveFrameWindow {
         window.orderFrontRegardless()
     }
 
+    /// Live-resizes the window (hidden-window mode when the region resizes).
+    func resize(to frame: CGRect) {
+        window.setFrame(frame, display: true)
+        if let view = window.contentView {
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            contentLayer.frame = view.bounds
+            CATransaction.commit()
+        }
+    }
+
     /// Called from the capture sample queue; CALayer property writes are
     /// thread-safe inside an explicit transaction.
     nonisolated func display(surface: IOSurfaceRef) {
