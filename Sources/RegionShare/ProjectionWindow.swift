@@ -11,7 +11,10 @@ final class ProjectionWindow {
     init(screen: NSScreen) {
         window = NSWindow(contentRect: screen.frame, styleMask: .borderless,
                           backing: .buffered, defer: false)
-        window.level = .normal
+        // Above the menu bar so the virtual display shows nothing but the
+        // projected region; the window exists only on the virtual screen.
+        window.level = .screenSaver
+        window.ignoresMouseEvents = true
         window.isOpaque = true
         window.backgroundColor = .black
         window.isReleasedWhenClosed = false

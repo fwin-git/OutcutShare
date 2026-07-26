@@ -24,6 +24,8 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
 
     var onFrame: ((IOSurfaceRef) -> Void)?
     var onStopped: ((Error?) -> Void)?
+    /// Debug/testing aid; incremented on the sample queue, read opportunistically.
+    private(set) nonisolated(unsafe) var frameCount = 0
 
     private var stream: SCStream?
     private let sampleQueue = DispatchQueue(label: "com.regionshare.capture")
@@ -77,6 +79,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
               let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer),
               let surface = CVPixelBufferGetIOSurface(pixelBuffer)?.takeUnretainedValue()
         else { return }
+        frameCount += 1
         onFrame?(surface)
     }
 
