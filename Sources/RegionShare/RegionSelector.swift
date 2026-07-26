@@ -5,10 +5,7 @@ struct SelectedRegion {
     let rect: CGRect
     let screen: NSScreen
 
-    var displayID: CGDirectDisplayID {
-        let key = NSDeviceDescriptionKey("NSScreenNumber")
-        return (screen.deviceDescription[key] as? NSNumber)?.uint32Value ?? 0
-    }
+    var displayID: CGDirectDisplayID { screen.displayID }
 }
 
 /// Full-screen drag-to-select overlay, one window per screen.
