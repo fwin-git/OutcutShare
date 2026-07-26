@@ -115,6 +115,24 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    /// Effective hotkey bindings (defaults applied, explicit clears removed).
+    @Published private(set) var hotkeys: [HotkeyAction: KeyCombo] = [:]
+
+    func hotkey(for action: HotkeyAction) -> KeyCombo? {
+        hotkeys[action]
+    }
+
+    /// Pass nil to clear a binding; the clear persists across launches.
+    func setHotkey(_ combo: KeyCombo?, for action: HotkeyAction) {
+        hotkeys[action] = combo
+        defaults.set(combo?.rawValue ?? "", forKey: Self.hotkeyKey(action))
+        notifyChange()
+    }
+
+    private static func hotkeyKey(_ action: HotkeyAction) -> String {
+        "hotkey.\(action.rawValue)"
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         defaults.register(defaults: [
@@ -141,6 +159,15 @@ final class SettingsStore: ObservableObject {
         self.borderStyle = defaults.string(forKey: Key.borderStyle)
             .flatMap(BorderStyle.init(rawValue:)) ?? .dashed
         self.borderThickness = defaults.double(forKey: Key.borderThickness)
+        // Hotkeys distinguish "never set" (use default) from "cleared" (empty
+        // string), so they bypass register(defaults:).
+        for action in HotkeyAction.allCases {
+            if let raw = defaults.string(forKey: Self.hotkeyKey(action)) {
+                hotkeys[action] = raw.isEmpty ? nil : KeyCombo(rawValue: raw)
+            } else {
+                hotkeys[action] = action.defaultCombo
+            }
+        }
     }
 
     private func notifyChange() {
