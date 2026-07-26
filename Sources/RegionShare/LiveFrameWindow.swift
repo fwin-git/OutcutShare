@@ -1,26 +1,32 @@
 import AppKit
 import IOSurface
 
-/// Borderless window filling the virtual display; captured frames land in its
-/// content layer, which is what sharing apps see when that display is shared.
+/// Borderless, click-through window whose content layer shows the live
+/// captured frames. Serves both share modes:
+///  - virtual display: fills the virtual screen above the menu bar, so the
+///    shared "monitor" shows nothing but the region, and
+///  - hidden window: normal level, titled "Region Share", pinned at the
+///    screen corner with 1×1 pt visible (see Geometry.hiddenWindowFrame) so
+///    sharing apps list and capture it while the user never sees it.
 @MainActor
-final class ProjectionWindow {
+final class LiveFrameWindow {
     private let window: NSWindow
     private nonisolated(unsafe) let contentLayer = CALayer()
 
-    init(screen: NSScreen) {
-        window = NSWindow(contentRect: screen.frame, styleMask: .borderless,
+    init(contentRect: CGRect, level: NSWindow.Level, title: String? = nil) {
+        window = NSWindow(contentRect: contentRect, styleMask: .borderless,
                           backing: .buffered, defer: false)
-        // Above the menu bar so the virtual display shows nothing but the
-        // projected region; the window exists only on the virtual screen.
-        window.level = .screenSaver
+        window.level = level
         window.ignoresMouseEvents = true
         window.isOpaque = true
         window.backgroundColor = .black
         window.isReleasedWhenClosed = false
         window.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
+        if let title {
+            window.title = title
+        }
 
-        let view = NSView(frame: NSRect(origin: .zero, size: screen.frame.size))
+        let view = NSView(frame: NSRect(origin: .zero, size: contentRect.size))
         view.wantsLayer = true
         contentLayer.frame = view.bounds
         contentLayer.contentsGravity = .resize

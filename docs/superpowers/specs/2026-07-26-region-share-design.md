@@ -111,6 +111,27 @@ The user then picks the virtual display ("Desktop 2") in Zoom/Teams.
   virtual display online and dimming correct); an automated smoke test launches the
   bundled app and checks it stays running.
 
+## Addendum (2026-07-26): Hidden-window share mode
+
+A settings toggle **Share as: Virtual Display / Hidden Window** selects the
+output. Hidden-window mode creates no virtual display; instead a borderless,
+click-through, *normal-level* window titled "Region Share", sized to the
+region, shows the live region mirror. The user shares it via **window**
+sharing in Zoom/Teams.
+
+Hiding requirement (validated by probe on this machine): a fully offscreen
+window is listed by SCShareableContent but **cannot be captured** (no rendered
+surface), while a window whose intersection with the screen is just **1×1 px**
+captures perfectly. The mirror window is therefore pinned at the bottom-right
+corner of the source screen with exactly one pixel on screen — effectively
+invisible, never floating, yet live-shareable.
+
+Implementation: `ProjectionWindow` generalizes to `LiveFrameWindow`
+(contentRect/level/title parameters) used by both modes;
+`Geometry.hiddenWindowFrame(regionSize:screenFrame:)` (unit-tested) computes
+the corner placement; `SettingsStore.shareMode` persists the choice; changing
+the mode while active restarts the session with the same region.
+
 ## Out of scope (YAGNI)
 
 Multiple simultaneous regions, region move/resize after selection (reselect

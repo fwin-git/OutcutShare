@@ -4,6 +4,14 @@ import Combine
 /// Posted whenever any setting changes; overlays observe this for live redraw.
 let settingsChangedNotification = Notification.Name("RegionShareSettingsChanged")
 
+/// How the region is exposed to sharing apps.
+enum ShareMode: String {
+    /// A virtual display sized to the region ("share screen" in Zoom/Teams).
+    case virtualDisplay
+    /// A hidden normal-level window mirroring the region ("share window").
+    case hiddenWindow
+}
+
 /// UserDefaults-backed app settings. All writes persist immediately and post
 /// `settingsChangedNotification`.
 final class SettingsStore: ObservableObject {
@@ -14,6 +22,7 @@ final class SettingsStore: ObservableObject {
         static let dimmingEnabled = "dimmingEnabled"
         static let showRegionBorder = "showRegionBorder"
         static let frameRate = "frameRate"
+        static let shareMode = "shareMode"
     }
 
     private let defaults: UserDefaults
@@ -51,6 +60,13 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    @Published var shareMode: ShareMode {
+        didSet {
+            defaults.set(shareMode.rawValue, forKey: Key.shareMode)
+            notifyChange()
+        }
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         defaults.register(defaults: [
@@ -58,11 +74,14 @@ final class SettingsStore: ObservableObject {
             Key.dimmingEnabled: true,
             Key.showRegionBorder: true,
             Key.frameRate: 30,
+            Key.shareMode: ShareMode.virtualDisplay.rawValue,
         ])
         self.dimOpacity = defaults.double(forKey: Key.dimOpacity)
         self.dimmingEnabled = defaults.bool(forKey: Key.dimmingEnabled)
         self.showRegionBorder = defaults.bool(forKey: Key.showRegionBorder)
         self.frameRate = defaults.integer(forKey: Key.frameRate)
+        self.shareMode = defaults.string(forKey: Key.shareMode)
+            .flatMap(ShareMode.init(rawValue:)) ?? .virtualDisplay
     }
 
     private func notifyChange() {

@@ -6,6 +6,18 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            Section("Sharing") {
+                Picker("Share as", selection: $settings.shareMode) {
+                    Text("Virtual Display").tag(ShareMode.virtualDisplay)
+                    Text("Hidden Window").tag(ShareMode.hiddenWindow)
+                }
+                .pickerStyle(.menu)
+                Text(settings.shareMode == .virtualDisplay
+                     ? "The region appears as an extra monitor — pick it under “share screen”."
+                     : "The region mirrors into an invisible window named “Region Share” — pick it under “share window”.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Section("Dimming") {
                 Toggle("Dim screen outside region", isOn: $settings.dimmingEnabled)
                 HStack {
@@ -28,7 +40,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 360, height: 260)
+        .frame(width: 380, height: 360)
     }
 }
 

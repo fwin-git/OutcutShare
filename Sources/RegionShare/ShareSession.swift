@@ -16,10 +16,11 @@ final class ShareSession {
     private var selector: RegionSelector?
     private var virtualDisplay: VirtualDisplay?
     private var capture: CaptureEngine?
-    private var projection: ProjectionWindow?
+    private var output: LiveFrameWindow?
     private var overlay: DimOverlay?
     private var currentRegion: SelectedRegion?
     private var activeFrameRate = 0
+    private var activeShareMode: ShareMode = .virtualDisplay
     private var settingsObserver: NSObjectProtocol?
 
     nonisolated init(settings: SettingsStore = .shared) {
@@ -64,21 +65,30 @@ final class ShareSession {
 
     private func activate(region: SelectedRegion) async {
         do {
+            let mode = settings.shareMode
             let sourceScale = region.screen.backingScaleFactor
-            let vd = try VirtualDisplay(sizeInPoints: region.rect.size,
-                                        scale: sourceScale, name: "Region Share")
-            virtualDisplay = vd
-            let virtualScreen = try await vd.waitForScreen()
-            let projection = ProjectionWindow(screen: virtualScreen)
-            self.projection = projection
+            let output: LiveFrameWindow
+            switch mode {
+            case .virtualDisplay:
+                let vd = try VirtualDisplay(sizeInPoints: region.rect.size,
+                                            scale: sourceScale, name: "Region Share")
+                virtualDisplay = vd
+                let virtualScreen = try await vd.waitForScreen()
+                output = LiveFrameWindow(contentRect: virtualScreen.frame, level: .screenSaver)
+            case .hiddenWindow:
+                let frame = Geometry.hiddenWindowFrame(regionSize: region.rect.size,
+                                                       screenFrame: region.screen.frame)
+                output = LiveFrameWindow(contentRect: frame, level: .normal, title: "Region Share")
+            }
+            self.output = output
             // Created before the capture filter snapshots the window list so
-            // the overlay is genuinely excluded from the captured picture.
+            // overlay and mirror window are genuinely excluded from capture.
             overlay = DimOverlay(region: region.rect, screen: region.screen, settings: settings)
 
             let capture = CaptureEngine()
             self.capture = capture
-            capture.onFrame = { [weak projection] surface in
-                projection?.display(surface: surface)
+            capture.onFrame = { [weak output] surface in
+                output?.display(surface: surface)
             }
             capture.onStopped = { [weak self] error in
                 Task { @MainActor in self?.handleStreamStopped(error) }
@@ -91,6 +101,7 @@ final class ShareSession {
 
             currentRegion = region
             activeFrameRate = settings.frameRate
+            activeShareMode = mode
             observeSettingsChanges()
             state = .active
         } catch {
@@ -106,9 +117,26 @@ final class ShareSession {
             forName: settingsChangedNotification, object: nil, queue: .main
         ) { [weak self] _ in
             MainActor.assumeIsolated {
-                self?.frameRateChangedIfNeeded()
+                self?.settingsDidChange()
             }
         }
+    }
+
+    private func settingsDidChange() {
+        guard state == .active else { return }
+        if settings.shareMode != activeShareMode {
+            restartSession()
+        } else {
+            frameRateChangedIfNeeded()
+        }
+    }
+
+    /// Mode switches need the whole output pipeline rebuilt; the region is kept.
+    private func restartSession() {
+        guard let region = currentRegion else { return }
+        teardown()
+        state = .selecting
+        Task { await activate(region: region) }
     }
 
     private func frameRateChangedIfNeeded() {
@@ -153,8 +181,8 @@ final class ShareSession {
         capture = nil
         overlay?.close()
         overlay = nil
-        projection?.close()
-        projection = nil
+        output?.close()
+        output = nil
         virtualDisplay?.destroy()
         virtualDisplay = nil
         currentRegion = nil
