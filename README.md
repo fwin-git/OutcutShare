@@ -54,11 +54,19 @@ Requires Xcode command line tools on macOS 14+ (developed on macOS 26).
 
 ## Settings
 
-Menu bar → **Settings…**
+Menu bar → **Settings…** — three pages:
+
+**General**
 
 | Setting | Effect | Default |
 | --- | --- | --- |
 | Share as | Virtual Display (share a screen) or Hidden Window (share a window) | Virtual Display |
+| Frame rate | Capture rate of the shared region (30/60 fps) | 30 fps |
+
+**Appearance**
+
+| Setting | Effect | Default |
+| --- | --- | --- |
 | Dim screen outside region | Toggles the dimming overlay | on |
 | Dim amount | 0–90 % black over everything outside the region | 60 % |
 | Show border around region | Frame just outside the region | on |
@@ -66,7 +74,21 @@ Menu bar → **Settings…**
 | Border style | Solid, dashed or dotted | dashed |
 | Border thickness | 1–10 pt | 3 pt |
 | Border corner radius | 0–30 pt (also rounds the dim cutout) | 8 pt |
-| Frame rate | Capture rate of the shared region (30/60 fps) | 30 fps |
+
+**Shortcuts** — system-wide hotkeys (no extra permissions needed), recordable
+to any key combination; click *Record*, press the combo (Esc cancels), ✕
+clears a binding:
+
+| Action | Default |
+| --- | --- |
+| Select Region & Share | ⌃⌥⌘S |
+| Move / Resize Region | ⌃⌥⌘M |
+| Stop Sharing | ⌃⌥⌘X |
+
+Assigning the same combo twice shows a warning on both rows; only the first
+action keeps the binding until the conflict is resolved. A combo without any
+modifier (except F-keys) also gets a caution, since it would swallow that key
+system-wide.
 
 Changes apply live to an active session. The dim overlay and border are drawn
 outside the shared area and excluded from capture — viewers never see them.

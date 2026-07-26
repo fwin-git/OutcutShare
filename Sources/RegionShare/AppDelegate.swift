@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusBar: StatusBarController?
     private var permissions: PermissionsWindowController?
     private var hotkeys: HotkeyManager?
+    private var debugSettingsWindow: SettingsWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let permissions = PermissionsWindowController()
@@ -50,6 +51,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if CommandLine.arguments.contains("--show-permissions") {
             permissions.show()
+            return
+        }
+        if let arg = CommandLine.arguments.first(where: { $0.hasPrefix("--show-settings") }) {
+            let tab = SettingsTab(rawValue: String(arg.dropFirst("--show-settings=".count)))
+            let controller = SettingsWindowController(settings: .shared)
+            debugSettingsWindow = controller
+            controller.show(tab: tab)
             return
         }
         runShareTestIfRequested()
