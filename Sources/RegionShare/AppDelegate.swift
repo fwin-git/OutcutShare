@@ -15,13 +15,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let session = ShareSession()
     private var statusBar: StatusBarController?
     private var permissions: PermissionsWindowController?
+    private var hotkeys: HotkeyManager?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let permissions = PermissionsWindowController()
         self.permissions = permissions
         session.onPermissionsNeeded = { permissions.show() }
         statusBar = StatusBarController(session: session, permissions: permissions)
+        hotkeys = HotkeyManager { [session] action in
+            switch action {
+            case .selectRegion: session.startSelection()
+            case .adjustRegion: session.startAdjust()
+            case .stopSharing: session.stop()
+            }
+        }
 
+        if CommandLine.arguments.contains("--hotkeys-test") {
+            let lines = (hotkeys?.registered ?? [])
+                .map { "\($0.action.rawValue)=\($0.combo.displayString)" }
+            print("HOTKEYS " + lines.joined(separator: " "))
+            exit(0)
+        }
         if CommandLine.arguments.contains("--permissions-test") {
             Task { @MainActor in
                 await permissions.model.refresh()
