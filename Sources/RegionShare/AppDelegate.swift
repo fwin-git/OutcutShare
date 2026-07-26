@@ -39,6 +39,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         let rect = CGRect(x: parts[0], y: parts[1], width: parts[2], height: parts[3])
         session.startSharing(rect: rect, on: screen)
+        // Optional companion flag: --move-by=dx,dy moves the region halfway
+        // through the test run to exercise the live-move path.
+        if let moveArg = CommandLine.arguments.first(where: { $0.hasPrefix("--move-by=") }) {
+            let delta = moveArg.dropFirst("--move-by=".count).split(separator: ",").compactMap { Double($0) }
+            if delta.count == 2 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + parts[4] / 2) { [session] in
+                    guard let current = session.currentRegionRect else { return }
+                    session.moveRegion(to: CGPoint(x: current.minX + delta[0],
+                                                   y: current.minY + delta[1]))
+                    print("SHARE-TEST moved region to \(session.currentRegionRect.map(String.init(describing:)) ?? "?")")
+                }
+            }
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + parts[4]) { [session] in
             let frames = session.receivedFrameCount
             let active = session.isActive

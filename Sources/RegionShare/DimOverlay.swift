@@ -7,8 +7,11 @@ import AppKit
 @MainActor
 final class DimOverlay {
     private let window: NSWindow
+    private let screenFrame: CGRect
+    private let dimView: DimView
 
     init(region: CGRect, screen: NSScreen, settings: SettingsStore) {
+        screenFrame = screen.frame
         window = NSWindow(contentRect: screen.frame, styleMask: .borderless,
                           backing: .buffered, defer: false)
         window.level = .screenSaver
@@ -22,9 +25,17 @@ final class DimOverlay {
         let regionInWindow = CGRect(x: region.minX - screen.frame.minX,
                                     y: region.minY - screen.frame.minY,
                                     width: region.width, height: region.height)
-        window.contentView = DimView(frame: NSRect(origin: .zero, size: screen.frame.size),
-                                     region: regionInWindow, settings: settings)
+        dimView = DimView(frame: NSRect(origin: .zero, size: screen.frame.size),
+                          region: regionInWindow, settings: settings)
+        window.contentView = dimView
         window.orderFrontRegardless()
+    }
+
+    /// Live-moves the clear cutout (region in AppKit global coordinates).
+    func update(region: CGRect) {
+        dimView.region = CGRect(x: region.minX - screenFrame.minX,
+                                y: region.minY - screenFrame.minY,
+                                width: region.width, height: region.height)
     }
 
     func close() {
@@ -33,7 +44,9 @@ final class DimOverlay {
 }
 
 private final class DimView: NSView {
-    private let region: CGRect
+    var region: CGRect {
+        didSet { needsDisplay = true }
+    }
     private let settings: SettingsStore
     private var observer: NSObjectProtocol?
 

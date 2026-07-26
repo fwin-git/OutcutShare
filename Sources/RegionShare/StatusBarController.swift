@@ -8,6 +8,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     private let selectItem = NSMenuItem(title: "Select Region & Share",
                                         action: #selector(selectRegion), keyEquivalent: "s")
+    private let moveItem = NSMenuItem(title: "Move Region",
+                                      action: #selector(moveRegion), keyEquivalent: "m")
     private let stopItem = NSMenuItem(title: "Stop Sharing",
                                       action: #selector(stopSharing), keyEquivalent: ".")
 
@@ -20,8 +22,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         let menu = NSMenu()
         menu.autoenablesItems = false
         selectItem.target = self
+        moveItem.target = self
         stopItem.target = self
         menu.addItem(selectItem)
+        menu.addItem(moveItem)
         menu.addItem(stopItem)
         menu.addItem(.separator())
         let settingsItem = NSMenuItem(title: "Settings…",
@@ -43,11 +47,16 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         statusItem.button?.image = NSImage(systemSymbolName: symbol,
                                            accessibilityDescription: "RegionShare")
         selectItem.isEnabled = session.state == .idle
+        moveItem.isEnabled = session.isActive
         stopItem.isEnabled = session.isActive
     }
 
     @objc private func selectRegion() {
         session.startSelection()
+    }
+
+    @objc private func moveRegion() {
+        session.startMove()
     }
 
     @objc private func stopSharing() {

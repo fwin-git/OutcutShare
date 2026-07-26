@@ -22,6 +22,13 @@ enum Geometry {
                width: r.width, height: r.height)
     }
 
+    /// Keeps a moved region fully inside its screen (AppKit coordinates).
+    static func clampedRegionOrigin(_ proposed: CGPoint, regionSize: CGSize,
+                                    screenFrame: CGRect) -> CGPoint {
+        CGPoint(x: min(max(proposed.x, screenFrame.minX), screenFrame.maxX - regionSize.width),
+                y: min(max(proposed.y, screenFrame.minY), screenFrame.maxY - regionSize.height))
+    }
+
     /// Placement for the hidden mirror window: pinned at the bottom-right
     /// corner of the screen so exactly 1×1 pt stays on screen. macOS keeps
     /// rendering (and sharing apps keep capturing) a window only while some

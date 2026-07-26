@@ -22,6 +22,10 @@ final class ShareSession {
     private var activeFrameRate = 0
     private var activeShareMode: ShareMode = .virtualDisplay
     private var settingsObserver: NSObjectProtocol?
+    private var mover: RegionMover?
+    private var moveBackupRect: CGRect?
+    private var pendingSourceRect: CGRect?
+    private var sourceRectUpdateInFlight = false
 
     nonisolated init(settings: SettingsStore = .shared) {
         self.settings = settings
@@ -62,6 +66,59 @@ final class ShareSession {
 
     /// Frames received by the active capture stream (debug/testing aid).
     var receivedFrameCount: Int { capture?.frameCount ?? 0 }
+
+    var currentRegionRect: CGRect? { currentRegion?.rect }
+
+    /// Enters interactive move mode: drag the region to a new spot, arrow
+    /// keys nudge, Esc reverts.
+    func startMove() {
+        guard state == .active, let region = currentRegion, mover == nil else { return }
+        moveBackupRect = region.rect
+        let mover = RegionMover()
+        self.mover = mover
+        mover.begin(region: region.rect, screen: region.screen) { [weak self] origin in
+            self?.moveRegion(to: origin)
+        } onEnd: { [weak self] cancelled in
+            guard let self else { return }
+            if cancelled, let backup = self.moveBackupRect {
+                self.moveRegion(to: backup.origin)
+            }
+            self.moveBackupRect = nil
+            self.mover = nil
+        }
+    }
+
+    /// Moves the active region (same size) to a new origin, clamped to its
+    /// screen. Dim overlay and the running capture stream follow live; the
+    /// virtual display / hidden window are position-independent.
+    func moveRegion(to proposedOrigin: CGPoint) {
+        guard state == .active, let region = currentRegion else { return }
+        let origin = Geometry.clampedRegionOrigin(proposedOrigin,
+                                                  regionSize: region.rect.size,
+                                                  screenFrame: region.screen.frame)
+        let newRect = CGRect(origin: origin, size: region.rect.size)
+        guard newRect != region.rect else { return }
+        currentRegion = SelectedRegion(rect: newRect, screen: region.screen)
+        overlay?.update(region: newRect)
+        scheduleSourceRectUpdate(newRect, screen: region.screen)
+    }
+
+    /// Coalesces rapid drag updates: at most one updateConfiguration call is
+    /// in flight; the newest pending rect wins.
+    private func scheduleSourceRectUpdate(_ rect: CGRect, screen: NSScreen) {
+        pendingSourceRect = Geometry.displayLocalTopLeftRect(appKitGlobal: rect,
+                                                             screenFrame: screen.frame)
+        guard !sourceRectUpdateInFlight else { return }
+        sourceRectUpdateInFlight = true
+        Task {
+            while let next = pendingSourceRect {
+                pendingSourceRect = nil
+                guard let capture else { break }
+                try? await capture.updateSourceRect(next)
+            }
+            sourceRectUpdateInFlight = false
+        }
+    }
 
     private func activate(region: SelectedRegion) async {
         do {
@@ -169,6 +226,10 @@ final class ShareSession {
     }
 
     private func teardown() {
+        mover?.close()
+        mover = nil
+        moveBackupRect = nil
+        pendingSourceRect = nil
         if let settingsObserver {
             NotificationCenter.default.removeObserver(settingsObserver)
             self.settingsObserver = nil
