@@ -59,6 +59,33 @@ final class GeometryTests: XCTestCase {
         XCTAssertEqual(frame.intersection(screen).size, CGSize(width: 1, height: 1))
     }
 
+    func testClampedRegionOriginInsideScreenUnchanged() {
+        let screen = CGRect(x: 0, y: 0, width: 2560, height: 1440)
+        let origin = Geometry.clampedRegionOrigin(CGPoint(x: 300, y: 400),
+                                                  regionSize: CGSize(width: 800, height: 600),
+                                                  screenFrame: screen)
+        XCTAssertEqual(origin, CGPoint(x: 300, y: 400))
+    }
+
+    func testClampedRegionOriginClampsToEdges() {
+        let screen = CGRect(x: 0, y: 0, width: 2560, height: 1440)
+        let size = CGSize(width: 800, height: 600)
+        XCTAssertEqual(Geometry.clampedRegionOrigin(CGPoint(x: -50, y: -20),
+                                                    regionSize: size, screenFrame: screen),
+                       CGPoint(x: 0, y: 0))
+        XCTAssertEqual(Geometry.clampedRegionOrigin(CGPoint(x: 2400, y: 1200),
+                                                    regionSize: size, screenFrame: screen),
+                       CGPoint(x: 1760, y: 840))
+    }
+
+    func testClampedRegionOriginOnOffsetScreen() {
+        let screen = CGRect(x: 2560, y: 360, width: 1920, height: 1080)
+        let origin = Geometry.clampedRegionOrigin(CGPoint(x: 100, y: 100),
+                                                  regionSize: CGSize(width: 640, height: 480),
+                                                  screenFrame: screen)
+        XCTAssertEqual(origin, CGPoint(x: 2560, y: 360))
+    }
+
     func testCapturePixelSizeFlooredToEven() {
         let s = Geometry.capturePixelSize(region: CGRect(x: 0, y: 0, width: 801.5, height: 599.5), scale: 1)
         XCTAssertEqual(s.width, 800)

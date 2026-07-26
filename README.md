@@ -38,7 +38,11 @@ Requires Xcode command line tools on macOS 14+ (developed on macOS 26).
      region live; pick it in your sharing app's *window* list. Nothing floats
      on your screen — the window keeps exactly one pixel in the bottom-right
      screen corner (macOS stops rendering fully offscreen windows).
-5. **Stop Sharing** removes the virtual display / hidden window and the
+5. **Move Region** (⌘M in the menu) lets you drag the region somewhere else
+   while sharing — viewers see the content pan live, the share never
+   interrupts. Arrow keys nudge (Shift = 10 pt), Return commits, Esc puts the
+   region back.
+6. **Stop Sharing** removes the virtual display / hidden window and the
    dimming.
 
 ## Settings
@@ -83,7 +87,8 @@ styles what you see locally.)
   display's position in *System Settings → Displays* while sharing. The
   Hidden Window mode avoids all of this — use it if the extra display gets in
   your way.
-- One region at a time. To change the region, stop sharing and select again.
+- One region at a time. Moving works live via **Move Region**; to change the
+  region's *size*, stop sharing and select again.
 - Changing "Share as" while sharing restarts the session — re-pick the
   screen/window in your sharing app afterwards.
 
@@ -96,4 +101,5 @@ with end-to-end verification without clicking through the UI:
 .build/debug/RegionShare --vd-test                             # virtual display only
 .build/debug/RegionShare --share-test=100,100,800,600,8        # full pipeline, 8 s
 .build/debug/RegionShare --share-test=100,100,800,600,8,window # hidden-window mode
+.build/debug/RegionShare --share-test=100,100,800,600,12,vd --move-by=700,300 # live move mid-run
 ```

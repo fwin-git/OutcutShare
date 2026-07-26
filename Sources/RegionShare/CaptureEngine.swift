@@ -28,6 +28,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
     private(set) nonisolated(unsafe) var frameCount = 0
 
     private var stream: SCStream?
+    private var config: SCStreamConfiguration?
     private let sampleQueue = DispatchQueue(label: "com.regionshare.capture")
 
     /// - Parameter sourceRectTopLeft: region in display-local, top-left-origin
@@ -61,11 +62,21 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
         try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: sampleQueue)
         try await stream.startCapture()
         self.stream = stream
+        self.config = config
+    }
+
+    /// Re-points the running stream at a new region (same size) without
+    /// interrupting the share.
+    func updateSourceRect(_ sourceRectTopLeft: CGRect) async throws {
+        guard let stream, let config else { return }
+        config.sourceRect = sourceRectTopLeft
+        try await stream.updateConfiguration(config)
     }
 
     func stop() async {
         guard let stream else { return }
         self.stream = nil
+        self.config = nil
         try? await stream.stopCapture()
     }
 
