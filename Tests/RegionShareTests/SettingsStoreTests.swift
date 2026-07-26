@@ -1,4 +1,5 @@
 import XCTest
+import AppKit
 @testable import RegionShare
 
 final class SettingsStoreTests: XCTestCase {
@@ -56,6 +57,48 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(store.dimOpacity, 0.9, accuracy: 0.0001)
         store.dimOpacity = -0.2
         XCTAssertEqual(store.dimOpacity, 0.0, accuracy: 0.0001)
+    }
+
+    func testBorderDefaults() {
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertEqual(store.borderStyle, .dashed)
+        XCTAssertEqual(store.borderRadius, 8, accuracy: 0.0001)
+        XCTAssertEqual(store.borderThickness, 3, accuracy: 0.0001)
+        XCTAssertEqual(store.borderColor.hexRGBA, "#FF3B30FF")
+    }
+
+    func testBorderSettingsPersist() {
+        let store = SettingsStore(defaults: defaults)
+        store.borderStyle = .dotted
+        store.borderRadius = 14
+        store.borderThickness = 6
+        store.borderColor = NSColor(hexRGBA: "#00FF00FF")!
+
+        let reloaded = SettingsStore(defaults: defaults)
+        XCTAssertEqual(reloaded.borderStyle, .dotted)
+        XCTAssertEqual(reloaded.borderRadius, 14, accuracy: 0.0001)
+        XCTAssertEqual(reloaded.borderThickness, 6, accuracy: 0.0001)
+        XCTAssertEqual(reloaded.borderColor.hexRGBA, "#00FF00FF")
+    }
+
+    func testBorderRadiusAndThicknessClamped() {
+        let store = SettingsStore(defaults: defaults)
+        store.borderRadius = -5
+        XCTAssertEqual(store.borderRadius, 0, accuracy: 0.0001)
+        store.borderRadius = 100
+        XCTAssertEqual(store.borderRadius, 30, accuracy: 0.0001)
+        store.borderThickness = 0
+        XCTAssertEqual(store.borderThickness, 1, accuracy: 0.0001)
+        store.borderThickness = 50
+        XCTAssertEqual(store.borderThickness, 10, accuracy: 0.0001)
+    }
+
+    func testHexColorRoundTrip() {
+        let color = NSColor(hexRGBA: "#3366CC80")
+        XCTAssertNotNil(color)
+        XCTAssertEqual(color?.hexRGBA, "#3366CC80")
+        XCTAssertNil(NSColor(hexRGBA: "not-a-color"))
+        XCTAssertNil(NSColor(hexRGBA: "#12345"))
     }
 
     func testChangePostsNotification() {

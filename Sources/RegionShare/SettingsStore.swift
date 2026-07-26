@@ -1,8 +1,12 @@
-import Foundation
+import AppKit
 import Combine
 
 /// Posted whenever any setting changes; overlays observe this for live redraw.
 let settingsChangedNotification = Notification.Name("RegionShareSettingsChanged")
+
+enum BorderStyle: String, CaseIterable {
+    case solid, dashed, dotted
+}
 
 /// How the region is exposed to sharing apps.
 enum ShareMode: String {
@@ -23,7 +27,13 @@ final class SettingsStore: ObservableObject {
         static let showRegionBorder = "showRegionBorder"
         static let frameRate = "frameRate"
         static let shareMode = "shareMode"
+        static let borderColor = "borderColor"
+        static let borderRadius = "borderRadius"
+        static let borderStyle = "borderStyle"
+        static let borderThickness = "borderThickness"
     }
+
+    static let defaultBorderColorHex = "#FF3B30FF"
 
     private let defaults: UserDefaults
 
@@ -67,6 +77,44 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    @Published var borderColor: NSColor {
+        didSet {
+            defaults.set(borderColor.hexRGBA, forKey: Key.borderColor)
+            notifyChange()
+        }
+    }
+
+    @Published var borderRadius: Double {
+        didSet {
+            let clamped = min(max(borderRadius, 0), 30)
+            if clamped != borderRadius {
+                borderRadius = clamped
+                return
+            }
+            defaults.set(borderRadius, forKey: Key.borderRadius)
+            notifyChange()
+        }
+    }
+
+    @Published var borderStyle: BorderStyle {
+        didSet {
+            defaults.set(borderStyle.rawValue, forKey: Key.borderStyle)
+            notifyChange()
+        }
+    }
+
+    @Published var borderThickness: Double {
+        didSet {
+            let clamped = min(max(borderThickness, 1), 10)
+            if clamped != borderThickness {
+                borderThickness = clamped
+                return
+            }
+            defaults.set(borderThickness, forKey: Key.borderThickness)
+            notifyChange()
+        }
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         defaults.register(defaults: [
@@ -75,6 +123,10 @@ final class SettingsStore: ObservableObject {
             Key.showRegionBorder: true,
             Key.frameRate: 30,
             Key.shareMode: ShareMode.virtualDisplay.rawValue,
+            Key.borderColor: Self.defaultBorderColorHex,
+            Key.borderRadius: 8.0,
+            Key.borderStyle: BorderStyle.dashed.rawValue,
+            Key.borderThickness: 3.0,
         ])
         self.dimOpacity = defaults.double(forKey: Key.dimOpacity)
         self.dimmingEnabled = defaults.bool(forKey: Key.dimmingEnabled)
@@ -82,6 +134,13 @@ final class SettingsStore: ObservableObject {
         self.frameRate = defaults.integer(forKey: Key.frameRate)
         self.shareMode = defaults.string(forKey: Key.shareMode)
             .flatMap(ShareMode.init(rawValue:)) ?? .virtualDisplay
+        self.borderColor = defaults.string(forKey: Key.borderColor)
+            .flatMap(NSColor.init(hexRGBA:))
+            ?? NSColor(hexRGBA: Self.defaultBorderColorHex)!
+        self.borderRadius = defaults.double(forKey: Key.borderRadius)
+        self.borderStyle = defaults.string(forKey: Key.borderStyle)
+            .flatMap(BorderStyle.init(rawValue:)) ?? .dashed
+        self.borderThickness = defaults.double(forKey: Key.borderThickness)
     }
 
     private func notifyChange() {

@@ -50,11 +50,17 @@ Menu bar → **Settings…**
 | Share as | Virtual Display (share a screen) or Hidden Window (share a window) | Virtual Display |
 | Dim screen outside region | Toggles the dimming overlay | on |
 | Dim amount | 0–90 % black over everything outside the region | 60 % |
-| Show border around region | Accent-colored frame just outside the region | on |
+| Show border around region | Frame just outside the region | on |
+| Border color | Any color incl. opacity | red |
+| Border style | Solid, dashed or dotted | dashed |
+| Border thickness | 1–10 pt | 3 pt |
+| Border corner radius | 0–30 pt (also rounds the dim cutout) | 8 pt |
 | Frame rate | Capture rate of the shared region (30/60 fps) | 30 fps |
 
 Changes apply live to an active session. The dim overlay and border are drawn
 outside the shared area and excluded from capture — viewers never see them.
+(The capture itself always stays a sharp rectangle; the corner radius only
+styles what you see locally.)
 
 ## How it works
 

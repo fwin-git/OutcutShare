@@ -29,7 +29,22 @@ struct SettingsView: View {
                         .monospacedDigit()
                         .frame(width: 44, alignment: .trailing)
                 }
+            }
+            Section("Region border") {
                 Toggle("Show border around region", isOn: $settings.showRegionBorder)
+                ColorPicker("Color", selection: borderColorBinding, supportsOpacity: true)
+                    .disabled(!settings.showRegionBorder)
+                Picker("Style", selection: $settings.borderStyle) {
+                    Text("Solid").tag(BorderStyle.solid)
+                    Text("Dashed").tag(BorderStyle.dashed)
+                    Text("Dotted").tag(BorderStyle.dotted)
+                }
+                .pickerStyle(.segmented)
+                .disabled(!settings.showRegionBorder)
+                labeledSlider("Thickness", value: $settings.borderThickness, range: 1...10)
+                    .disabled(!settings.showRegionBorder)
+                labeledSlider("Corner radius", value: $settings.borderRadius, range: 0...30)
+                    .disabled(!settings.showRegionBorder)
             }
             Section("Capture") {
                 Picker("Frame rate", selection: $settings.frameRate) {
@@ -40,7 +55,22 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 380, height: 360)
+        .frame(width: 380, height: 540)
+    }
+
+    private var borderColorBinding: Binding<Color> {
+        Binding(get: { Color(nsColor: settings.borderColor) },
+                set: { settings.borderColor = NSColor($0) })
+    }
+
+    private func labeledSlider(_ label: String, value: Binding<Double>,
+                               range: ClosedRange<Double>) -> some View {
+        HStack {
+            Slider(value: value, in: range) { Text(label) }
+            Text("\(Int(value.wrappedValue.rounded())) pt")
+                .monospacedDigit()
+                .frame(width: 40, alignment: .trailing)
+        }
     }
 }
 
