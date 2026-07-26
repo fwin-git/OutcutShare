@@ -113,7 +113,9 @@ private final class SelectionView: NSView {
         dragCurrent = nil
         needsDisplay = true
         guard Geometry.meetsMinimumSize(local) else { return }
-        let global = window.convertToScreen(local)
+        // Integral coordinates keep the dim boundary and the capture rect
+        // pixel-aligned.
+        let global = window.convertToScreen(local).integral
         selector?.finish(with: SelectedRegion(rect: global, screen: screen))
     }
 

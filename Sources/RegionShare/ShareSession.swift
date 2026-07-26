@@ -71,6 +71,9 @@ final class ShareSession {
             let virtualScreen = try await vd.waitForScreen()
             let projection = ProjectionWindow(screen: virtualScreen)
             self.projection = projection
+            // Created before the capture filter snapshots the window list so
+            // the overlay is genuinely excluded from the captured picture.
+            overlay = DimOverlay(region: region.rect, screen: region.screen, settings: settings)
 
             let capture = CaptureEngine()
             self.capture = capture
@@ -86,7 +89,6 @@ final class ShareSession {
             try await capture.start(displayID: region.displayID, sourceRectTopLeft: sourceRect,
                                     pixelWidth: pw, pixelHeight: ph, fps: settings.frameRate)
 
-            overlay = DimOverlay(region: region.rect, screen: region.screen, settings: settings)
             currentRegion = region
             activeFrameRate = settings.frameRate
             observeSettingsChanges()
@@ -120,8 +122,12 @@ final class ShareSession {
             let sourceRect = Geometry.displayLocalTopLeftRect(appKitGlobal: region.rect,
                                                              screenFrame: region.screen.frame)
             let (pw, ph) = Geometry.capturePixelSize(region: region.rect, scale: sourceScale)
-            try? await capture.start(displayID: region.displayID, sourceRectTopLeft: sourceRect,
-                                     pixelWidth: pw, pixelHeight: ph, fps: fps)
+            do {
+                try await capture.start(displayID: region.displayID, sourceRectTopLeft: sourceRect,
+                                        pixelWidth: pw, pixelHeight: ph, fps: fps)
+            } catch {
+                handleStreamStopped(error)
+            }
         }
     }
 
