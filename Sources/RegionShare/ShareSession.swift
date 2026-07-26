@@ -10,6 +10,9 @@ final class ShareSession {
         didSet { onStateChange?() }
     }
     var onStateChange: (() -> Void)?
+    /// Set by the app delegate: opens the guided permissions window. Called
+    /// instead of firing raw system prompts when the permission is missing.
+    var onPermissionsNeeded: (() -> Void)?
     var isActive: Bool { state == .active }
 
     private nonisolated(unsafe) let settings: SettingsStore
@@ -35,9 +38,9 @@ final class ShareSession {
 
     func startSelection() {
         guard state == .idle else { return }
-        if !CGPreflightScreenCaptureAccess() {
-            // Trigger the system prompt before the selection overlay appears.
-            CGRequestScreenCaptureAccess()
+        guard CGPreflightScreenCaptureAccess() else {
+            onPermissionsNeeded?()
+            return
         }
         state = .selecting
         let selector = RegionSelector()
@@ -287,20 +290,15 @@ final class ShareSession {
     }
 
     private func presentError(_ error: Error, title: String = "RegionShare couldn't start sharing") {
+        if case CaptureEngine.CaptureError.permissionDenied = error {
+            onPermissionsNeeded?()
+            return
+        }
         let alert = NSAlert()
         alert.messageText = title
         alert.informativeText = error.localizedDescription
         NSApp.activate(ignoringOtherApps: true)
-        if case CaptureEngine.CaptureError.permissionDenied = error {
-            alert.addButton(withTitle: "Open System Settings")
-            alert.addButton(withTitle: "OK")
-            if alert.runModal() == .alertFirstButtonReturn,
-               let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
-                NSWorkspace.shared.open(url)
-            }
-        } else {
-            alert.addButton(withTitle: "OK")
-            alert.runModal()
-        }
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
     }
 }

@@ -1,0 +1,136 @@
+import AppKit
+import SwiftUI
+
+struct PermissionsView: View {
+    @ObservedObject var model: PermissionsModel
+    var onDone: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 10) {
+                Image(systemName: "rectangle.dashed.badge.record")
+                    .font(.system(size: 28))
+                    .foregroundStyle(.tint)
+                VStack(alignment: .leading) {
+                    Text("Welcome to RegionShare").font(.title3).bold()
+                    Text("One system permission is needed before you can share a region.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Divider()
+
+            statusRow(state: screenRecordingState,
+                      title: "Screen & System Audio Recording",
+                      detail: screenRecordingDetail)
+
+            if !model.status.screenRecordingGranted {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("1.  Click **Request Permission** and choose *Allow* in the macOS dialog.")
+                    Text("2.  No dialog? Enable **RegionShare** in *System Settings → Privacy & Security → Screen & System Audio Recording*.")
+                    Text("3.  Come back here — the checkmark updates by itself.")
+                }
+                .font(.callout)
+                .padding(.leading, 30)
+
+                HStack {
+                    Button("Request Permission") { model.requestScreenRecording() }
+                        .keyboardShortcut(.defaultAction)
+                    Button("Open System Settings") { model.openSystemSettings() }
+                }
+                .padding(.leading, 30)
+            } else if model.status.needsRelaunch {
+                Button("Relaunch RegionShare") { model.relaunch() }
+                    .keyboardShortcut(.defaultAction)
+                    .padding(.leading, 30)
+            }
+
+            statusRow(state: model.status.virtualDisplayAvailable ? .ok : .warning,
+                      title: "Virtual display support",
+                      detail: model.status.virtualDisplayAvailable
+                          ? "Available — the region can appear as its own monitor."
+                          : "Unavailable on this macOS — use the Hidden Window share mode.")
+
+            Divider()
+
+            HStack {
+                if model.status.allSatisfied {
+                    Label("All set — you're ready to share.", systemImage: "checkmark.seal.fill")
+                        .foregroundStyle(.green)
+                }
+                Spacer()
+                Button(model.status.allSatisfied ? "Done" : "Later") { onDone() }
+            }
+        }
+        .padding(20)
+        .frame(width: 470)
+    }
+
+    private enum RowState { case ok, pending, warning }
+
+    private var screenRecordingState: RowState {
+        if model.status.captureWorks { return .ok }
+        if model.status.needsRelaunch { return .warning }
+        return .pending
+    }
+
+    private var screenRecordingDetail: String {
+        if model.status.captureWorks {
+            return "Granted."
+        }
+        if model.status.needsRelaunch {
+            return "Granted — relaunch RegionShare so it takes effect."
+        }
+        return "Required to capture the selected screen region."
+    }
+
+    private func statusRow(state: RowState, title: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Group {
+                switch state {
+                case .ok:
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                case .pending:
+                    Image(systemName: "circle").foregroundStyle(.secondary)
+                case .warning:
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                }
+            }
+            .font(.system(size: 20))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).bold()
+                Text(detail).font(.callout).foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+@MainActor
+final class PermissionsWindowController {
+    let model = PermissionsModel()
+    private var window: NSWindow?
+    private var closeObserver: NSObjectProtocol?
+
+    func show() {
+        if window == nil {
+            let hosting = NSHostingController(rootView: PermissionsView(model: model) { [weak self] in
+                self?.window?.close()
+            })
+            let window = NSWindow(contentViewController: hosting)
+            window.title = "RegionShare Permissions"
+            window.styleMask = [.titled, .closable]
+            window.isReleasedWhenClosed = false
+            window.center()
+            self.window = window
+            closeObserver = NotificationCenter.default.addObserver(
+                forName: NSWindow.willCloseNotification, object: window, queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated { self?.model.stopPolling() }
+            }
+        }
+        model.startPolling()
+        NSApp.activate(ignoringOtherApps: true)
+        window?.makeKeyAndOrderFront(nil)
+    }
+}

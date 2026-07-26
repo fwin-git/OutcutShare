@@ -5,6 +5,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     private let session: ShareSession
     private let statusItem: NSStatusItem
     private let settingsWindow: SettingsWindowController
+    private let permissions: PermissionsWindowController
 
     private let selectItem = NSMenuItem(title: "Select Region & Share",
                                         action: #selector(selectRegion), keyEquivalent: "s")
@@ -13,8 +14,9 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     private let stopItem = NSMenuItem(title: "Stop Sharing",
                                       action: #selector(stopSharing), keyEquivalent: ".")
 
-    init(session: ShareSession) {
+    init(session: ShareSession, permissions: PermissionsWindowController) {
         self.session = session
+        self.permissions = permissions
         self.settingsWindow = SettingsWindowController(settings: .shared)
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         super.init()
@@ -32,6 +34,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
                                       action: #selector(openSettings), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(settingsItem)
+        let permissionsItem = NSMenuItem(title: "Permissions…",
+                                         action: #selector(openPermissions), keyEquivalent: "")
+        permissionsItem.target = self
+        menu.addItem(permissionsItem)
         menu.addItem(.separator())
         let quitItem = NSMenuItem(title: "Quit RegionShare",
                                   action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
@@ -65,5 +71,9 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     @objc private func openSettings() {
         settingsWindow.show()
+    }
+
+    @objc private func openPermissions() {
+        permissions.show()
     }
 }

@@ -26,10 +26,13 @@ Requires Xcode command line tools on macOS 14+ (developed on macOS 26).
 ## First run
 
 1. Launch the app — a dashed-rectangle icon appears in the menu bar.
-2. Choose **Select Region & Share** and drag a rectangle (Esc cancels).
-3. macOS will ask for **Screen Recording** permission the first time. Grant it
-   under *System Settings → Privacy & Security → Screen Recording*, then
-   select the region again.
+2. If the **Screen & System Audio Recording** permission is missing, a guided
+   permissions window opens automatically with live-updating checkmarks: click
+   *Request Permission* (or enable RegionShare in the System Settings pane it
+   opens for you) and the checkmark flips green by itself; a *Relaunch* button
+   appears if macOS needs a fresh start to apply the grant. The window is also
+   available anytime via menu → **Permissions…**.
+3. Choose **Select Region & Share** and drag a rectangle (Esc cancels).
 4. Depending on the **Share as** setting:
    - **Virtual Display** (default): a display named **Region Share** comes
      online sized to your region; your sharing app lists it as another
@@ -79,6 +82,21 @@ styles what you see locally.)
   frames onto a window filling the virtual display.
 - A click-through overlay dims everything outside the region on your real
   screen.
+
+## Signing & permission persistence
+
+macOS ties the Screen Recording grant to the app's code signature. `make app`
+therefore signs with your first *Apple Development* identity when one exists
+(override with `make app CODESIGN_ID=…`), so the grant survives rebuilds.
+Without any identity it falls back to ad-hoc signing — which changes every
+build and makes macOS re-ask each time. If you're upgrading from an earlier
+ad-hoc build and see repeated permission prompts, remove the stale entry once:
+
+```sh
+tccutil reset ScreenCapture com.regionshare.app
+```
+
+then grant again via the permissions window.
 
 ## Caveats
 
