@@ -1,32 +1,23 @@
 import AppKit
 import SwiftUI
 
-enum SettingsTab: String {
+enum SettingsTab: String, CaseIterable {
     case general, appearance, shortcuts
-}
 
-struct SettingsView: View {
-    @ObservedObject var settings: SettingsStore
-    @State private var selection: SettingsTab
-
-    init(settings: SettingsStore, initialTab: SettingsTab = .general) {
-        self.settings = settings
-        _selection = State(initialValue: initialTab)
+    var title: String {
+        switch self {
+        case .general: return "General"
+        case .appearance: return "Appearance"
+        case .shortcuts: return "Shortcuts"
+        }
     }
 
-    var body: some View {
-        TabView(selection: $selection) {
-            GeneralPage(settings: settings)
-                .tabItem { Label("General", systemImage: "gearshape") }
-                .tag(SettingsTab.general)
-            AppearancePage(settings: settings)
-                .tabItem { Label("Appearance", systemImage: "paintbrush") }
-                .tag(SettingsTab.appearance)
-            ShortcutsPage(settings: settings)
-                .tabItem { Label("Shortcuts", systemImage: "keyboard") }
-                .tag(SettingsTab.shortcuts)
+    var symbolName: String {
+        switch self {
+        case .general: return "gearshape"
+        case .appearance: return "paintbrush"
+        case .shortcuts: return "keyboard"
         }
-        .frame(width: 470, height: 470)
     }
 }
 
@@ -112,31 +103,69 @@ private struct AppearancePage: View {
     }
 }
 
+/// System Settings–style window: toolbar tabs with icons, the window title
+/// follows the selected pane, and the window animates to each pane's size.
 @MainActor
 final class SettingsWindowController {
     private let settings: SettingsStore
     private var window: NSWindow?
+    private var tabController: SettingsTabViewController?
 
     init(settings: SettingsStore) {
         self.settings = settings
     }
 
     func show(tab: SettingsTab? = nil) {
-        if window == nil || tab != nil {
-            let hosting = NSHostingController(
-                rootView: SettingsView(settings: settings, initialTab: tab ?? .general))
-            if let window {
-                window.contentViewController = hosting
-            } else {
-                let window = NSWindow(contentViewController: hosting)
-                window.title = "RegionShare Settings"
-                window.styleMask = [.titled, .closable]
-                window.isReleasedWhenClosed = false
-                window.center()
-                self.window = window
-            }
+        if window == nil {
+            build()
+        }
+        if let tab, let index = SettingsTab.allCases.firstIndex(of: tab) {
+            tabController?.selectedTabViewItemIndex = index
         }
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
     }
+
+    private func build() {
+        let tabs = SettingsTabViewController()
+        tabs.tabStyle = .toolbar
+        for tab in SettingsTab.allCases {
+            let item = NSTabViewItem(viewController: pageController(for: tab))
+            item.label = tab.title
+            item.image = NSImage(systemSymbolName: tab.symbolName,
+                                 accessibilityDescription: tab.title)
+            tabs.addTabViewItem(item)
+        }
+        tabController = tabs
+
+        let window = NSWindow(contentViewController: tabs)
+        window.styleMask = [.titled, .closable]
+        window.toolbarStyle = .preference
+        window.title = SettingsTab.allCases[0].title
+        window.isReleasedWhenClosed = false
+        window.center()
+        self.window = window
+    }
+
+    private func pageController(for tab: SettingsTab) -> NSViewController {
+        let controller: NSHostingController<AnyView>
+        switch tab {
+        case .general:
+            controller = NSHostingController(
+                rootView: AnyView(GeneralPage(settings: settings).frame(width: 470, height: 250)))
+        case .appearance:
+            controller = NSHostingController(
+                rootView: AnyView(AppearancePage(settings: settings).frame(width: 470, height: 440)))
+        case .shortcuts:
+            controller = NSHostingController(
+                rootView: AnyView(ShortcutsPage(settings: settings).frame(width: 470, height: 400)))
+        }
+        controller.sizingOptions = .preferredContentSize
+        // NSTabViewController propagates the selected child's title to the
+        // window, giving the System Settings-style per-pane window title.
+        controller.title = tab.title
+        return controller
+    }
 }
+
+private final class SettingsTabViewController: NSTabViewController {}
