@@ -38,6 +38,18 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(reloaded.frameRate, 60)
     }
 
+    func testShareModeDefaultsToVirtualDisplay() {
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertEqual(store.shareMode, .virtualDisplay)
+    }
+
+    func testShareModePersists() {
+        let store = SettingsStore(defaults: defaults)
+        store.shareMode = .hiddenWindow
+        let reloaded = SettingsStore(defaults: defaults)
+        XCTAssertEqual(reloaded.shareMode, .hiddenWindow)
+    }
+
     func testDimOpacityClamped() {
         let store = SettingsStore(defaults: defaults)
         store.dimOpacity = 1.5

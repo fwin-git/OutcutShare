@@ -41,6 +41,24 @@ final class GeometryTests: XCTestCase {
         XCTAssertEqual(s.height, 1200)
     }
 
+    func testHiddenWindowFrameKeepsOnePixelOnScreen() {
+        let screen = CGRect(x: 0, y: 0, width: 2560, height: 1440)
+        let frame = Geometry.hiddenWindowFrame(regionSize: CGSize(width: 400, height: 300),
+                                               screenFrame: screen)
+        XCTAssertEqual(frame, CGRect(x: 2559, y: -299, width: 400, height: 300))
+        // Exactly 1x1 px intersects the screen.
+        let intersection = frame.intersection(screen)
+        XCTAssertEqual(intersection.size, CGSize(width: 1, height: 1))
+    }
+
+    func testHiddenWindowFrameOnOffsetScreen() {
+        let screen = CGRect(x: 2560, y: 360, width: 1920, height: 1080)
+        let frame = Geometry.hiddenWindowFrame(regionSize: CGSize(width: 640, height: 480),
+                                               screenFrame: screen)
+        XCTAssertEqual(frame, CGRect(x: 4479, y: -119, width: 640, height: 480))
+        XCTAssertEqual(frame.intersection(screen).size, CGSize(width: 1, height: 1))
+    }
+
     func testCapturePixelSizeFlooredToEven() {
         let s = Geometry.capturePixelSize(region: CGRect(x: 0, y: 0, width: 801.5, height: 599.5), scale: 1)
         XCTAssertEqual(s.width, 800)

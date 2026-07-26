@@ -22,6 +22,16 @@ enum Geometry {
                width: r.width, height: r.height)
     }
 
+    /// Placement for the hidden mirror window: pinned at the bottom-right
+    /// corner of the screen so exactly 1×1 pt stays on screen. macOS keeps
+    /// rendering (and sharing apps keep capturing) a window only while some
+    /// part of it is on a display; a fully offscreen window turns black.
+    static func hiddenWindowFrame(regionSize: CGSize, screenFrame: CGRect) -> CGRect {
+        CGRect(x: screenFrame.maxX - 1,
+               y: screenFrame.minY - regionSize.height + 1,
+               width: regionSize.width, height: regionSize.height)
+    }
+
     /// Capture size in pixels: region points × display scale, floored to even
     /// values so the video pipeline never sees odd dimensions.
     static func capturePixelSize(region: CGRect, scale: CGFloat) -> (width: Int, height: Int) {
