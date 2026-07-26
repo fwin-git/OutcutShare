@@ -30,9 +30,16 @@ Requires Xcode command line tools on macOS 14+ (developed on macOS 26).
 3. macOS will ask for **Screen Recording** permission the first time. Grant it
    under *System Settings → Privacy & Security → Screen Recording*, then
    select the region again.
-4. A virtual display named **Region Share** comes online sized to your region;
-   your sharing app lists it as another desktop/screen — share that one.
-5. **Stop Sharing** removes the virtual display and the dimming.
+4. Depending on the **Share as** setting:
+   - **Virtual Display** (default): a display named **Region Share** comes
+     online sized to your region; your sharing app lists it as another
+     desktop/screen — share that one.
+   - **Hidden Window**: an invisible window named **Region Share** mirrors the
+     region live; pick it in your sharing app's *window* list. Nothing floats
+     on your screen — the window keeps exactly one pixel in the bottom-right
+     screen corner (macOS stops rendering fully offscreen windows).
+5. **Stop Sharing** removes the virtual display / hidden window and the
+   dimming.
 
 ## Settings
 
@@ -40,6 +47,7 @@ Menu bar → **Settings…**
 
 | Setting | Effect | Default |
 | --- | --- | --- |
+| Share as | Virtual Display (share a screen) or Hidden Window (share a window) | Virtual Display |
 | Dim screen outside region | Toggles the dimming overlay | on |
 | Dim amount | 0–90 % black over everything outside the region | 60 % |
 | Show border around region | Accent-colored frame just outside the region | on |
@@ -66,8 +74,12 @@ outside the shared area and excluded from capture — viewers never see them.
 - The virtual display is a real display to macOS: your mouse can travel onto
   it (off the edge of your screen, usually to the right). If your cursor
   "disappears", move it back the way it went. You can rearrange the virtual
-  display's position in *System Settings → Displays* while sharing.
+  display's position in *System Settings → Displays* while sharing. The
+  Hidden Window mode avoids all of this — use it if the extra display gets in
+  your way.
 - One region at a time. To change the region, stop sharing and select again.
+- Changing "Share as" while sharing restarts the session — re-pick the
+  screen/window in your sharing app afterwards.
 
 ## Development
 
@@ -75,6 +87,7 @@ outside the shared area and excluded from capture — viewers never see them.
 with end-to-end verification without clicking through the UI:
 
 ```sh
-.build/debug/RegionShare --vd-test                      # virtual display only
-.build/debug/RegionShare --share-test=100,100,800,600,8 # full pipeline, 8 s
+.build/debug/RegionShare --vd-test                             # virtual display only
+.build/debug/RegionShare --share-test=100,100,800,600,8        # full pipeline, 8 s
+.build/debug/RegionShare --share-test=100,100,800,600,8,window # hidden-window mode
 ```
