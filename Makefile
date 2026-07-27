@@ -1,7 +1,10 @@
 APP      := build/OutcutShare.app
 BINARY   := .build/release/OutcutShare
+ASSETS   := Resources/Assets.xcassets
+ASSET_FILES := $(shell find $(ASSETS) -type f)
+ASSET_INFO := build/AppIconInfo.plist
 
-VERSION  ?= 1.3
+VERSION  ?= 1.4.0
 BUILD    := $(shell git rev-list --count HEAD 2>/dev/null || echo 0)
 HASH     := $(shell git rev-parse --short HEAD 2>/dev/null || echo dev)
 
@@ -18,13 +21,25 @@ endif
 
 app: $(APP)
 
-$(APP): Support/Info.plist $(shell find Sources -type f) Package.swift Makefile
+$(APP): Support/Info.plist $(ASSET_FILES) $(shell find Sources -type f) Package.swift Makefile
 	swift build -c release
 	rm -rf $(APP)
 	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources
 	cp $(BINARY) $(APP)/Contents/MacOS/OutcutShare
 	cp Support/Info.plist $(APP)/Contents/Info.plist
+	xcrun actool \
+		--compile $(APP)/Contents/Resources \
+		--platform macosx \
+		--minimum-deployment-target 14.0 \
+		--app-icon AppIcon \
+		--standalone-icon-behavior all \
+		--output-partial-info-plist $(ASSET_INFO) \
+		--output-format human-readable-text \
+		--warnings \
+		--notices \
+		$(ASSETS)
 	/usr/libexec/PlistBuddy \
+		-c "Merge $(ASSET_INFO)" \
 		-c "Set :CFBundleShortVersionString $(VERSION)" \
 		-c "Set :CFBundleVersion $(BUILD).$(HASH)" \
 		$(APP)/Contents/Info.plist

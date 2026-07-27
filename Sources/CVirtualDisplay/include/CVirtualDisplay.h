@@ -1,7 +1,7 @@
 // Declarations for the private CoreGraphics virtual display API.
 // Not in any public SDK header; the classes are resolved at runtime via
 // NSClassFromString so a macOS release that removes them fails gracefully.
-// Shapes validated on macOS 26.5 (see docs/superpowers/specs design doc).
+// Shapes validated on macOS 26.5.
 
 #import <Foundation/Foundation.h>
 #import <CoreGraphics/CoreGraphics.h>

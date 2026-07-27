@@ -3,7 +3,7 @@ import ServiceManagement
 import SwiftUI
 
 enum SettingsTab: String, CaseIterable {
-    case general, appearance, privacy, presets, shortcuts
+    case general, appearance, privacy, presets, shortcuts, about
 
     var title: String {
         switch self {
@@ -12,6 +12,7 @@ enum SettingsTab: String, CaseIterable {
         case .privacy: return "Privacy"
         case .presets: return "Presets"
         case .shortcuts: return "Shortcuts"
+        case .about: return "About"
         }
     }
 
@@ -22,6 +23,7 @@ enum SettingsTab: String, CaseIterable {
         case .privacy: return "hand.raised"
         case .presets: return "square.grid.2x2"
         case .shortcuts: return "keyboard"
+        case .about: return "info.circle"
         }
     }
 }
@@ -177,9 +179,6 @@ private struct GeneralPage: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            Section("About") {
-                LabeledContent("Version", value: AppVersion.display)
-            }
         }
         .formStyle(.grouped)
     }
@@ -203,6 +202,24 @@ private struct GeneralPage: View {
                     LoginItem.setEnabled(on)
                     launchAtLogin = LoginItem.isEnabled
                 })
+    }
+}
+
+private struct AboutPage: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(nsImage: NSApplication.shared.applicationIconImage)
+                .resizable()
+                .interpolation(.high)
+                .frame(width: 96, height: 96)
+                .accessibilityLabel("Outcut Share app icon")
+            Text("Outcut Share")
+                .font(.title2.weight(.semibold))
+            Text("Version \(AppVersion.display)")
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(32)
     }
 }
 
@@ -382,6 +399,9 @@ final class SettingsWindowController {
         case .shortcuts:
             controller = NSHostingController(
                 rootView: AnyView(ShortcutsPage(settings: settings).frame(width: 470, height: 400)))
+        case .about:
+            controller = NSHostingController(
+                rootView: AnyView(AboutPage().frame(width: 470, height: 260)))
         }
         controller.sizingOptions = .preferredContentSize
         // NSTabViewController propagates the selected child's title to the

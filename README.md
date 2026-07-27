@@ -1,5 +1,9 @@
 # Outcut Share
 
+<p align="center">
+  <img src="Resources/AppIcon.png" alt="Outcut Share app icon" width="160">
+</p>
+
 Share **any part of your screen as its own monitor** in Zoom, Teams, Meet —
 drag a rectangle and it appears as a virtual display (or an invisible
 shareable window). Made for ultrawides: present one clean slice instead of
