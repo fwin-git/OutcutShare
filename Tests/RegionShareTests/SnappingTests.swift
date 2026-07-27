@@ -44,6 +44,46 @@ final class SnappingTests: XCTestCase {
         XCTAssertNil(Geometry.snappedPresetIndex(dragged: .zero, candidates: [], anchor: .zero))
     }
 
+    func testEdgeResizeRightAndLeft() {
+        let screen = CGRect(x: 0, y: 0, width: 2560, height: 1440)
+        let region = CGRect(x: 500, y: 500, width: 600, height: 400)
+        let wider = Geometry.edgeResizedRegion(region, edge: .right,
+                                               draggedTo: CGPoint(x: 1400, y: 0),
+                                               lockedAspect: nil, screenFrame: screen)
+        XCTAssertEqual(wider, CGRect(x: 500, y: 500, width: 900, height: 400))
+        let narrowerLeft = Geometry.edgeResizedRegion(region, edge: .left,
+                                                      draggedTo: CGPoint(x: 700, y: 0),
+                                                      lockedAspect: nil, screenFrame: screen)
+        XCTAssertEqual(narrowerLeft, CGRect(x: 700, y: 500, width: 400, height: 400))
+    }
+
+    func testEdgeResizeEnforcesMinimumAndScreenBounds() {
+        let screen = CGRect(x: 0, y: 0, width: 2560, height: 1440)
+        let region = CGRect(x: 500, y: 500, width: 600, height: 400)
+        // Dragging the right edge past the left side clamps at the minimum.
+        let tiny = Geometry.edgeResizedRegion(region, edge: .right,
+                                              draggedTo: CGPoint(x: 100, y: 0),
+                                              lockedAspect: nil, screenFrame: screen)
+        XCTAssertEqual(tiny.width, Geometry.minRegionSide)
+        // Dragging the top edge beyond the screen clamps to the screen.
+        let tall = Geometry.edgeResizedRegion(region, edge: .top,
+                                              draggedTo: CGPoint(x: 0, y: 2000),
+                                              lockedAspect: nil, screenFrame: screen)
+        XCTAssertEqual(tall.maxY, 1440)
+    }
+
+    func testEdgeResizeWithAspectKeepsCrossAxisCentered() {
+        let screen = CGRect(x: 0, y: 0, width: 2560, height: 1440)
+        let region = CGRect(x: 500, y: 500, width: 600, height: 400)
+        let resized = Geometry.edgeResizedRegion(region, edge: .right,
+                                                 draggedTo: CGPoint(x: 1300, y: 0),
+                                                 lockedAspect: 2.0, screenFrame: screen)
+        XCTAssertEqual(resized.width, 800, accuracy: 0.01)
+        XCTAssertEqual(resized.height, 400, accuracy: 0.01)
+        XCTAssertEqual(resized.midY, region.midY, accuracy: 0.01) // centered vertically
+        XCTAssertEqual(resized.minX, 500, accuracy: 0.01)          // left edge fixed
+    }
+
     func testFrontmostWindowFrameAtPoint() {
         let front = CGRect(x: 100, y: 100, width: 400, height: 300)
         let back = CGRect(x: 50, y: 50, width: 900, height: 700)

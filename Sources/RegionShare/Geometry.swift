@@ -136,6 +136,50 @@ enum Geometry {
         return shift
     }
 
+    enum RegionEdge {
+        case left, right, top, bottom
+    }
+
+    /// Resize by dragging one edge: that side follows the mouse, the opposite
+    /// side stays fixed. With a locked aspect the cross-axis grows/shrinks
+    /// around its center. Enforces the minimum size and the screen bounds.
+    static func edgeResizedRegion(_ region: CGRect, edge: RegionEdge, draggedTo point: CGPoint,
+                                  lockedAspect: CGFloat?, screenFrame: CGRect) -> CGRect {
+        var r = region
+        switch edge {
+        case .right:
+            r.size.width = min(max(point.x - r.minX, minRegionSide), screenFrame.maxX - r.minX)
+        case .left:
+            let newMinX = min(max(point.x, screenFrame.minX), r.maxX - minRegionSide)
+            r.size.width = r.maxX - newMinX
+            r.origin.x = newMinX
+        case .top:
+            r.size.height = min(max(point.y - r.minY, minRegionSide), screenFrame.maxY - r.minY)
+        case .bottom:
+            let newMinY = min(max(point.y, screenFrame.minY), r.maxY - minRegionSide)
+            r.size.height = r.maxY - newMinY
+            r.origin.y = newMinY
+        }
+        if let aspect = lockedAspect {
+            switch edge {
+            case .left, .right:
+                let newHeight = min(r.width / aspect, screenFrame.height)
+                r.origin.y = region.midY - newHeight / 2
+                r.size.height = newHeight
+                r.size.width = newHeight * aspect
+                if edge == .left { r.origin.x = region.maxX - r.width }
+            case .top, .bottom:
+                let newWidth = min(r.height * aspect, screenFrame.width)
+                r.origin.x = region.midX - newWidth / 2
+                r.size.width = newWidth
+                r.size.height = newWidth / aspect
+                if edge == .bottom { r.origin.y = region.maxY - r.height }
+            }
+            r.origin = clampedRegionOrigin(r.origin, regionSize: r.size, screenFrame: screenFrame)
+        }
+        return r
+    }
+
     /// Windows are listed front-to-back; first hit wins.
     static func frontmostWindowFrame(at point: CGPoint, windows: [CGRect]) -> CGRect? {
         windows.first { $0.contains(point) }

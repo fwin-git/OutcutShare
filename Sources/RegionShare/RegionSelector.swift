@@ -99,13 +99,6 @@ private final class SelectionWindow: NSWindow {
 }
 
 private final class SelectionView: NSView {
-    private static let presetSizes: [CGSize] = [
-        CGSize(width: 1280, height: 720),
-        CGSize(width: 1600, height: 900),
-        CGSize(width: 1920, height: 1080),
-    ]
-    private static let presetColors: [NSColor] = [.systemBlue, .systemGreen, .systemOrange]
-
     private weak var selector: RegionSelector?
     private var dragStart: CGPoint?
     private var dragCurrent: CGPoint?
@@ -271,7 +264,7 @@ private final class SelectionView: NSView {
         presetActive = mods.contains(.control)
         if presetActive {
             presetCandidates = Geometry.presetCandidates(anchor: start, toward: point,
-                                                         sizes: Self.presetSizes, bounds: bounds)
+                                                         sizes: SnapPresets.sizes, bounds: bounds)
             let fitting = presetCandidates.compactMap { $0 }
             if let index = Geometry.snappedPresetIndex(dragged: point, candidates: fitting,
                                                        anchor: start) {
@@ -355,38 +348,7 @@ private final class SelectionView: NSView {
         }
 
         if presetActive, let start = dragStart {
-            drawPresetPreviews(anchor: start)
-        }
-    }
-
-    private func drawPresetPreviews(anchor: CGPoint) {
-        for (index, candidate) in presetCandidates.enumerated() {
-            guard let rect = candidate else { continue }
-            let color = Self.presetColors[index % Self.presetColors.count]
-            let isSnapped = rect == snappedPreset
-            color.withAlphaComponent(isSnapped ? 0.9 : 0.45).setStroke()
-            let path = NSBezierPath(rect: rect)
-            path.lineWidth = isSnapped ? 3 : 1.5
-            if !isSnapped {
-                path.setLineDash([6, 4], count: 2, phase: 0)
-            }
-            path.stroke()
-
-            let size = Self.presetSizes[index]
-            let label = "\(Int(size.width)) × \(Int(size.height))"
-            let attributes: [NSAttributedString.Key: Any] = [
-                .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .semibold),
-                .foregroundColor: NSColor.white,
-            ]
-            let textSize = label.size(withAttributes: attributes)
-            // Far corner (away from the anchor), kept inside the rect.
-            let x = rect.minX == anchor.x ? rect.maxX - textSize.width - 8 : rect.minX + 8
-            let y = rect.minY == anchor.y ? rect.maxY - textSize.height - 6 : rect.minY + 6
-            let background = CGRect(x: x - 4, y: y - 2,
-                                    width: textSize.width + 8, height: textSize.height + 4)
-            color.withAlphaComponent(0.75).setFill()
-            NSBezierPath(roundedRect: background, xRadius: 4, yRadius: 4).fill()
-            label.draw(at: CGPoint(x: x, y: y), withAttributes: attributes)
+            SnapPresets.draw(candidates: presetCandidates, snapped: snappedPreset, anchor: start)
         }
     }
 
