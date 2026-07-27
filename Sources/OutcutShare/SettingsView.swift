@@ -100,16 +100,23 @@ private struct PrivacyPage: View {
 private struct GeneralPage: View {
     @ObservedObject var settings: SettingsStore
     @State private var followHover = false
+    @StateObject private var demoModel = FollowDemoModel()
+
+    private var demoPlaying: Bool { demoModel.playOverride ?? followHover }
 
     var body: some View {
         Form {
-            Section("Preview") {
+            Section {
                 RegionPreviewCanvas(settings: settings, showsHotbar: true,
-                                    demoActive: followHover)
-                if settings.followMode != .off {
-                    Text("Hover the follow controls below to see follow mode in action.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                                    demoActive: demoPlaying, demoModel: demoModel)
+                Text("Hover the follow controls below to see follow mode in action.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } header: {
+                HStack {
+                    Text("Preview")
+                    Spacer()
+                    DemoProgressRing(progress: demoModel.progress)
                 }
             }
             Section("Sharing") {
@@ -139,7 +146,7 @@ private struct GeneralPage: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Section("Follow mode") {
+            Section {
                 VStack(alignment: .leading, spacing: 12) {
                     Picker("Follow", selection: $settings.followMode) {
                         ForEach(FollowMode.allCases, id: \.self) { mode in
@@ -156,6 +163,17 @@ private struct GeneralPage: View {
                 }
                 .contentShape(Rectangle())
                 .onHover { followHover = $0 }
+            } header: {
+                HStack {
+                    Text("Follow mode")
+                    Spacer()
+                    Button(demoPlaying ? "Pause preview animation" : "Play preview animation") {
+                        demoModel.playOverride = demoPlaying ? false : true
+                    }
+                    .buttonStyle(.plain)
+                    .font(.caption)
+                    .foregroundStyle(.tint)
+                }
             }
             Section("Hotbar") {
                 Toggle("Show floating hotbar while sharing", isOn: $settings.hotbarEnabled)
@@ -184,6 +202,23 @@ private struct GeneralPage: View {
                     LoginItem.setEnabled(on)
                     launchAtLogin = LoginItem.isEnabled
                 })
+    }
+}
+
+private struct DemoProgressRing: View {
+    var progress: Double
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(Color.secondary.opacity(0.25), lineWidth: 2)
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(Color.accentColor,
+                        style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+        }
+        .frame(width: 12, height: 12)
     }
 }
 

@@ -1,6 +1,16 @@
 import AppKit
 import SwiftUI
 
+/// Shared playback state between the demo canvas and surrounding controls:
+/// hover-driven by default, explicitly paused/playing once the user touches
+/// the play/pause control; `progress` tracks the position in the demo cycle.
+@MainActor
+final class FollowDemoModel: ObservableObject {
+    /// nil = hover-driven; false = paused; true = always playing.
+    @Published var playOverride: Bool?
+    @Published var progress: Double = 0
+}
+
 /// Reusable live preview of the sharing experience: fake desktop, styled
 /// region with dimming, cursor emphasis, optional mini hotbar, optional
 /// paused-state rendering, and an optional animated follow-mode demo.
@@ -13,6 +23,7 @@ struct RegionPreviewCanvas: View {
     var showsCursor = true
     /// While true (e.g. hovering the follow controls) the follow demo plays.
     var demoActive = false
+    var demoModel: FollowDemoModel? = nil
 
     // Unit-space scene layout.
     private static let windowsU: [CGRect] = [
@@ -86,6 +97,9 @@ struct RegionPreviewCanvas: View {
                         regionU = Self.defaultRegionU
                         cursorU = Self.defaultCursorU
                     }
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) { demoModel?.progress = 0 }
                 }
             }
         }
@@ -97,10 +111,13 @@ struct RegionPreviewCanvas: View {
     // MARK: Follow demo
 
     private func advanceDemo() {
-        guard demoActive, settings.followMode != .off else { return }
+        guard demoActive else { return }
         step += 1
+        reportProgress()
         let window = Self.windowsU[step % Self.windowsU.count]
         let target = CGPoint(x: window.midX, y: window.midY)
+        // The cursor does its rounds in every mode — with follow off, the
+        // region simply doesn't react, which is exactly what "off" means.
         withAnimation(.easeInOut(duration: 0.5)) {
             cursorU = target
         }
@@ -115,6 +132,9 @@ struct RegionPreviewCanvas: View {
             regionTarget = centered(Self.defaultRegionU.size,
                                     on: CGPoint(x: target.x - 0.03, y: target.y + 0.02))
         case .off:
+            withAnimation(.easeOut(duration: 0.4)) {
+                regionU = Self.defaultRegionU
+            }
             return
         }
         // The region reacts after the cursor starts moving, like real usage.
@@ -126,6 +146,19 @@ struct RegionPreviewCanvas: View {
             } else {
                 regionU = regionTarget
             }
+        }
+    }
+
+    private func reportProgress() {
+        guard let model = demoModel else { return }
+        let phase = step % Self.windowsU.count
+        if phase == 0 {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { model.progress = 0 }
+        }
+        withAnimation(.linear(duration: 1.6)) {
+            model.progress = Double(phase + 1) / Double(Self.windowsU.count)
         }
     }
 
