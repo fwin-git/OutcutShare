@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run tests
+        run: swift test
+
+      - name: Build app bundle
+        run: make app VERSION="${GITHUB_REF_NAME#v}"
+
+      - name: Package
+        run: ditto -c -k --keepParent build/RegionShare.app "RegionShare-${GITHUB_REF_NAME}.zip"
+
+      - name: Generate changelog
+        run: |
+          PREV=$(git tag --sort=-v:refname | grep -vx "${GITHUB_REF_NAME}" | head -1 || true)
+          Scripts/changelog.sh "$PREV" "${GITHUB_REF_NAME}" > notes.md
+          if [ ! -s notes.md ]; then
+            echo "Maintenance release — no user-facing changes." > notes.md
+          fi
+          cat >> notes.md <<'FOOTER'
+          ---
+          Requires macOS 14 or newer. This build is not notarized: after
+          unzipping, right-click the app and choose Open once, or run
+          `xattr -d com.apple.quarantine RegionShare.app`.
+          FOOTER
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "RegionShare-${GITHUB_REF_NAME}.zip" \
+            --title "RegionShare ${GITHUB_REF_NAME#v}" \
+            --notes-file notes.md

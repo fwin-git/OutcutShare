@@ -1,7 +1,7 @@
 APP      := build/RegionShare.app
 BINARY   := .build/release/RegionShare
 
-VERSION  := 1.1
+VERSION  ?= 1.1
 BUILD    := $(shell git rev-list --count HEAD 2>/dev/null || echo 0)
 HASH     := $(shell git rev-parse --short HEAD 2>/dev/null || echo dev)
 
