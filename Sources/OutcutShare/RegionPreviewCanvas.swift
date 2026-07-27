@@ -216,9 +216,17 @@ struct RegionPreviewCanvas: View {
 
     private func desktop(size: CGSize) -> some View {
         ZStack {
-            LinearGradient(colors: [Color(red: 0.16, green: 0.22, blue: 0.42),
-                                    Color(red: 0.45, green: 0.25, blue: 0.45)],
-                           startPoint: .topLeading, endPoint: .bottomTrailing)
+            if let backdrop = PreviewBackdrop.image {
+                Image(nsImage: backdrop)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size.width, height: size.height)
+                    .clipped()
+            } else {
+                LinearGradient(colors: [Color(red: 0.16, green: 0.22, blue: 0.42),
+                                        Color(red: 0.45, green: 0.25, blue: 0.45)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+            }
             ForEach(Array(Self.windowsU.enumerated()), id: \.offset) { index, unit in
                 let rect = scaled(unit, in: size)
                 RoundedRectangle(cornerRadius: 6)
@@ -311,6 +319,20 @@ struct RegionPreviewCanvas: View {
             .frame(width: region.width + outset * 2, height: region.height + outset * 2)
             .position(x: region.midX, y: region.midY)
     }
+}
+
+/// The bundled wallpaper behind the fake desktop (same image the demo
+/// stage uses): app bundle first, repo-relative for debug runs, nil falls
+/// back to the gradient.
+private enum PreviewBackdrop {
+    static let image: NSImage? = {
+        if let url = Bundle.main.url(forResource: "DemoBackdrop", withExtension: "jpg"),
+           let image = NSImage(contentsOf: url) {
+            return image
+        }
+        return NSImage(contentsOfFile:
+            FileManager.default.currentDirectoryPath + "/Resources/DemoBackdrop.jpg")
+    }()
 }
 
 /// Even-odd "everything except the region" shape.
