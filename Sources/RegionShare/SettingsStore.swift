@@ -8,6 +8,12 @@ enum BorderStyle: String, CaseIterable {
     case solid, dashed, dotted
 }
 
+/// What viewers see while sharing is paused.
+enum PauseStyle: String, CaseIterable {
+    case freeze
+    case privacyScreen
+}
+
 /// How the region is exposed to sharing apps.
 enum ShareMode: String {
     /// A virtual display sized to the region ("share screen" in Zoom/Teams).
@@ -103,6 +109,13 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    @Published var pauseStyle: PauseStyle {
+        didSet {
+            defaults.set(pauseStyle.rawValue, forKey: "pauseStyle")
+            notifyChange()
+        }
+    }
+
     @Published var borderThickness: Double {
         didSet {
             let clamped = min(max(borderThickness, 1), 10)
@@ -178,6 +191,8 @@ final class SettingsStore: ObservableObject {
         self.borderStyle = defaults.string(forKey: Key.borderStyle)
             .flatMap(BorderStyle.init(rawValue:)) ?? .dashed
         self.borderThickness = defaults.double(forKey: Key.borderThickness)
+        self.pauseStyle = defaults.string(forKey: "pauseStyle")
+            .flatMap(PauseStyle.init(rawValue:)) ?? .privacyScreen
         if let data = defaults.data(forKey: "presets"),
            let decoded = try? JSONDecoder().decode([RegionPreset].self, from: data) {
             presets = decoded

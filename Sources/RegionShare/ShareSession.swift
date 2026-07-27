@@ -10,6 +10,8 @@ final class ShareSession {
         didSet { onStateChange?() }
     }
     var onStateChange: (() -> Void)?
+    /// Read from the capture sample queue to gate frame forwarding.
+    private(set) nonisolated(unsafe) var isPaused = false
     /// Set by the app delegate: opens the guided permissions window. Called
     /// instead of firing raw system prompts when the permission is missing.
     var onPermissionsNeeded: (() -> Void)?
@@ -97,6 +99,19 @@ final class ShareSession {
         state = .selecting
         let screen = screens[resolved.screenIndex]
         Task { await activate(region: SelectedRegion(rect: resolved.rect, screen: screen)) }
+    }
+
+    /// Pauses/resumes what viewers see without touching the stream: frames
+    /// stop being forwarded; the privacy style optionally covers the output.
+    func togglePause() {
+        guard state == .active else { return }
+        isPaused.toggle()
+        if isPaused && settings.pauseStyle == .privacyScreen {
+            output?.showPrivacyScreen()
+        } else {
+            output?.hidePrivacyScreen()
+        }
+        onStateChange?()
     }
 
     func stop() {
@@ -222,7 +237,8 @@ final class ShareSession {
 
             let capture = CaptureEngine()
             self.capture = capture
-            capture.onFrame = { [weak output] surface in
+            capture.onFrame = { [weak self, weak output] surface in
+                guard self?.isPaused != true else { return }
                 output?.display(surface: surface)
             }
             capture.onStopped = { [weak self] error in
@@ -307,6 +323,7 @@ final class ShareSession {
     }
 
     private func teardown() {
+        isPaused = false
         mover?.close()
         mover = nil
         moveBackupRect = nil

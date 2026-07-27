@@ -14,6 +14,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     private let presetsItem = NSMenuItem(title: "Presets", action: nil, keyEquivalent: "")
     private let moveItem = NSMenuItem(title: "Move / Resize Region",
                                       action: #selector(moveRegion), keyEquivalent: "m")
+    private let pauseItem = NSMenuItem(title: "Pause Sharing",
+                                       action: #selector(togglePause), keyEquivalent: "p")
     private let stopItem = NSMenuItem(title: "Stop Sharing",
                                       action: #selector(stopSharing), keyEquivalent: ".")
 
@@ -30,12 +32,14 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         selectItem.target = self
         shareLastItem.target = self
         moveItem.target = self
+        pauseItem.target = self
         stopItem.target = self
         presetsItem.submenu = NSMenu(title: "Presets")
         menu.addItem(selectItem)
         menu.addItem(shareLastItem)
         menu.addItem(presetsItem)
         menu.addItem(moveItem)
+        menu.addItem(pauseItem)
         menu.addItem(stopItem)
         menu.addItem(.separator())
         let settingsItem = NSMenuItem(title: "Settings…",
@@ -57,12 +61,19 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     }
 
     private func refresh() {
-        let symbol = session.isActive ? "rectangle.inset.filled.badge.record" : "rectangle.dashed"
+        let symbol: String
+        if session.isPaused && session.isActive {
+            symbol = "pause.rectangle"
+        } else {
+            symbol = session.isActive ? "rectangle.inset.filled.badge.record" : "rectangle.dashed"
+        }
         statusItem.button?.image = NSImage(systemSymbolName: symbol,
                                            accessibilityDescription: "RegionShare")
         selectItem.isEnabled = session.state == .idle
         shareLastItem.isEnabled = session.state == .idle && SettingsStore.shared.lastRegion != nil
         moveItem.isEnabled = session.isActive
+        pauseItem.isEnabled = session.isActive
+        pauseItem.title = session.isPaused ? "Resume Sharing" : "Pause Sharing"
         stopItem.isEnabled = session.isActive
     }
 
@@ -129,6 +140,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     @objc private func moveRegion() {
         session.startAdjust()
+    }
+
+    @objc private func togglePause() {
+        session.togglePause()
     }
 
     @objc private func stopSharing() {

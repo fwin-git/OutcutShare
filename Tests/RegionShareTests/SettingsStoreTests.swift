@@ -39,6 +39,13 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(reloaded.frameRate, 60)
     }
 
+    func testPauseStyleDefaultsToPrivacyScreenAndPersists() {
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertEqual(store.pauseStyle, .privacyScreen)
+        store.pauseStyle = .freeze
+        XCTAssertEqual(SettingsStore(defaults: defaults).pauseStyle, .freeze)
+    }
+
     func testShareModeDefaultsToVirtualDisplay() {
         let store = SettingsStore(defaults: defaults)
         XCTAssertEqual(store.shareMode, .virtualDisplay)
