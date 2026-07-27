@@ -7,7 +7,12 @@ final class ShareSession {
     enum State { case idle, selecting, active }
 
     private(set) var state: State = .idle {
-        didSet { onStateChange?() }
+        didSet { notifyUI() }
+    }
+
+    private func notifyUI() {
+        onStateChange?()
+        hotbar.refresh()
     }
     var onStateChange: (() -> Void)?
     /// Read from the capture sample queue to gate frame forwarding.
@@ -168,14 +173,19 @@ final class ShareSession {
 
     private lazy var follow = FollowController(session: self, settings: settings)
     private lazy var cursorEmphasis = CursorEmphasisController(session: self, settings: settings)
+    private lazy var hotbar = HotbarController(session: self, settings: settings)
+    /// Set when the user dismisses the hotbar with ✕; resets on stop.
+    var hotbarHiddenForSession = false
+    private var lastHotbarEnabled = true
     private var recorder: RecordingEngine?
     var isRecording: Bool { recorder?.isRecording ?? false }
     var followMode: FollowMode { follow.mode }
 
+    /// Menu/hotbar entry point — persists the choice; the active session
+    /// applies it via the settings observer.
     func setFollow(mode: FollowMode) {
-        guard state == .active || mode == .off else { return }
-        follow.set(mode: mode)
-        onStateChange?()
+        settings.followMode = mode
+        notifyUI()
     }
 
     /// Enters interactive adjust mode: drag the region to move it, drag its
@@ -230,6 +240,7 @@ final class ShareSession {
         let sizeChanged = rect.size != region.rect.size
         currentRegion = SelectedRegion(rect: rect, screen: region.screen)
         overlay?.update(region: rect)
+        hotbar.regionChanged(rect)
         var pixelSize: (width: Int, height: Int)? = nil
         if sizeChanged && activeShareMode == .hiddenWindow {
             output?.resize(to: Geometry.hiddenWindowFrame(regionSize: rect.size,
@@ -281,8 +292,12 @@ final class ShareSession {
             }
             self.output = output
             // Created before the capture filter snapshots the window list so
-            // overlay and mirror window are genuinely excluded from capture.
+            // overlay, mirror window and hotbar are excluded from capture.
             overlay = DimOverlay(region: region.rect, screen: region.screen, settings: settings)
+            lastHotbarEnabled = settings.hotbarEnabled
+            if settings.hotbarEnabled && !hotbarHiddenForSession {
+                hotbar.show(region: region.rect, screen: region.screen)
+            }
 
             let capture = CaptureEngine()
             self.capture = capture
@@ -307,6 +322,9 @@ final class ShareSession {
             activeOutputPixelSize = (pw, ph)
             observeSettingsChanges()
             state = .active
+            if settings.followMode != .off {
+                follow.set(mode: settings.followMode)
+            }
             cursorEmphasis.start(output: output)
             settings.lastRegion = StoredRegion(rect: region.rect, displayID: region.displayID)
         } catch {
@@ -334,6 +352,21 @@ final class ShareSession {
         } else {
             frameRateChangedIfNeeded()
             cursorEmphasis.settingsChanged()
+            if follow.mode != settings.followMode {
+                follow.set(mode: settings.followMode)
+            }
+            if settings.hotbarEnabled != lastHotbarEnabled {
+                lastHotbarEnabled = settings.hotbarEnabled
+                if settings.hotbarEnabled {
+                    hotbarHiddenForSession = false
+                    if let region = currentRegion {
+                        hotbar.show(region: region.rect, screen: region.screen)
+                    }
+                } else {
+                    hotbar.close()
+                }
+            }
+            hotbar.refresh()
         }
     }
 
@@ -376,6 +409,8 @@ final class ShareSession {
     private func teardown() {
         isPaused = false
         follow.set(mode: .off)
+        hotbar.close()
+        hotbarHiddenForSession = false
         cursorEmphasis.stop()
         if let recorder {
             self.recorder = nil

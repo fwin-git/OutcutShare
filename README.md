@@ -39,6 +39,9 @@ The first launch guides you through the one required permission
   privacy screen while you handle something private.
 - **Cursor emphasis** — halo + click ripples, drawn for viewers only.
 - **Recording** (⌃⌥⌘R) — the region straight to .mp4, no meeting needed.
+- **Hotbar** — floating quick actions next to the region (stop, pause,
+  record, highlights, resize, preset, follow); draggable, dismissible,
+  toggleable from menu & Settings.
 - **Global hotkeys** — all rebindable to any combo, with duplicate warnings.
   → [hotkeys](docs/hotkeys.md)
 
