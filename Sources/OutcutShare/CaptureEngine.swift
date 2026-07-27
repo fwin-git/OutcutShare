@@ -83,8 +83,13 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
     private static func makeFilter(content: SCShareableContent, display: SCDisplay,
                                    excludedBundleIDs: [String]) -> SCContentFilter {
         let ownPID = ProcessInfo.processInfo.processIdentifier
+        // Bundle-id match also hides OTHER Outcut Share instances (e.g. the
+        // user's running copy while a debug build captures).
+        let ownBundleID = Bundle.main.bundleIdentifier
         let excluded = content.applications.filter {
-            $0.processID == ownPID || excludedBundleIDs.contains($0.bundleIdentifier)
+            $0.processID == ownPID
+                || (ownBundleID != nil && $0.bundleIdentifier == ownBundleID)
+                || excludedBundleIDs.contains($0.bundleIdentifier)
         }
         return SCContentFilter(display: display, excludingApplications: excluded,
                                exceptingWindows: [])
