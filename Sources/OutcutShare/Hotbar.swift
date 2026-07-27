@@ -182,6 +182,25 @@ final class HotbarController {
         position()
     }
 
+    /// Monitor mode: the preview panel moved or resized. The hotbar follows
+    /// while it sits near the panel (auto placement re-runs; a manual spot
+    /// keeps its relative offset). Parked far away, it stays — that
+    /// placement was deliberate.
+    func panelMoved(to frame: CGRect) {
+        let previous = lastRegion
+        lastRegion = frame
+        guard let panel, panel.isVisible, previous != frame else { return }
+        guard Geometry.framesAreNear(panel.frame, previous, threshold: 80) else { return }
+        if let manual = manualOrigin {
+            let moved = CGPoint(x: manual.x + frame.minX - previous.minX,
+                                y: manual.y + frame.minY - previous.minY)
+            manualOrigin = moved
+            panel.setFrameOrigin(clamped(moved, size: panel.frame.size))
+        } else {
+            position()
+        }
+    }
+
     func close() {
         panel?.orderOut(nil)
         manualOrigin = nil

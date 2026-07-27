@@ -40,6 +40,10 @@ final class PreviewWindowController: NSObject {
     private var screenFrame: CGRect = .zero
     /// Remembers the user-chosen size while the preview is toggled off.
     private var lastFrame: CGRect?
+    /// Fired on every panel move/resize (monitor mode: the hotbar follows
+    /// while it sits nearby).
+    var onPanelFrameChanged: ((CGRect) -> Void)?
+    private var frameObservers: [NSObjectProtocol] = []
 
     private static let minWidth: CGFloat = 160
     private static let cornerControlSize: CGFloat = 26
@@ -506,6 +510,16 @@ final class PreviewWindowController: NSObject {
         // like isFloatingPanel silently reset it.
         panel.level = NSWindow.Level(rawValue: NSWindow.Level.screenSaver.rawValue + 1)
         self.panel = panel
+        for name in [NSWindow.didMoveNotification, NSWindow.didResizeNotification] {
+            frameObservers.append(NotificationCenter.default.addObserver(
+                forName: name, object: panel, queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    guard let self, let frame = self.panelFrame else { return }
+                    self.onPanelFrameChanged?(frame)
+                }
+            })
+        }
     }
 
     private func applyAspectConstraints() {

@@ -411,6 +411,10 @@ final class ShareSession {
                 }
             }
             monitorDrag.start(displayFrame: region.rect, preview: preview)
+            preview.onPanelFrameChanged = { [weak self] frame in
+                guard let self, self.isVirtualMonitor else { return }
+                self.hotbar.panelMoved(to: frame)
+            }
             preview.configureMonitorInteraction(
                 manipulator: MonitorWindowManipulator(session: self,
                                                       displayFrame: region.rect,
