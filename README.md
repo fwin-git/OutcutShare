@@ -75,6 +75,13 @@ Menu bar → **Settings…** — three pages:
 | Border thickness | 1–10 pt | 3 pt |
 | Border corner radius | 0–30 pt (also rounds the dim cutout) | 8 pt |
 
+**Presets** — save the current region while sharing (menu bar → Presets →
+*Save Current Region as Preset…*), then re-share it anytime from the menu or
+with ⌃⌥⌘1–9. Rename or delete presets here. **Share Last Region** (menu or
+⌃⌥⌘L) re-shares whatever you shared last, including moves/resizes you made.
+If a preset's display is gone, it falls back to the best-matching screen.
+The General page also gains **Launch at login**.
+
 **Shortcuts** — system-wide hotkeys (no extra permissions needed), recordable
 to any key combination; click *Record*, press the combo (Esc cancels), ✕
 clears a binding:
@@ -82,8 +89,10 @@ clears a binding:
 | Action | Default |
 | --- | --- |
 | Select Region & Share | ⌃⌥⌘S |
+| Share Last Region | ⌃⌥⌘L |
 | Move / Resize Region | ⌃⌥⌘M |
 | Stop Sharing | ⌃⌥⌘X |
+| Share preset 1–9 | ⌃⌥⌘1–9 (fixed) |
 
 Assigning the same combo twice shows a warning on both rows; only the first
 action keeps the binding until the conflict is resolved. A combo without any

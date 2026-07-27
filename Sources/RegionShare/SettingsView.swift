@@ -1,13 +1,15 @@
 import AppKit
+import ServiceManagement
 import SwiftUI
 
 enum SettingsTab: String, CaseIterable {
-    case general, appearance, shortcuts
+    case general, appearance, presets, shortcuts
 
     var title: String {
         switch self {
         case .general: return "General"
         case .appearance: return "Appearance"
+        case .presets: return "Presets"
         case .shortcuts: return "Shortcuts"
         }
     }
@@ -16,6 +18,7 @@ enum SettingsTab: String, CaseIterable {
         switch self {
         case .general: return "gearshape"
         case .appearance: return "paintbrush"
+        case .presets: return "square.grid.2x2"
         case .shortcuts: return "keyboard"
         }
     }
@@ -44,6 +47,82 @@ private struct GeneralPage: View {
                     Text("60 fps").tag(60)
                 }
                 .pickerStyle(.segmented)
+            }
+            Section("Startup") {
+                Toggle("Launch at login", isOn: launchAtLoginBinding)
+                    .disabled(!LoginItem.available)
+                if !LoginItem.available {
+                    Text("Available when running the built app bundle.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    @State private var launchAtLogin = LoginItem.isEnabled
+
+    private var launchAtLoginBinding: Binding<Bool> {
+        Binding(get: { launchAtLogin },
+                set: { on in
+                    LoginItem.setEnabled(on)
+                    launchAtLogin = LoginItem.isEnabled
+                })
+    }
+}
+
+@MainActor
+enum LoginItem {
+    static var available: Bool { Bundle.main.bundlePath.hasSuffix(".app") }
+
+    static var isEnabled: Bool { SMAppService.mainApp.status == .enabled }
+
+    static func setEnabled(_ on: Bool) {
+        do {
+            if on {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+        } catch {
+            NSSound.beep()
+        }
+    }
+}
+
+private struct PresetsPage: View {
+    @ObservedObject var settings: SettingsStore
+
+    var body: some View {
+        Form {
+            Section("Saved presets") {
+                if settings.presets.isEmpty {
+                    Text("No presets yet. While sharing, choose menu bar → Presets → "
+                         + "“Save Current Region as Preset…”.")
+                        .foregroundStyle(.secondary)
+                }
+                ForEach($settings.presets) { $preset in
+                    HStack {
+                        TextField("Name", text: $preset.name)
+                        Spacer()
+                        Text("\(Int(preset.region.width)) × \(Int(preset.region.height))")
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                        Button {
+                            settings.presets.removeAll { $0.id == preset.id }
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            Section {
+                Text("The first nine presets are shared instantly with ⌃⌥⌘1–9.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
@@ -152,7 +231,10 @@ final class SettingsWindowController {
         switch tab {
         case .general:
             controller = NSHostingController(
-                rootView: AnyView(GeneralPage(settings: settings).frame(width: 470, height: 250)))
+                rootView: AnyView(GeneralPage(settings: settings).frame(width: 470, height: 330)))
+        case .presets:
+            controller = NSHostingController(
+                rootView: AnyView(PresetsPage(settings: settings).frame(width: 470, height: 360)))
         case .appearance:
             controller = NSHostingController(
                 rootView: AnyView(AppearancePage(settings: settings).frame(width: 470, height: 440)))

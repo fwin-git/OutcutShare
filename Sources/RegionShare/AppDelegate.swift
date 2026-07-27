@@ -23,17 +23,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.permissions = permissions
         session.onPermissionsNeeded = { permissions.show() }
         statusBar = StatusBarController(session: session, permissions: permissions)
-        hotkeys = HotkeyManager { [session] action in
-            switch action {
-            case .selectRegion: session.startSelection()
-            case .adjustRegion: session.startAdjust()
-            case .stopSharing: session.stop()
+        hotkeys = HotkeyManager { [session] event in
+            switch event {
+            case .action(.selectRegion): session.startSelection()
+            case .action(.adjustRegion): session.startAdjust()
+            case .action(.stopSharing): session.stop()
+            case .action(.shareLastRegion): session.shareLastRegion()
+            case .preset(let index):
+                let presets = SettingsStore.shared.presets
+                if index < presets.count {
+                    session.sharePreset(presets[index])
+                }
             }
         }
 
         if CommandLine.arguments.contains("--hotkeys-test") {
             let lines = (hotkeys?.registered ?? [])
-                .map { "\($0.action.rawValue)=\($0.combo.displayString)" }
+                .map { "\($0.label)=\($0.combo.displayString)" }
             print("HOTKEYS " + lines.joined(separator: " "))
             exit(0)
         }
