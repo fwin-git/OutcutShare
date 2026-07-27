@@ -31,6 +31,10 @@ drawn into the output only, and recording taps the same frames into an .mp4.
 - **Mouse can enter the virtual display** (off the screen edge, usually to
   the right). Move it back the way it went, or rearrange the display in
   *System Settings → Displays*. Hidden Window mode avoids this entirely.
+- **Crisp text:** with *Crisp text (Retina output)* enabled, the virtual
+  display gets 2× backing. Meeting apps then capture and encode at double
+  resolution — genuinely sharper when the source region is Retina, and
+  gentler compression on text edges even when it isn't.
 - **Aspect-locked resize in Virtual Display mode:** the display keeps its
   resolution and content scales into it. Growing the region a lot trades
   sharpness; reselect to recreate the display at full size.

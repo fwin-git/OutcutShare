@@ -40,6 +40,13 @@ private struct GeneralPage: View {
                      : "The region mirrors into an invisible window named “Outcut Share” — pick it under “share window”.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Toggle("Crisp text (Retina output)", isOn: $settings.crispOutput)
+                    .disabled(settings.shareMode != .virtualDisplay)
+                Text("Renders the shared monitor at 2× pixel density: sharpest with Retina "
+                     + "sources, reduces compression artifacts otherwise. Uses more bandwidth. "
+                     + "Virtual Display mode only.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             Section("Follow mode") {
                 Picker("Follow", selection: $settings.followMode) {
