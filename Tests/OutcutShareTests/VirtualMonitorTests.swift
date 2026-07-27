@@ -143,6 +143,35 @@ final class MonitorInteractionTests: XCTestCase {
         XCTAssertEqual(p, CGPoint(x: 100, y: 1040))
     }
 
+    func testEdgeExitMapsPositionAlongTheHitEdge() {
+        let display = CGRect(x: 5120, y: 0, width: 1920, height: 1080)
+        let panel = CGRect(x: 1600, y: 180, width: 960, height: 540)
+
+        // Left edge at 25% height → panel's left edge at 25% height.
+        let left = Geometry.edgeExitPoint(mouse: CGPoint(x: 5121, y: 270),
+                                          display: display, panel: panel, inset: 10)
+        XCTAssertEqual(left.x, panel.minX + 10, accuracy: 0.01)
+        XCTAssertEqual(left.y, panel.minY + 0.25 * panel.height, accuracy: 0.5)
+
+        // Right edge mid-height → panel's right edge mid-height.
+        let right = Geometry.edgeExitPoint(mouse: CGPoint(x: display.maxX - 1, y: 540),
+                                           display: display, panel: panel, inset: 10)
+        XCTAssertEqual(right.x, panel.maxX - 10, accuracy: 0.01)
+        XCTAssertEqual(right.y, panel.midY, accuracy: 0.5)
+
+        // Top edge at 75% width → panel's top edge at 75% width.
+        let top = Geometry.edgeExitPoint(mouse: CGPoint(x: 5120 + 1440, y: display.maxY - 1),
+                                         display: display, panel: panel, inset: 10)
+        XCTAssertEqual(top.y, panel.maxY - 10, accuracy: 0.01)
+        XCTAssertEqual(top.x, panel.minX + 0.75 * panel.width, accuracy: 0.5)
+
+        // Bottom edge at 10% width → panel's bottom edge at 10% width.
+        let bottom = Geometry.edgeExitPoint(mouse: CGPoint(x: 5120 + 192, y: 1),
+                                            display: display, panel: panel, inset: 10)
+        XCTAssertEqual(bottom.y, panel.minY + 10, accuracy: 0.01)
+        XCTAssertEqual(bottom.x, panel.minX + 0.1 * panel.width, accuracy: 0.5)
+    }
+
     func testResizeEdgeMapping() {
         let bounds = CGRect(x: 0, y: 0, width: 800, height: 500)
         XCTAssertEqual(Geometry.resizeEdge(for: CGPoint(x: 5, y: 250), bounds: bounds, band: 18), .left)

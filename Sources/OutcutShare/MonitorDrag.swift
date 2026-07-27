@@ -185,24 +185,30 @@ final class MonitorWindowManipulator {
         return NSScreen.screens.first
     }
 
-    func mouseDown(at local: CGPoint, in bounds: CGRect) {
+    /// Returns false when no window sits under the point — the caller then
+    /// treats the press as a panel-background drag.
+    @discardableResult
+    func mouseDown(at local: CGPoint, in bounds: CGRect) -> Bool {
         drag = nil
         let displayPoint = Geometry.previewPointToDisplayPoint(
             local, panel: CGRect(origin: .zero, size: bounds.size), display: displayFrame)
         guard let found = WindowLocator.frontmostWindow(at: displayPoint,
-                                                       excludingPID: getpid()) else { return }
+                                                       excludingPID: getpid()) else {
+            return false
+        }
         guard WindowMover.hasPermission else {
             if !promptedForPermission {
                 promptedForPermission = true
                 WindowMover.requestPermission()
                 session?.onPermissionsNeeded?()
             }
-            return
+            return true
         }
-        guard let ax = WindowMover.resolveAXWindow(for: found) else { return }
+        guard let ax = WindowMover.resolveAXWindow(for: found) else { return true }
         let offset = CGSize(width: found.frame.minX - displayPoint.x,
                             height: found.frame.minY - displayPoint.y)
         drag = (found, ax, offset, local, false)
+        return true
     }
 
     func mouseDragged(to local: CGPoint, in bounds: CGRect) {

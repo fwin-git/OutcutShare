@@ -513,10 +513,12 @@ final class PreviewWindowController: NSObject {
               let frame = panelFrame else { return }
         edgeExitArmed = false
         showControlExitHint(false)
+        // Seamless: reappear on the panel where the edge was crossed.
+        let exit = Geometry.edgeExitPoint(mouse: mouse, display: monitorDisplayFrame,
+                                          panel: frame, inset: 12)
         let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
-        CGWarpMouseCursorPosition(Geometry.cgPoint(
-            fromAppKit: CGPoint(x: frame.midX, y: frame.midY),
-            primaryHeight: primaryHeight))
+        CGWarpMouseCursorPosition(Geometry.cgPoint(fromAppKit: exit,
+                                                   primaryHeight: primaryHeight))
         CGAssociateMouseAndMouseCursorPosition(1)
     }
 
@@ -554,6 +556,8 @@ final class PreviewContentView: NSView {
     private static let resizeBand: CGFloat = 18
     private var activeResizeEdge: Geometry.RegionEdge?
     private var trackingArea: NSTrackingArea?
+    /// Set while a press on empty monitor background drags the panel.
+    private var panelDragAnchor: (origin: CGPoint, mouse: CGPoint)?
 
     override var mouseDownCanMoveWindow: Bool { !monitorMode }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
@@ -616,8 +620,10 @@ final class PreviewContentView: NSView {
         if passthroughActive {
             pointerForwarder?.mouseDown(clickCount: event.clickCount, at: p,
                                         in: bounds, button: .left)
-        } else {
-            interactionHandler?.mouseDown(at: p, in: bounds)
+        } else if interactionHandler?.mouseDown(at: p, in: bounds) != true,
+                  let window {
+            // Empty monitor background: the press drags the panel itself.
+            panelDragAnchor = (window.frame.origin, NSEvent.mouseLocation)
         }
     }
 
@@ -625,6 +631,12 @@ final class PreviewContentView: NSView {
         guard monitorMode else { return super.mouseDragged(with: event) }
         if let edge = activeResizeEdge {
             previewController?.performEdgeResize(edge: edge, to: NSEvent.mouseLocation)
+            return
+        }
+        if let anchor = panelDragAnchor, let window {
+            let mouse = NSEvent.mouseLocation
+            window.setFrameOrigin(CGPoint(x: anchor.origin.x + mouse.x - anchor.mouse.x,
+                                          y: anchor.origin.y + mouse.y - anchor.mouse.y))
             return
         }
         let p = localPoint(event)
@@ -639,6 +651,10 @@ final class PreviewContentView: NSView {
         guard monitorMode else { return super.mouseUp(with: event) }
         if activeResizeEdge != nil {
             activeResizeEdge = nil
+            return
+        }
+        if panelDragAnchor != nil {
+            panelDragAnchor = nil
             return
         }
         let p = localPoint(event)
