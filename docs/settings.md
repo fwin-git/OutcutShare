@@ -51,11 +51,11 @@ the monitor. With the optional **Accessibility** permission:
   cursor. The modifier also suppresses snapping, so edge snaps and
   pulling out never collide.
 - **Control mode** — the cursor button in the panel's top-right corner:
-  while on, clicks, drags and scrolls on the picture pass through to the
-  monitor, so you can browse a folder or drive a browser there without
-  moving your mouse to the virtual screen. The pointer briefly jumps to
-  the monitor during a gesture (watch it in the preview) and returns
-  after.
+  while on, clicking the picture hands your cursor to the corresponding
+  spot on the monitor, where it works natively — browse folders, drive a
+  browser, select text. A teal glow on the preview reminds you of the way
+  back: push the cursor against **any edge of the virtual screen** and it
+  returns to the preview panel.
 
 The panel moves via its ≡ grabber in this mode and resizes from its
 edges; pausing covers the whole virtual screen with the privacy note. You
