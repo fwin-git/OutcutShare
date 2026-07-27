@@ -37,7 +37,9 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         selectItem.target = self
         selectItem.image = NSImage(systemSymbolName: "rectangle.dashed.badge.record",
                                    accessibilityDescription: nil)
-        stopItem.image = NSImage(systemSymbolName: "stop.circle",
+        // Bare square, clearly distinct from the record dot-in-circle — and
+        // consistent with the hotbar's stop icon.
+        stopItem.image = NSImage(systemSymbolName: "stop.fill",
                                  accessibilityDescription: nil)
         shareLastItem.target = self
         moveItem.target = self
