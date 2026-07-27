@@ -164,6 +164,10 @@ private struct AppearancePage: View {
                         .frame(width: 44, alignment: .trailing)
                 }
             }
+            Section("Cursor emphasis (viewers only)") {
+                Toggle("Highlight cursor", isOn: $settings.cursorHighlight)
+                Toggle("Show click ripples", isOn: $settings.clickRipples)
+            }
             Section("Region border") {
                 Toggle("Show border around region", isOn: $settings.showRegionBorder)
                 ColorPicker("Color", selection: borderColorBinding, supportsOpacity: true)
@@ -255,7 +259,7 @@ final class SettingsWindowController {
                 rootView: AnyView(PresetsPage(settings: settings).frame(width: 470, height: 360)))
         case .appearance:
             controller = NSHostingController(
-                rootView: AnyView(AppearancePage(settings: settings).frame(width: 470, height: 440)))
+                rootView: AnyView(AppearancePage(settings: settings).frame(width: 470, height: 540)))
         case .shortcuts:
             controller = NSHostingController(
                 rootView: AnyView(ShortcutsPage(settings: settings).frame(width: 470, height: 400)))

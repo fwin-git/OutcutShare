@@ -122,6 +122,20 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    @Published var cursorHighlight: Bool {
+        didSet {
+            defaults.set(cursorHighlight, forKey: "cursorHighlight")
+            notifyChange()
+        }
+    }
+
+    @Published var clickRipples: Bool {
+        didSet {
+            defaults.set(clickRipples, forKey: "clickRipples")
+            notifyChange()
+        }
+    }
+
     @Published var followBehavior: FollowBehavior {
         didSet {
             defaults.set(followBehavior.rawValue, forKey: "followBehavior")
@@ -213,7 +227,11 @@ final class SettingsStore: ObservableObject {
         self.borderThickness = defaults.double(forKey: Key.borderThickness)
         self.pauseStyle = defaults.string(forKey: "pauseStyle")
             .flatMap(PauseStyle.init(rawValue:)) ?? .privacyScreen
-        defaults.register(defaults: ["followResizes": true])
+        defaults.register(defaults: ["followResizes": true,
+                                     "cursorHighlight": true,
+                                     "clickRipples": true])
+        self.cursorHighlight = defaults.bool(forKey: "cursorHighlight")
+        self.clickRipples = defaults.bool(forKey: "clickRipples")
         self.followBehavior = defaults.string(forKey: "followBehavior")
             .flatMap(FollowBehavior.init(rawValue:)) ?? .glide
         self.followResizes = defaults.bool(forKey: "followResizes")
