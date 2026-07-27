@@ -213,6 +213,22 @@ final class MonitorInteractionTests: XCTestCase {
                                              size: CGSize(width: 600, height: 200))))
     }
 
+    func testFramesAreNear() {
+        let panel = CGRect(x: 1000, y: 400, width: 900, height: 500)
+        // Hotbar sitting 12pt below the panel: near.
+        XCTAssertTrue(Geometry.framesAreNear(
+            CGRect(x: 1300, y: 340, width: 300, height: 48), panel, threshold: 80))
+        // Touching the side: near.
+        XCTAssertTrue(Geometry.framesAreNear(
+            CGRect(x: 1910, y: 600, width: 300, height: 48), panel, threshold: 80))
+        // Parked 300pt away: far.
+        XCTAssertFalse(Geometry.framesAreNear(
+            CGRect(x: 2500, y: 100, width: 300, height: 48), panel, threshold: 80))
+        // Just beyond the threshold: far.
+        XCTAssertFalse(Geometry.framesAreNear(
+            CGRect(x: 1000, y: 234, width: 300, height: 48), panel, threshold: 80))
+    }
+
     func testDockSideDetection() {
         let frame = CGRect(x: 0, y: 0, width: 5120, height: 1440)
         XCTAssertEqual(Geometry.dockSide(

@@ -384,6 +384,12 @@ enum Geometry {
                            : CGPoint(x: primaryWidth, y: 0)
     }
 
+    /// True when the gap between two frames is within `threshold` — used to
+    /// decide whether the hotbar counts as "attached" to the preview panel.
+    static func framesAreNear(_ a: CGRect, _ b: CGRect, threshold: CGFloat) -> Bool {
+        b.insetBy(dx: -threshold, dy: -threshold).intersects(a)
+    }
+
     /// Which display edge the cursor is crossing (nearest wins).
     static func nearestEdge(of p: CGPoint, in rect: CGRect) -> RegionEdge {
         let dl = p.x - rect.minX
