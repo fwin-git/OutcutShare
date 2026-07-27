@@ -41,6 +41,13 @@ private struct GeneralPage: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            Section("Pausing") {
+                Picker("When paused, viewers see", selection: $settings.pauseStyle) {
+                    Text("Frozen last frame").tag(PauseStyle.freeze)
+                    Text("Privacy screen").tag(PauseStyle.privacyScreen)
+                }
+                .pickerStyle(.menu)
+            }
             Section("Capture") {
                 Picker("Frame rate", selection: $settings.frameRate) {
                     Text("30 fps").tag(30)
@@ -231,7 +238,7 @@ final class SettingsWindowController {
         switch tab {
         case .general:
             controller = NSHostingController(
-                rootView: AnyView(GeneralPage(settings: settings).frame(width: 470, height: 330)))
+                rootView: AnyView(GeneralPage(settings: settings).frame(width: 470, height: 400)))
         case .presets:
             controller = NSHostingController(
                 rootView: AnyView(PresetsPage(settings: settings).frame(width: 470, height: 360)))

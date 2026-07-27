@@ -29,6 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             case .action(.adjustRegion): session.startAdjust()
             case .action(.stopSharing): session.stop()
             case .action(.shareLastRegion): session.shareLastRegion()
+            case .action(.togglePause): session.togglePause()
             case .preset(let index):
                 let presets = SettingsStore.shared.presets
                 if index < presets.count {
@@ -112,6 +113,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     session.moveRegion(to: CGPoint(x: current.minX + delta[0],
                                                    y: current.minY + delta[1]))
                     print("SHARE-TEST moved region to \(session.currentRegionRect.map(String.init(describing:)) ?? "?")")
+                }
+            }
+        }
+        // --pause-at=t1,t2 toggles pause at the given offsets (seconds).
+        if let pauseArg = CommandLine.arguments.first(where: { $0.hasPrefix("--pause-at=") }) {
+            let times = pauseArg.dropFirst("--pause-at=".count).split(separator: ",").compactMap { Double($0) }
+            for time in times {
+                DispatchQueue.main.asyncAfter(deadline: .now() + time) { [session] in
+                    session.togglePause()
+                    print("SHARE-TEST pause toggled, paused=\(session.isPaused)")
                 }
             }
         }
