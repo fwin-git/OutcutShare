@@ -27,8 +27,29 @@ struct HotbarView: View {
     @ObservedObject var model: HotbarModel
     let actions: HotbarActions
     @State private var dragging = false
+    @State private var hoverLabel: String?
 
     var body: some View {
+        VStack(spacing: 5) {
+            bar
+            // In-panel tooltip: system tooltips render at popup level, which
+            // sits below this panel — they'd be invisible.
+            Group {
+                if let hoverLabel {
+                    Text(hoverLabel)
+                        .font(.caption)
+                        .foregroundStyle(.primary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(.ultraThinMaterial, in: Capsule())
+                }
+            }
+            .frame(height: 22)
+        }
+        .fixedSize()
+    }
+
+    private var bar: some View {
         HStack(spacing: 13) {
             Image(systemName: "line.3.horizontal")
                 .foregroundStyle(.secondary)
@@ -52,7 +73,7 @@ struct HotbarView: View {
                             actions.endDrag()
                         }
                 )
-                .help("Move hotbar")
+                .onHover { hover(hover: $0, label: "Move hotbar") }
 
             barButton("stop.fill", help: "Stop sharing", action: actions.stop)
             barButton(model.isPaused ? "play.fill" : "pause.fill",
@@ -78,13 +99,20 @@ struct HotbarView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
-            .help("Hide hotbar")
+            .onHover { hover(hover: $0, label: "Hide hotbar (turns the setting off)") }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .background(.ultraThinMaterial, in: Capsule())
         .overlay(Capsule().strokeBorder(.white.opacity(0.15)))
-        .fixedSize()
+    }
+
+    private func hover(hover: Bool, label: String) {
+        if hover {
+            hoverLabel = label
+        } else if hoverLabel == label {
+            hoverLabel = nil
+        }
     }
 
     private func barButton(_ symbol: String, help: String, active: Bool = false,
@@ -96,7 +124,7 @@ struct HotbarView: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(tint ?? (active ? Color.accentColor : Color.primary))
-        .help(help)
+        .onHover { hover(hover: $0, label: help) }
     }
 }
 
@@ -232,8 +260,10 @@ final class HotbarController {
         refresh()
     }
 
+    /// ✕ turns the setting itself off, so the menu/settings checkboxes stay
+    /// truthful; re-checking either brings the bar back.
     private func hideForSession() {
-        session?.hotbarHiddenForSession = true
         panel?.orderOut(nil)
+        settings.hotbarEnabled = false
     }
 }
