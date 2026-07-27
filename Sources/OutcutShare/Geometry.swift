@@ -344,25 +344,65 @@ enum Geometry {
         return nil
     }
 
-    /// Seamless control-mode exit: the cursor leaves through an edge of the
-    /// virtual display and reappears at the corresponding position on the
-    /// preview panel's matching edge (slightly inset, so it lands on the
-    /// picture). The nearest display edge wins.
+    /// Which display edge the cursor is crossing (nearest wins).
+    static func nearestEdge(of p: CGPoint, in rect: CGRect) -> RegionEdge {
+        let dl = p.x - rect.minX
+        let dr = rect.maxX - p.x
+        let db = p.y - rect.minY
+        let dt = rect.maxY - p.y
+        let nearest = min(dl, dr, db, dt)
+        if nearest == dl { return .left }
+        if nearest == dr { return .right }
+        if nearest == db { return .bottom }
+        return .top
+    }
+
+    /// Position on the preview panel's edge matching a crossing point on
+    /// the virtual display's edge (positive inset = inside the picture).
     static func edgeExitPoint(mouse: CGPoint, display: CGRect, panel: CGRect,
                               inset: CGFloat) -> CGPoint {
-        let dl = mouse.x - display.minX
-        let dr = display.maxX - mouse.x
-        let db = mouse.y - display.minY
-        let dt = display.maxY - mouse.y
-        let nearest = min(dl, dr, db, dt)
-        if nearest == dl || nearest == dr {
+        switch nearestEdge(of: mouse, in: display) {
+        case .left, .right:
             let t = display.height > 0 ? (mouse.y - display.minY) / display.height : 0.5
-            return CGPoint(x: nearest == dl ? panel.minX + inset : panel.maxX - inset,
+            let left = nearestEdge(of: mouse, in: display) == .left
+            return CGPoint(x: left ? panel.minX + inset : panel.maxX - inset,
                            y: panel.minY + t * panel.height)
+        case .bottom, .top:
+            let t = display.width > 0 ? (mouse.x - display.minX) / display.width : 0.5
+            let bottom = nearestEdge(of: mouse, in: display) == .bottom
+            return CGPoint(x: panel.minX + t * panel.width,
+                           y: bottom ? panel.minY + inset : panel.maxY - inset)
         }
-        let t = display.width > 0 ? (mouse.x - display.minX) / display.width : 0.5
-        return CGPoint(x: panel.minX + t * panel.width,
-                       y: nearest == db ? panel.minY + inset : panel.maxY - inset)
+    }
+
+    /// Seamless control-mode exit: the cursor reappears OUTSIDE the panel's
+    /// matching edge, continuing the tracked motion (velocity scaled to
+    /// panel size, capped) — pushing through the monitor's left edge makes
+    /// the cursor emerge out of the panel's left side, still moving. A
+    /// minimum outset guarantees it clears the edge even when pinned still.
+    static func seamlessExitPoint(mouse: CGPoint, previous: CGPoint,
+                                  display: CGRect, panel: CGRect,
+                                  screenBounds: CGRect,
+                                  minOutset: CGFloat = 6,
+                                  maxLead: CGFloat = 90) -> CGPoint {
+        let base = edgeExitPoint(mouse: mouse, display: display, panel: panel, inset: 0)
+        let scale = display.width > 0 ? panel.width / display.width : 1
+        var vx = (mouse.x - previous.x) * scale
+        var vy = (mouse.y - previous.y) * scale
+        let speed = hypot(vx, vy)
+        if speed > maxLead {
+            vx *= maxLead / speed
+            vy *= maxLead / speed
+        }
+        var p = CGPoint(x: base.x + vx, y: base.y + vy)
+        switch nearestEdge(of: mouse, in: display) {
+        case .left: p.x = min(p.x, panel.minX - minOutset)
+        case .right: p.x = max(p.x, panel.maxX + minOutset)
+        case .bottom: p.y = min(p.y, panel.minY - minOutset)
+        case .top: p.y = max(p.y, panel.maxY + minOutset)
+        }
+        return CGPoint(x: min(max(p.x, screenBounds.minX + 1), screenBounds.maxX - 1),
+                       y: min(max(p.y, screenBounds.minY + 1), screenBounds.maxY - 1))
     }
 
     /// True near the view edges where AppKit's borderless-window resize

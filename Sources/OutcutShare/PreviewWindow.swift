@@ -28,6 +28,9 @@ final class PreviewWindowController: NSObject {
     private var monitorDisplayFrame: CGRect = .zero
     private var loweredForDrag = false
     private var edgeExitArmed = false
+    /// Previous poll position while the cursor is on the monitor — the
+    /// exit's motion continuation is derived from it.
+    private var lastMonitorMouse: CGPoint?
     private var grabber: NSImageView?
     private var pauseButton: NSButton?
     private var controlButton: NSButton?
@@ -500,8 +503,10 @@ final class PreviewWindowController: NSObject {
         showControlExitHint(onMonitor)
         guard onMonitor else {
             edgeExitArmed = false
+            lastMonitorMouse = nil
             return
         }
+        defer { lastMonitorMouse = mouse }
         let inner = monitorDisplayFrame.insetBy(dx: 3, dy: 3)
         if inner.contains(mouse) {
             // Entry clicks can land near an edge — only exit once the
@@ -513,9 +518,17 @@ final class PreviewWindowController: NSObject {
               let frame = panelFrame else { return }
         edgeExitArmed = false
         showControlExitHint(false)
-        // Seamless: reappear on the panel where the edge was crossed.
-        let exit = Geometry.edgeExitPoint(mouse: mouse, display: monitorDisplayFrame,
-                                          panel: frame, inset: 12)
+        // Seamless: emerge OUTSIDE the panel's matching edge, continuing
+        // the motion that pushed through.
+        let screenBounds = NSScreen.screens
+            .first { $0.frame.intersects(frame) }?.frame
+            ?? NSScreen.screens.first?.frame ?? frame
+        let exit = Geometry.seamlessExitPoint(mouse: mouse,
+                                              previous: lastMonitorMouse ?? mouse,
+                                              display: monitorDisplayFrame,
+                                              panel: frame,
+                                              screenBounds: screenBounds)
+        lastMonitorMouse = nil
         let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
         CGWarpMouseCursorPosition(Geometry.cgPoint(fromAppKit: exit,
                                                    primaryHeight: primaryHeight))
