@@ -33,18 +33,19 @@ struct HotbarView: View {
         VStack(spacing: 5) {
             bar
             // In-panel tooltip: system tooltips render at popup level, which
-            // sits below this panel — they'd be invisible.
-            Group {
-                if let hoverLabel {
-                    Text(hoverLabel)
-                        .font(.caption)
-                        .foregroundStyle(.primary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(.ultraThinMaterial, in: Capsule())
-                }
-            }
-            .frame(height: 22)
+            // sits below this panel — they'd be invisible. The label stays in
+            // the view tree permanently (opacity swap, plain background):
+            // inserting a material view on hover makes the window server
+            // rebuild the panel backdrop and stalls the app.
+            Text(hoverLabel ?? " ")
+                .font(.caption)
+                .lineLimit(1)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(Color.black.opacity(0.72), in: Capsule())
+                .opacity(hoverLabel == nil ? 0 : 1)
+                .frame(height: 22)
         }
         .fixedSize()
     }
@@ -99,7 +100,7 @@ struct HotbarView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
-            .onHover { hover(hover: $0, label: "Hide hotbar (turns the setting off)") }
+            .onHover { hover(hover: $0, label: "Hide hotbar") }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
