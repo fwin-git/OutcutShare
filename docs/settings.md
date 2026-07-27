@@ -11,7 +11,9 @@ Menu bar → **Settings…** — seven pages.
 | Follow movement | Snap or smooth glide when follow mode moves the region | Glide |
 | Resize region to followed window | Follow mode adopts the window's size (aspect-fitted in Virtual Display mode) | on |
 | Follow | Off / Active Window / Cursor (also in menu bar → Follow) | Off |
-| Show floating hotbar | Quick-action bar next to the region: stop, pause, record, highlights, resize, save preset, follow. Auto-positions below → side → top; drag the ≡ grabber to place it manually; ✕ hides it until re-enabled | on |
+| Show floating hotbar | Quick-action bar next to the region: stop, pause, record, highlights, preview, resize, save preset, follow. Auto-positions below → side → top; drag the ≡ grabber to place it manually; ✕ hides it until re-enabled | on |
+
+The hotbar's eye button opens a small floating **preview of the shared output** — what viewers actually see, without keeping Zoom/Teams open. Drag it anywhere by its picture, resize it from the edges (the region's aspect ratio is kept), and use the pin in its top-left corner to keep it above every other window. Off by default; the choice persists.
 | Capture frame rate | 30/60 fps — applies to both the shared picture and recordings | 30 fps |
 | Launch at login | Start with macOS (app bundle only) | off |
 | Version | Current version + build for support | — |

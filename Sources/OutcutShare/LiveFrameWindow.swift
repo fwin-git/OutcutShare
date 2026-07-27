@@ -68,50 +68,8 @@ final class LiveFrameWindow {
     func showPrivacyScreen() {
         hidePrivacyScreen()
         guard let view = window.contentView else { return }
-        let container = CALayer()
-        container.frame = view.bounds
-        container.backgroundColor = NSColor.black.cgColor
-
-        if let surface = lastSurface {
-            let image = CIImage(ioSurface: surface)
-            let blurred = image.clampedToExtent()
-                .applyingGaussianBlur(sigma: 28)
-                .cropped(to: image.extent)
-            if let cgImage = CIContext().createCGImage(blurred, from: image.extent) {
-                let blurLayer = CALayer()
-                blurLayer.frame = container.bounds
-                blurLayer.contents = cgImage
-                blurLayer.contentsGravity = .resizeAspectFill
-                blurLayer.opacity = 0.55
-                container.addSublayer(blurLayer)
-            }
-        }
-
-        let iconSize: CGFloat = min(container.bounds.height * 0.25, 96)
-        let config = NSImage.SymbolConfiguration(pointSize: iconSize, weight: .medium)
-            .applying(.init(paletteColors: [.white]))
-        if let icon = NSImage(systemSymbolName: "eye.slash.fill", accessibilityDescription: "Paused")?
-            .withSymbolConfiguration(config) {
-            let iconLayer = CALayer()
-            var rect = CGRect(origin: .zero, size: icon.size)
-            iconLayer.contents = icon.cgImage(forProposedRect: &rect, context: nil, hints: nil)
-            iconLayer.frame = CGRect(x: container.bounds.midX - icon.size.width / 2,
-                                     y: container.bounds.midY - icon.size.height / 2 + 14,
-                                     width: icon.size.width, height: icon.size.height)
-            container.addSublayer(iconLayer)
-        }
-
-        let text = CATextLayer()
-        text.string = "Sharing is paused"
-        text.font = NSFont.systemFont(ofSize: 22, weight: .semibold)
-        text.fontSize = 22
-        text.foregroundColor = NSColor.white.cgColor
-        text.alignmentMode = .center
-        text.contentsScale = window.backingScaleFactor
-        text.frame = CGRect(x: 0, y: container.bounds.midY - iconSize / 2 - 34,
-                            width: container.bounds.width, height: 30)
-        container.addSublayer(text)
-
+        let container = PrivacyScreenLayer.make(bounds: view.bounds, lastSurface: lastSurface,
+                                                contentsScale: window.backingScaleFactor)
         view.layer?.addSublayer(container)
         privacyLayer = container
     }
@@ -181,5 +139,60 @@ final class LiveFrameWindow {
 
     func close() {
         window.orderOut(nil)
+    }
+}
+
+/// Builds the "sharing is paused" cover (blurred still, slashed eye, note).
+/// Shared by the output window and the preview panel; glyph and text scale
+/// with the layer height so both sizes read well.
+@MainActor
+enum PrivacyScreenLayer {
+    static func make(bounds: CGRect, lastSurface: IOSurfaceRef?,
+                     contentsScale: CGFloat) -> CALayer {
+        let container = CALayer()
+        container.frame = bounds
+        container.backgroundColor = NSColor.black.cgColor
+
+        if let surface = lastSurface {
+            let image = CIImage(ioSurface: surface)
+            let blurred = image.clampedToExtent()
+                .applyingGaussianBlur(sigma: 28)
+                .cropped(to: image.extent)
+            if let cgImage = CIContext().createCGImage(blurred, from: image.extent) {
+                let blurLayer = CALayer()
+                blurLayer.frame = container.bounds
+                blurLayer.contents = cgImage
+                blurLayer.contentsGravity = .resizeAspectFill
+                blurLayer.opacity = 0.55
+                container.addSublayer(blurLayer)
+            }
+        }
+
+        let fontSize = max(11, min(22, bounds.height * 0.07))
+        let iconSize: CGFloat = min(container.bounds.height * 0.25, 96)
+        let config = NSImage.SymbolConfiguration(pointSize: iconSize, weight: .medium)
+            .applying(.init(paletteColors: [.white]))
+        if let icon = NSImage(systemSymbolName: "eye.slash.fill", accessibilityDescription: "Paused")?
+            .withSymbolConfiguration(config) {
+            let iconLayer = CALayer()
+            var rect = CGRect(origin: .zero, size: icon.size)
+            iconLayer.contents = icon.cgImage(forProposedRect: &rect, context: nil, hints: nil)
+            iconLayer.frame = CGRect(x: container.bounds.midX - icon.size.width / 2,
+                                     y: container.bounds.midY - icon.size.height / 2 + fontSize * 0.64,
+                                     width: icon.size.width, height: icon.size.height)
+            container.addSublayer(iconLayer)
+        }
+
+        let text = CATextLayer()
+        text.string = "Sharing is paused"
+        text.font = NSFont.systemFont(ofSize: fontSize, weight: .semibold)
+        text.fontSize = fontSize
+        text.foregroundColor = NSColor.white.cgColor
+        text.alignmentMode = .center
+        text.contentsScale = contentsScale
+        text.frame = CGRect(x: 0, y: container.bounds.midY - iconSize / 2 - fontSize * 1.55,
+                            width: container.bounds.width, height: fontSize * 1.4)
+        container.addSublayer(text)
+        return container
     }
 }

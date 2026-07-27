@@ -203,6 +203,44 @@ enum Geometry {
         return CGPoint(x: clampedX, y: region.minY + gap)
     }
 
+    /// Default placement for the shared-output preview panel: bottom-right
+    /// corner of the screen, sized by `width` with the region's aspect
+    /// (width/height); shrinks when the screen is too small.
+    static func previewPanelFrame(aspect: CGFloat, screenFrame: CGRect,
+                                  width: CGFloat = 320, margin: CGFloat = 16) -> CGRect {
+        var w = min(width, screenFrame.width - 2 * margin)
+        var h = w / aspect
+        let maxH = screenFrame.height - 2 * margin
+        if h > maxH {
+            h = maxH
+            w = h * aspect
+        }
+        return CGRect(x: screenFrame.maxX - margin - w,
+                      y: screenFrame.minY + margin, width: w, height: h)
+    }
+
+    /// Refits an existing preview panel frame to a new aspect (the shared
+    /// region was resized): the width and the top-left corner stay, the
+    /// height follows, and the result is clamped inside the screen.
+    static func aspectRefittedPanelFrame(current: CGRect, aspect: CGFloat,
+                                         screenFrame: CGRect,
+                                         minWidth: CGFloat = 160) -> CGRect {
+        var w = max(current.width, minWidth)
+        var h = w / aspect
+        if h > screenFrame.height {
+            h = screenFrame.height
+            w = h * aspect
+        }
+        if w > screenFrame.width {
+            w = screenFrame.width
+            h = w / aspect
+        }
+        let origin = clampedRegionOrigin(CGPoint(x: current.minX, y: current.maxY - h),
+                                         regionSize: CGSize(width: w, height: h),
+                                         screenFrame: screenFrame)
+        return CGRect(origin: origin, size: CGSize(width: w, height: h))
+    }
+
     /// Windows are listed front-to-back; first hit wins.
     static func frontmostWindowFrame(at point: CGPoint, windows: [CGRect]) -> CGRect? {
         windows.first { $0.contains(point) }

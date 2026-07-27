@@ -138,6 +138,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             exit(2)
         }
         let rect = CGRect(x: parts[0], y: parts[1], width: parts[2], height: parts[3])
+        // --preview shows the shared-output preview panel for the whole run.
+        if CommandLine.arguments.contains("--preview") {
+            SettingsStore.shared.previewWindowEnabled = true
+        }
         session.startSharing(rect: rect, on: screen)
         // Optional companion flag: --move-by=dx,dy moves the region halfway
         // through the test run to exercise the live-move path.

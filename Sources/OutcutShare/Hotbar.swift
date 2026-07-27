@@ -7,6 +7,7 @@ final class HotbarModel: ObservableObject {
     @Published var isRecording = false
     @Published var followOn = false
     @Published var highlightsOn = false
+    @Published var previewOn = false
 }
 
 struct HotbarActions {
@@ -14,6 +15,7 @@ struct HotbarActions {
     var pause: () -> Void
     var record: () -> Void
     var highlights: () -> Void
+    var preview: () -> Void
     var adjust: () -> Void
     var savePreset: () -> Void
     var follow: () -> Void
@@ -85,6 +87,8 @@ struct HotbarView: View {
                       tint: model.isRecording ? .red : nil, action: actions.record)
             barButton("cursorarrow.rays", help: "Presenter highlights",
                       active: model.highlightsOn, action: actions.highlights)
+            barButton("eye", help: "Preview shared output",
+                      active: model.previewOn, action: actions.preview)
             barButton("arrow.up.left.and.arrow.down.right", help: "Move / resize region",
                       action: actions.adjust)
             barButton("plus.square.on.square", help: "Save region as preset",
@@ -176,6 +180,7 @@ final class HotbarController {
         model.isRecording = session?.isRecording ?? false
         model.followOn = settings.followMode != .off
         model.highlightsOn = settings.cursorHighlight || settings.clickRipples
+        model.previewOn = settings.previewWindowEnabled
     }
 
     private func position() {
@@ -200,6 +205,7 @@ final class HotbarController {
             pause: { [weak self] in self?.session?.togglePause() },
             record: { [weak self] in self?.session?.toggleRecording() },
             highlights: { [weak self] in self?.toggleHighlights() },
+            preview: { [weak self] in self?.togglePreview() },
             adjust: { [weak self] in self?.session?.startAdjust() },
             savePreset: { [weak self] in
                 guard let session = self?.session else { return }
@@ -248,6 +254,12 @@ final class HotbarController {
         let enable = !(settings.cursorHighlight || settings.clickRipples)
         settings.cursorHighlight = enable
         settings.clickRipples = enable
+        refresh()
+    }
+
+    /// The session's settings observer shows/hides the panel.
+    private func togglePreview() {
+        settings.previewWindowEnabled.toggle()
         refresh()
     }
 

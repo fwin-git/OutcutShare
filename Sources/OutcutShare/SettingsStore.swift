@@ -222,6 +222,23 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    /// Floating live preview of the shared output ("what viewers see"),
+    /// toggled from the hotbar. Off by default.
+    @Published var previewWindowEnabled: Bool {
+        didSet {
+            defaults.set(previewWindowEnabled, forKey: "previewWindowEnabled")
+            notifyChange()
+        }
+    }
+
+    /// Keeps the preview panel above every other window when set.
+    @Published var previewWindowPinned: Bool {
+        didSet {
+            defaults.set(previewWindowPinned, forKey: "previewWindowPinned")
+            notifyChange()
+        }
+    }
+
     @Published var followBehavior: FollowBehavior {
         didSet {
             defaults.set(followBehavior.rawValue, forKey: "followBehavior")
@@ -320,6 +337,8 @@ final class SettingsStore: ObservableObject {
         self.followMode = defaults.string(forKey: "followMode")
             .flatMap(FollowMode.init(rawValue:)) ?? .off
         self.hotbarEnabled = defaults.bool(forKey: "hotbarEnabled")
+        self.previewWindowEnabled = defaults.bool(forKey: "previewWindowEnabled")
+        self.previewWindowPinned = defaults.bool(forKey: "previewWindowPinned")
         self.crispOutput = defaults.bool(forKey: "crispOutput")
         self.dockIconWhileActive = defaults.bool(forKey: "dockIconWhileActive")
         defaults.register(defaults: ["hideNotificationBanners": true])
