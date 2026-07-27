@@ -41,6 +41,8 @@ RegionSelector (drag/pick overlay)             SettingsStore (UserDefaults)
         │        └── onSampleBuffer → RecordingEngine (AVAssetWriter)
         ├── DimOverlay (click-through, even-odd cutout, styled border)
         ├── HotbarController (NSPanel, quick actions)
+        ├── PreviewWindowController (floating "what viewers see" panel;
+        │        aspect-locked resize, pin = above hotbar; always above dim)
         ├── FollowController (timer; window/cursor targets → setRegionRect)
         ├── CursorEmphasisController (halo/ripples drawn on OUTPUT only)
         └── RegionMover (adjust overlay: move/resize/pick)
@@ -122,7 +124,7 @@ Key invariants:
 --vd-test[=2x]                          virtual display on/off(line) check
 --share-test=x,y,w,h,secs[,vd|window]   full pipeline, prints frame count
    companions: --move-by=dx,dy  --resize-by=dw,dh  --pause-at=t1,t2
-               --record-at=t1,t2  --follow=activeWindow|cursor
+               --record-at=t1,t2  --follow=activeWindow|cursor  --preview
 --hotkeys-test                          registered shortcuts
 --permissions-test                      permission status line
 --show-settings[=tab] [--dim-preview]   open a settings pane

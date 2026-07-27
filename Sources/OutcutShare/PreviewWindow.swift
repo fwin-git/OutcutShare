@@ -93,6 +93,9 @@ final class PreviewWindowController: NSObject {
         guard privacyShowing, let view = panel?.contentView else { return }
         let layer = PrivacyScreenLayer.make(bounds: view.bounds, lastSurface: lastSurface,
                                             contentsScale: panel?.backingScaleFactor ?? 2)
+        // Below the pin button's backing layer, above the live picture.
+        layer.zPosition = 1
+        pinButton?.layer?.zPosition = 2
         view.layer?.addSublayer(layer)
         privacyLayer = layer
     }
@@ -162,14 +165,13 @@ final class PreviewWindowController: NSObject {
     private func applyPinState() {
         guard let panel else { return }
         let pinned = settings.previewWindowPinned
-        // Pinned: above everything including the dim overlay (like the
-        // hotbar). Unpinned: normal stacking — other windows can cover it
-        // and the ambient dim applies, like any other window on screen.
+        // Always above the dim overlay (.screenSaver) — the preview must
+        // never be grayed out by our own veil. Pinned raises it one step
+        // further, above the hotbar and any other overlay-level window.
         // Level is set here, after all other panel setup: properties like
         // isFloatingPanel silently reset it.
-        panel.level = pinned
-            ? NSWindow.Level(rawValue: NSWindow.Level.screenSaver.rawValue + 1)
-            : .normal
+        panel.level = NSWindow.Level(rawValue: NSWindow.Level.screenSaver.rawValue
+                                                + (pinned ? 2 : 1))
         let config = NSImage.SymbolConfiguration(pointSize: 12, weight: .semibold)
             .applying(.init(paletteColors: [pinned ? .systemYellow : .white]))
         pinButton?.image = NSImage(systemSymbolName: pinned ? "pin.fill" : "pin",
