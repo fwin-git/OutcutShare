@@ -23,9 +23,11 @@ final class PreviewWindowController: NSObject {
     private var snapTileLayer: CALayer?
     private var resizeHighlight: CALayer?
     private var pullOutHintLayer: CALayer?
+    private var controlExitHintLayer: CALayer?
     private var passthroughWatchdog: Timer?
     private var monitorDisplayFrame: CGRect = .zero
     private var loweredForDrag = false
+    private var edgeExitArmed = false
     private var grabber: NSImageView?
     private var pauseButton: NSButton?
     private var controlButton: NSButton?
@@ -158,6 +160,7 @@ final class PreviewWindowController: NSObject {
         controlButton?.isHidden = true
         showSnapTile(nil)
         showPullOutHint(false)
+        showControlExitHint(false)
         setResizeHighlight(false)
         stopWatchdog()
     }
@@ -191,80 +194,88 @@ final class PreviewWindowController: NSObject {
         }
     }
 
-    /// Pull-out affordance while the modifier is held during a window drag:
-    /// soft glows emanating from all four edges, a slight fade, and a
-    /// high-contrast caption on an accent capsule.
+    /// Pull-out affordance while the modifier is held during a window drag.
     func showPullOutHint(_ on: Bool) {
         guard on != (pullOutHintLayer != nil) else { return }
         if on, let view = panel?.contentView {
-            let container = CALayer()
-            container.frame = view.bounds
-            container.zPosition = 3
-
-            let fade = CALayer()
-            fade.frame = container.bounds
-            fade.backgroundColor = NSColor.black.withAlphaComponent(0.2).cgColor
-            container.addSublayer(fade)
-
-            let accent = NSColor.controlAccentColor
-            let glowColors = [accent.withAlphaComponent(0.65).cgColor,
-                              accent.withAlphaComponent(0.0).cgColor]
-            let depth = min(90, container.bounds.width * 0.12)
-            let b = container.bounds
-            let strips: [(CGRect, CGPoint, CGPoint)] = [
-                (CGRect(x: 0, y: 0, width: depth, height: b.height),
-                 CGPoint(x: 0, y: 0.5), CGPoint(x: 1, y: 0.5)),
-                (CGRect(x: b.maxX - depth, y: 0, width: depth, height: b.height),
-                 CGPoint(x: 1, y: 0.5), CGPoint(x: 0, y: 0.5)),
-                (CGRect(x: 0, y: b.maxY - depth, width: b.width, height: depth),
-                 CGPoint(x: 0.5, y: 0), CGPoint(x: 0.5, y: 1)),
-                (CGRect(x: 0, y: 0, width: b.width, height: depth),
-                 CGPoint(x: 0.5, y: 1), CGPoint(x: 0.5, y: 0)),
-            ]
-            for (frame, start, end) in strips {
-                let glow = CAGradientLayer()
-                glow.frame = frame
-                glow.colors = glowColors
-                glow.startPoint = start
-                glow.endPoint = end
-                container.addSublayer(glow)
-            }
-
-            let fontSize = max(13, min(20, container.bounds.height * 0.045))
-            let caption = "Drag the window out of the screen"
-            let capsuleWidth = min(b.width * 0.8,
-                                   CGFloat(caption.count) * fontSize * 0.62 + 44)
-            let capsuleHeight = fontSize * 2.2
-            let capsule = CALayer()
-            capsule.frame = CGRect(x: b.midX - capsuleWidth / 2,
-                                   y: b.midY - capsuleHeight / 2,
-                                   width: capsuleWidth, height: capsuleHeight)
-            capsule.backgroundColor = accent.cgColor
-            capsule.cornerRadius = capsuleHeight / 2
-            capsule.shadowColor = NSColor.black.cgColor
-            capsule.shadowOpacity = 0.35
-            capsule.shadowRadius = 8
-            capsule.shadowOffset = CGSize(width: 0, height: -2)
-            container.addSublayer(capsule)
-
-            let text = CATextLayer()
-            text.string = caption
-            text.font = NSFont.systemFont(ofSize: fontSize, weight: .bold)
-            text.fontSize = fontSize
-            text.foregroundColor = NSColor.white.cgColor
-            text.alignmentMode = .center
-            text.contentsScale = panel?.backingScaleFactor ?? 2
-            text.frame = CGRect(x: capsule.frame.minX,
-                                y: capsule.frame.midY - fontSize * 0.72,
-                                width: capsuleWidth, height: fontSize * 1.5)
-            container.addSublayer(text)
-
-            view.layer?.addSublayer(container)
-            pullOutHintLayer = container
+            let layer = Self.makeEdgeGlow(color: .controlAccentColor,
+                                          caption: "Drag the window out of the screen",
+                                          bounds: view.bounds,
+                                          scale: panel?.backingScaleFactor ?? 2)
+            view.layer?.addSublayer(layer)
+            pullOutHintLayer = layer
         } else {
             pullOutHintLayer?.removeFromSuperlayer()
             pullOutHintLayer = nil
         }
+    }
+
+    /// Control-mode hint while the cursor lives on the virtual display:
+    /// push any edge of the monitor to come back.
+    func showControlExitHint(_ on: Bool) {
+        guard on != (controlExitHintLayer != nil) else { return }
+        if on, let view = panel?.contentView {
+            let layer = Self.makeEdgeGlow(color: .systemTeal,
+                                          caption: "Move to any edge of the screen to return",
+                                          bounds: view.bounds,
+                                          scale: panel?.backingScaleFactor ?? 2)
+            view.layer?.addSublayer(layer)
+            controlExitHintLayer = layer
+        } else {
+            controlExitHintLayer?.removeFromSuperlayer()
+            controlExitHintLayer = nil
+        }
+    }
+
+    /// Subtle inner glow hugging the panel edge with the panel's rounded
+    /// corners (concentric stroked rings, clipped by the content view — no
+    /// corner overlaps), plus a high-contrast caption capsule.
+    private static func makeEdgeGlow(color: NSColor, caption: String,
+                                     bounds b: CGRect, scale: CGFloat) -> CALayer {
+        let container = CALayer()
+        container.frame = b
+        container.zPosition = 3
+
+        let path = CGPath(roundedRect: b.insetBy(dx: 1, dy: 1),
+                          cornerWidth: 10, cornerHeight: 10, transform: nil)
+        for (width, alpha) in [(48.0, 0.10), (26.0, 0.16), (10.0, 0.26)] {
+            let ring = CAShapeLayer()
+            ring.frame = container.bounds
+            ring.path = path
+            ring.fillColor = nil
+            ring.strokeColor = color.withAlphaComponent(alpha).cgColor
+            ring.lineWidth = width
+            container.addSublayer(ring)
+        }
+
+        let fontSize = max(12, min(16, b.height * 0.035))
+        let capsuleWidth = min(b.width * 0.75,
+                               CGFloat(caption.count) * fontSize * 0.6 + 40)
+        let capsuleHeight = fontSize * 2.1
+        let capsule = CALayer()
+        capsule.frame = CGRect(x: b.midX - capsuleWidth / 2,
+                               y: b.minY + b.height * 0.12,
+                               width: capsuleWidth, height: capsuleHeight)
+        capsule.backgroundColor = color.withAlphaComponent(0.92).cgColor
+        capsule.cornerRadius = capsuleHeight / 2
+        capsule.shadowColor = NSColor.black.cgColor
+        capsule.shadowOpacity = 0.3
+        capsule.shadowRadius = 6
+        capsule.shadowOffset = CGSize(width: 0, height: -1)
+        container.addSublayer(capsule)
+
+        let text = CATextLayer()
+        text.string = caption
+        text.font = NSFont.systemFont(ofSize: fontSize, weight: .bold)
+        text.fontSize = fontSize
+        text.foregroundColor = NSColor.white.cgColor
+        text.alignmentMode = .center
+        text.contentsScale = scale
+        text.frame = CGRect(x: capsule.frame.minX,
+                            y: capsule.frame.midY - fontSize * 0.72,
+                            width: capsuleWidth, height: fontSize * 1.5)
+        container.addSublayer(text)
+        return container
     }
 
     /// Highlights a magnet snap zone (unit rect, y up) during a window drag.
@@ -460,29 +471,48 @@ final class PreviewWindowController: NSObject {
         updateControlButton()
     }
 
-    /// While control mode is on, a stranded cursor on the virtual display
-    /// (event-queue races, physical overshoot) is warped back to the panel
-    /// — control mode means "drive it from here", and the control button
-    /// would otherwise be unreachable without a long physical mouse trip.
+    /// Control-mode exit: clicking the picture hands the cursor to the
+    /// monitor, where it operates natively. To come back, the user pushes
+    /// the cursor against ANY edge of the virtual display — this poller
+    /// notices the edge contact and ports the cursor to the panel's
+    /// center. (Warping after every gesture fought the user's movement and
+    /// froze the cursor mid-click; this model has no fights.)
     private func startWatchdog() {
         stopWatchdog()
-        passthroughWatchdog = Timer.scheduledTimer(withTimeInterval: 0.4,
+        edgeExitArmed = false
+        passthroughWatchdog = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0,
                                                    repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.watchdogTick() }
+            MainActor.assumeIsolated { self?.edgeExitTick() }
         }
     }
 
     private func stopWatchdog() {
         passthroughWatchdog?.invalidate()
         passthroughWatchdog = nil
+        showControlExitHint(false)
     }
 
-    private func watchdogTick() {
+    private func edgeExitTick() {
         guard let view = panel?.contentView as? PreviewContentView,
-              view.passthroughActive,
-              view.pointerForwarder?.gestureActive != true,
-              monitorDisplayFrame.contains(NSEvent.mouseLocation),
+              view.passthroughActive else { return }
+        let mouse = NSEvent.mouseLocation
+        let onMonitor = monitorDisplayFrame.contains(mouse)
+        showControlExitHint(onMonitor)
+        guard onMonitor else {
+            edgeExitArmed = false
+            return
+        }
+        let inner = monitorDisplayFrame.insetBy(dx: 3, dy: 3)
+        if inner.contains(mouse) {
+            // Entry clicks can land near an edge — only exit once the
+            // cursor has actually been inside.
+            edgeExitArmed = true
+            return
+        }
+        guard edgeExitArmed, NSEvent.pressedMouseButtons == 0,
               let frame = panelFrame else { return }
+        edgeExitArmed = false
+        showControlExitHint(false)
         let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
         CGWarpMouseCursorPosition(Geometry.cgPoint(
             fromAppKit: CGPoint(x: frame.midX, y: frame.midY),
