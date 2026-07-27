@@ -37,7 +37,8 @@ private struct PrivacyPage: View {
     var body: some View {
         Form {
             Section("Preview — while paused") {
-                RegionPreviewCanvas(settings: settings, paused: true, showsCursor: false)
+                RegionPreviewCanvas(settings: settings, paused: true, showsCursor: false,
+                                showsNotificationDemo: true)
             }
             Section("Pausing") {
                 Picker("When paused, viewers see", selection: $settings.pauseStyle) {
@@ -111,7 +112,9 @@ private struct GeneralPage: View {
                     Text("Preview")
                     Spacer()
                     DemoProgressRing(progress: demoModel.progress,
-                                     playing: demoModel.playing)
+                                     playing: demoModel.playing) {
+                        demoModel.playing.toggle()
+                    }
                 }
             }
             Section("Sharing") {
@@ -156,7 +159,6 @@ private struct GeneralPage: View {
                     .pickerStyle(.segmented)
                     Toggle("Resize region to the followed window", isOn: $settings.followResizes)
                 }
-                .contentShape(Rectangle())
             } header: {
                 HStack {
                     Text("Follow mode")
@@ -206,8 +208,17 @@ private struct GeneralPage: View {
 private struct DemoProgressRing: View {
     var progress: Double
     var playing: Bool
+    var action: () -> Void
 
     var body: some View {
+        Button(action: action) {
+            ring
+        }
+        .buttonStyle(.plain)
+        .help(playing ? "Pause preview animation" : "Play preview animation")
+    }
+
+    private var ring: some View {
         ZStack {
             Circle()
                 .stroke(Color.secondary.opacity(0.25), lineWidth: 2)

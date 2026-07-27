@@ -2,8 +2,8 @@ import AppKit
 import SwiftUI
 
 /// Shared playback state between the demo canvas and surrounding controls:
-/// hover-driven by default, explicitly paused/playing once the user touches
-/// the play/pause control; `progress` tracks the position in the demo cycle.
+/// autoplay by default, toggled by the play/pause controls; `progress`
+/// tracks the position in the demo cycle.
 @MainActor
 final class FollowDemoModel: ObservableObject {
     /// Autoplay by default; the play/pause control toggles this.
@@ -21,9 +21,11 @@ struct RegionPreviewCanvas: View {
     var showsHotbar = false
     var paused = false
     var showsCursor = true
-    /// While true (e.g. hovering the follow controls) the follow demo plays.
+    /// While true the follow demo plays (autoplay-driven via FollowDemoModel).
     var demoActive = false
     var demoModel: FollowDemoModel? = nil
+    /// Shows a mock notification banner unless banners are hidden from viewers.
+    var showsNotificationDemo = false
 
     // Unit-space scene layout.
     private static let windowsU: [CGRect] = [
@@ -39,6 +41,7 @@ struct RegionPreviewCanvas: View {
     @State private var step = 0
     @State private var rippleID = 0
     private let demoTimer = Timer.publish(every: 1.6, on: .main, in: .common).autoconnect()
+    private let progressTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
     private let rippleTimer = Timer.publish(every: 1.7, on: .main, in: .common).autoconnect()
 
     var body: some View {
@@ -77,12 +80,18 @@ struct RegionPreviewCanvas: View {
                     Image(nsImage: NSCursor.arrow.image)
                         .position(x: cursor.x + 5, y: cursor.y + 7)
                 }
+                if showsNotificationDemo && !settings.hideNotificationBanners {
+                    notificationBanner
+                        .position(x: size.width - 66, y: 22)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                }
                 if showsHotbar && settings.hotbarEnabled {
                     miniHotbar
                         .position(x: region.midX,
                                   y: min(region.maxY + 16, size.height - 12))
                 }
             }
+            .animation(.easeOut(duration: 0.3), value: settings.hideNotificationBanners)
             .onReceive(rippleTimer) { _ in
                 if settings.clickRipples && showsCursor && !paused {
                     rippleID += 1
@@ -90,6 +99,11 @@ struct RegionPreviewCanvas: View {
             }
             .onReceive(demoTimer) { _ in
                 advanceDemo()
+            }
+            .onReceive(progressTimer) { _ in
+                // Fine-grained fill so pausing freezes the ring instantly.
+                guard demoActive, let model = demoModel else { return }
+                model.progress = min(model.progress + 0.05 / 4.8, 1)
             }
             .onChange(of: demoActive) { _, active in
                 // Pausing freezes in place; resuming steps immediately
@@ -151,16 +165,10 @@ struct RegionPreviewCanvas: View {
     }
 
     private func reportProgress() {
+        // Snap to the exact phase baseline; the fine timer fills in between.
         guard let model = demoModel else { return }
         let phase = step % Self.windowsU.count
-        if phase == 0 {
-            var transaction = Transaction()
-            transaction.disablesAnimations = true
-            withTransaction(transaction) { model.progress = 0 }
-        }
-        withAnimation(.linear(duration: 1.6)) {
-            model.progress = Double(phase + 1) / Double(Self.windowsU.count)
-        }
+        model.progress = Double(phase) / Double(Self.windowsU.count)
     }
 
     private func centered(_ size: CGSize, on center: CGPoint) -> CGRect {
@@ -221,6 +229,22 @@ struct RegionPreviewCanvas: View {
                     .position(x: region.maxX - 16, y: region.minY + 16)
             }
         }
+    }
+
+    private var notificationBanner: some View {
+        HStack(spacing: 6) {
+            RoundedRectangle(cornerRadius: 3)
+                .fill(Color.blue.opacity(0.8))
+                .frame(width: 14, height: 14)
+            VStack(alignment: .leading, spacing: 3) {
+                Capsule().fill(Color.primary.opacity(0.5)).frame(width: 46, height: 3.5)
+                Capsule().fill(Color.primary.opacity(0.25)).frame(width: 32, height: 3.5)
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 7))
+        .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(.white.opacity(0.2)))
     }
 
     private var miniHotbar: some View {
