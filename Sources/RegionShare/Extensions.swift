@@ -1,5 +1,17 @@
 import AppKit
 
+enum AppVersion {
+    /// "1.1 (84.5b4d644)" for the stamped bundle, "dev build" otherwise.
+    static var display: String {
+        guard Bundle.main.bundlePath.hasSuffix(".app"),
+              let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
+              let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String else {
+            return "dev build"
+        }
+        return "\(version) (\(build))"
+    }
+}
+
 extension NSColor {
     /// "#RRGGBBAA" in sRGB; used to persist colors in UserDefaults.
     convenience init?(hexRGBA: String) {

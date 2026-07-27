@@ -1,6 +1,10 @@
 APP      := build/RegionShare.app
 BINARY   := .build/release/RegionShare
 
+VERSION  := 1.1
+BUILD    := $(shell git rev-list --count HEAD 2>/dev/null || echo 0)
+HASH     := $(shell git rev-parse --short HEAD 2>/dev/null || echo dev)
+
 # A stable signing identity keeps the Screen Recording grant across rebuilds;
 # ad-hoc signatures change every build and make macOS re-ask each time.
 # Override with `make app CODESIGN_ID=<sha1-or-name>` if needed.
@@ -20,8 +24,12 @@ $(APP): Support/Info.plist $(shell find Sources -type f) Package.swift
 	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources
 	cp $(BINARY) $(APP)/Contents/MacOS/RegionShare
 	cp Support/Info.plist $(APP)/Contents/Info.plist
+	/usr/libexec/PlistBuddy \
+		-c "Set :CFBundleShortVersionString $(VERSION)" \
+		-c "Set :CFBundleVersion $(BUILD).$(HASH)" \
+		$(APP)/Contents/Info.plist
 	codesign --force -s "$(CODESIGN_ID)" $(APP)
-	@echo "Built $(APP) (signed as $(CODESIGN_ID))"
+	@echo "Built $(APP) v$(VERSION) ($(BUILD).$(HASH), signed as $(CODESIGN_ID))"
 
 test:
 	swift test

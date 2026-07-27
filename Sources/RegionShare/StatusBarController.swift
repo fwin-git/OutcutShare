@@ -67,6 +67,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         permissionsItem.target = self
         menu.addItem(permissionsItem)
         menu.addItem(.separator())
+        let versionItem = NSMenuItem(title: "RegionShare \(AppVersion.display)",
+                                     action: nil, keyEquivalent: "")
+        versionItem.isEnabled = false
+        menu.addItem(versionItem)
         let quitItem = NSMenuItem(title: "Quit RegionShare",
                                   action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quitItem)

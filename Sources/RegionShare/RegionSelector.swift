@@ -82,6 +82,10 @@ private final class SelectionWindow: NSWindow {
         backgroundColor = .clear
         hasShadow = false
         acceptsMouseMovedEvents = true
+        // Explicitly NOT ignoring mouse events disables the window server's
+        // per-pixel alpha hit-testing — otherwise clicks inside fully clear
+        // areas (the pick-mode window cutout) fall through to the app below.
+        ignoresMouseEvents = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         contentView = SelectionView(frame: NSRect(origin: .zero, size: screen.frame.size),
                                     selector: selector)
@@ -326,6 +330,11 @@ private final class SelectionView: NSView {
     // MARK: Drawing
 
     override func draw(_ dirtyRect: NSRect) {
+        // Invisible floor so no pixel is ever alpha-zero: guarantees clicks
+        // hit this overlay even in the clear cutout.
+        NSColor.black.withAlphaComponent(0.01).setFill()
+        bounds.fill()
+
         let backdrop = NSBezierPath(rect: bounds)
         if let selection = currentSelection() {
             backdrop.append(NSBezierPath(rect: selection))
