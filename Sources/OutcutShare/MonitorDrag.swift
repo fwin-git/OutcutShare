@@ -279,90 +279,35 @@ final class MonitorWindowManipulator {
 final class MonitorPointerForwarder {
     private weak var session: ShareSession?
     private let displayFrame: CGRect
-    private var savedCursor: CGPoint?
     private var promptedForPermission = false
-    private var upMonitors: [Any] = []
-    /// True from mouse-down until the warp-back completed — the stranded-
-    /// cursor watchdog must not fight an in-flight gesture.
-    private(set) var gestureActive = false
 
     init(session: ShareSession, displayFrame: CGRect) {
         self.session = session
         self.displayFrame = displayFrame
     }
 
-    deinit {
-        for monitor in upMonitors {
-            NSEvent.removeMonitor(monitor)
-        }
-    }
-
+    /// The injected mouse-down hands the physical tracking to the app under
+    /// the synthetic location, so from here the user's mouse drives the
+    /// monitor natively — no warp-backs (they fought the user's movement).
+    /// The way back is the edge-exit poller on the preview panel.
     func mouseDown(clickCount: Int, at local: CGPoint, in bounds: CGRect,
                    button: CGMouseButton) {
         guard ensurePermission() else { return }
-        gestureActive = true
-        savedCursor = currentCursor()
         post(button == .left ? .leftMouseDown : .rightMouseDown,
              at: target(local, bounds), button: button, clickCount: clickCount)
-        // The injected mouse-down makes the window server hand the physical
-        // drag/up tracking to the app under the SYNTHETIC location — our
-        // view then never receives the mouse-up, which used to leave the
-        // gesture (and the cursor) stranded on the virtual display. A
-        // global monitor sees that other app's mouse-up and finalizes.
-        installUpMonitor()
     }
 
     func mouseDragged(at local: CGPoint, in bounds: CGRect, button: CGMouseButton) {
-        guard WindowMover.hasPermission, gestureActive else { return }
+        guard WindowMover.hasPermission else { return }
         post(button == .left ? .leftMouseDragged : .rightMouseDragged,
              at: target(local, bounds), button: button, clickCount: 1)
     }
 
     func mouseUp(clickCount: Int, at local: CGPoint, in bounds: CGRect,
                  button: CGMouseButton) {
-        guard WindowMover.hasPermission, gestureActive else { return }
+        guard WindowMover.hasPermission else { return }
         post(button == .left ? .leftMouseUp : .rightMouseUp,
              at: target(local, bounds), button: button, clickCount: clickCount)
-        finalizeGesture()
-    }
-
-    private func installUpMonitor() {
-        removeUpMonitors()
-        let monitor = NSEvent.addGlobalMonitorForEvents(
-            matching: [.leftMouseUp, .rightMouseUp],
-            handler: { [weak self] _ in
-                MainActor.assumeIsolated { self?.finalizeGesture() }
-            })
-        if let monitor {
-            upMonitors.append(monitor)
-        }
-    }
-
-    private func removeUpMonitors() {
-        upMonitors.forEach { NSEvent.removeMonitor($0) }
-        upMonitors = []
-    }
-
-    /// Ends the gesture from whichever side saw the mouse-up (our view or
-    /// the target app via the global monitor). The warp-back runs as a
-    /// short burst: queued synthetic events carry the monitor position and
-    /// would undo a single immediate warp.
-    private func finalizeGesture() {
-        guard gestureActive else { return }
-        removeUpMonitors()
-        let saved = savedCursor
-        savedCursor = nil
-        if let saved {
-            for delay in [0.08, 0.22, 0.4] {
-                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                    CGWarpMouseCursorPosition(saved)
-                    CGAssociateMouseAndMouseCursorPosition(1)
-                }
-            }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak self] in
-            MainActor.assumeIsolated { self?.gestureActive = false }
-        }
     }
 
     func scroll(deltaX: CGFloat, deltaY: CGFloat, at local: CGPoint, in bounds: CGRect) {
