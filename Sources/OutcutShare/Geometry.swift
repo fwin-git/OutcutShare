@@ -344,6 +344,27 @@ enum Geometry {
         return nil
     }
 
+    /// Seamless control-mode exit: the cursor leaves through an edge of the
+    /// virtual display and reappears at the corresponding position on the
+    /// preview panel's matching edge (slightly inset, so it lands on the
+    /// picture). The nearest display edge wins.
+    static func edgeExitPoint(mouse: CGPoint, display: CGRect, panel: CGRect,
+                              inset: CGFloat) -> CGPoint {
+        let dl = mouse.x - display.minX
+        let dr = display.maxX - mouse.x
+        let db = mouse.y - display.minY
+        let dt = display.maxY - mouse.y
+        let nearest = min(dl, dr, db, dt)
+        if nearest == dl || nearest == dr {
+            let t = display.height > 0 ? (mouse.y - display.minY) / display.height : 0.5
+            return CGPoint(x: nearest == dl ? panel.minX + inset : panel.maxX - inset,
+                           y: panel.minY + t * panel.height)
+        }
+        let t = display.width > 0 ? (mouse.x - display.minX) / display.width : 0.5
+        return CGPoint(x: panel.minX + t * panel.width,
+                       y: nearest == db ? panel.minY + inset : panel.maxY - inset)
+    }
+
     /// True near the view edges where AppKit's borderless-window resize
     /// zones live — picture interactions must leave those events alone.
     static func isInResizeBand(_ p: CGPoint, bounds: CGRect, band: CGFloat) -> Bool {
