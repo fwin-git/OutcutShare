@@ -1,0 +1,291 @@
+<style>
+  .icon-intro {
+    max-width: 920px;
+    margin-bottom: 26px;
+  }
+  .icon-intro strong { color: var(--text); }
+  .icon-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+    margin-top: 24px;
+  }
+  .icon-card {
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 22px;
+    padding: 18px;
+    transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  }
+  .icon-card:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  }
+  .icon-card.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+  .icon-preview {
+    aspect-ratio: 1;
+    max-width: 330px;
+    margin: 0 auto 17px;
+    border-radius: 28%;
+    overflow: hidden;
+    box-shadow:
+      0 24px 50px rgba(0,0,0,.22),
+      inset 0 1px 0 rgba(255,255,255,.38);
+  }
+  .icon-preview svg { display: block; width: 100%; height: 100%; }
+  .concept-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .concept-head h3 { margin: 0; }
+  .concept-type {
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .icon-card p { margin: 8px 0 0; line-height: 1.5; }
+  .signal-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 12px;
+  }
+  .signal {
+    font-size: 12px;
+    border-radius: 999px;
+    padding: 4px 8px;
+    background: color-mix(in srgb, var(--text) 7%, transparent);
+    color: var(--text-secondary);
+  }
+  .spread-note {
+    margin-top: 24px;
+    padding: 16px 18px;
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+  }
+  @media (max-width: 760px) {
+    .icon-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="icon-intro">
+  <div class="label">Outcut Share · macOS 26 icon study</div>
+  <h2>Four intentionally different directions</h2>
+  <p class="subtitle">
+    Each uses a simple centered silhouette, a small number of bold layers, and glass-like depth.
+    The final files will be full-bleed 1024 × 1024 PNGs with no text or watermark.
+    Click any concepts you especially like, then tell me in the terminal whether to approve or revise the set.
+  </p>
+</div>
+
+<div class="icon-grid" data-multiselect>
+  <div class="icon-card" data-choice="cutout" onclick="toggleSelect(this)">
+    <div class="icon-preview">
+      <svg viewBox="0 0 512 512" role="img" aria-label="The Cutout icon concept">
+        <defs>
+          <radialGradient id="cut-bg" cx="26%" cy="18%" r="92%">
+            <stop offset="0" stop-color="#5947b8"/>
+            <stop offset=".43" stop-color="#201a52"/>
+            <stop offset="1" stop-color="#090b22"/>
+          </radialGradient>
+          <linearGradient id="cut-glass" x1="0" y1="0" x2="1" y2="1">
+            <stop stop-color="#ffffff" stop-opacity=".22"/>
+            <stop offset=".55" stop-color="#c4c8ff" stop-opacity=".07"/>
+            <stop offset="1" stop-color="#11152c" stop-opacity=".3"/>
+          </linearGradient>
+          <filter id="cut-shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="16" stdDeviation="14" flood-color="#050714" flood-opacity=".65"/>
+          </filter>
+          <linearGradient id="cut-edge" x1="0" y1="0" x2="1" y2="1">
+            <stop stop-color="#ffb28a"/>
+            <stop offset=".45" stop-color="#ff5f66"/>
+            <stop offset="1" stop-color="#ff365c"/>
+          </linearGradient>
+        </defs>
+        <rect width="512" height="512" fill="url(#cut-bg)"/>
+        <circle cx="110" cy="90" r="170" fill="#8467ff" opacity=".12"/>
+        <rect x="76" y="92" width="360" height="328" rx="70" fill="url(#cut-glass)" stroke="#fff" stroke-opacity=".18" stroke-width="3"/>
+        <path d="M105 120h302M105 150h205" stroke="#fff" stroke-opacity=".10" stroke-width="12" stroke-linecap="round"/>
+        <rect x="137" y="162" width="238" height="188" rx="38" fill="#0a0d23" fill-opacity=".38" filter="url(#cut-shadow)"/>
+        <rect x="147" y="172" width="218" height="168" rx="31" fill="#171b3d" stroke="url(#cut-edge)" stroke-width="10" stroke-dasharray="26 16"/>
+        <path d="M179 210h151M179 242h105M179 274h128" stroke="#b9c2ff" stroke-opacity=".36" stroke-width="15" stroke-linecap="round"/>
+        <path d="M150 194v-14a18 18 0 0 1 18-18h15" fill="none" stroke="#fff" stroke-opacity=".82" stroke-width="5" stroke-linecap="round"/>
+        <ellipse cx="254" cy="375" rx="116" ry="13" fill="#ff4b64" opacity=".19"/>
+      </svg>
+    </div>
+    <div class="concept-head">
+      <h3>A. The Cutout</h3>
+      <span class="concept-type">Literal</span>
+    </div>
+    <p>A bright dashed crop region floats above a dimmed screen. It communicates the app’s core interaction fastest.</p>
+    <div class="signal-row">
+      <span class="signal">recognizable</span>
+      <span class="signal">night indigo + coral</span>
+      <span class="signal">strong at small sizes</span>
+    </div>
+  </div>
+
+  <div class="icon-card" data-choice="portal" onclick="toggleSelect(this)">
+    <div class="icon-preview">
+      <svg viewBox="0 0 512 512" role="img" aria-label="Portal Display icon concept">
+        <defs>
+          <linearGradient id="por-bg" x1="0" y1="0" x2="1" y2="1">
+            <stop stop-color="#073f4d"/>
+            <stop offset=".5" stop-color="#071c3b"/>
+            <stop offset="1" stop-color="#11092e"/>
+          </linearGradient>
+          <linearGradient id="por-back" x1="0" y1="0" x2=".8" y2="1">
+            <stop stop-color="#69f5e3" stop-opacity=".55"/>
+            <stop offset="1" stop-color="#5c75ff" stop-opacity=".12"/>
+          </linearGradient>
+          <linearGradient id="por-front" x1=".1" y1="0" x2=".9" y2="1">
+            <stop stop-color="#aaffee" stop-opacity=".76"/>
+            <stop offset=".42" stop-color="#5bdfff" stop-opacity=".34"/>
+            <stop offset="1" stop-color="#7c5cff" stop-opacity=".42"/>
+          </linearGradient>
+          <filter id="por-shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="22" stdDeviation="18" flood-color="#020a18" flood-opacity=".65"/>
+          </filter>
+        </defs>
+        <rect width="512" height="512" fill="url(#por-bg)"/>
+        <circle cx="138" cy="104" r="145" fill="#65ffe4" opacity=".08"/>
+        <circle cx="394" cy="406" r="180" fill="#835bff" opacity=".11"/>
+        <g transform="translate(49 78) rotate(-7 205 170)">
+          <rect x="52" y="55" width="300" height="232" rx="46" fill="url(#por-back)" stroke="#b8fff3" stroke-opacity=".48" stroke-width="4"/>
+          <rect x="86" y="88" width="232" height="148" rx="24" fill="#061d32" fill-opacity=".67"/>
+          <path d="M111 119h172M111 150h104M111 181h144" stroke="#94fff1" stroke-opacity=".28" stroke-width="13" stroke-linecap="round"/>
+        </g>
+        <g transform="translate(125 143) rotate(6 155 135)" filter="url(#por-shadow)">
+          <rect x="0" y="0" width="292" height="224" rx="48" fill="url(#por-front)" stroke="#fff" stroke-opacity=".63" stroke-width="5"/>
+          <rect x="28" y="29" width="236" height="144" rx="27" fill="#071635" fill-opacity=".77" stroke="#b8fff3" stroke-opacity=".46" stroke-width="3"/>
+          <path d="M55 63h144M55 95h178M55 127h111" stroke="#fff" stroke-opacity=".52" stroke-width="13" stroke-linecap="round"/>
+          <path d="M120 197h52" stroke="#ddfff9" stroke-width="10" stroke-linecap="round"/>
+        </g>
+        <path d="M229 135c18-25 49-42 83-39" fill="none" stroke="#b9fff5" stroke-width="11" stroke-linecap="round"/>
+        <path d="m306 80 28 15-23 22" fill="none" stroke="#b9fff5" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="concept-head">
+      <h3>B. Portal Display</h3>
+      <span class="concept-type">Transformation</span>
+    </div>
+    <p>One screen plane lifts out of another, expressing the distinctive “region becomes its own monitor” behavior.</p>
+    <div class="signal-row">
+      <span class="signal">differentiated</span>
+      <span class="signal">cyan + violet</span>
+      <span class="signal">dynamic depth</span>
+    </div>
+  </div>
+
+  <div class="icon-card" data-choice="spotlight" onclick="toggleSelect(this)">
+    <div class="icon-preview">
+      <svg viewBox="0 0 512 512" role="img" aria-label="Spotlight Crop icon concept">
+        <defs>
+          <radialGradient id="spo-bg" cx="50%" cy="44%" r="75%">
+            <stop stop-color="#5f1832"/>
+            <stop offset=".52" stop-color="#270c25"/>
+            <stop offset="1" stop-color="#10091e"/>
+          </radialGradient>
+          <linearGradient id="spo-hot" x1="0" y1="0" x2="1" y2="1">
+            <stop stop-color="#ffe888"/>
+            <stop offset=".45" stop-color="#ffad4a"/>
+            <stop offset="1" stop-color="#ff4d9a"/>
+          </linearGradient>
+          <filter id="spo-glow" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="15" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <linearGradient id="spo-glass" x1="0" y1="0" x2="1" y2="1">
+            <stop stop-color="#fff" stop-opacity=".23"/>
+            <stop offset="1" stop-color="#ffadd7" stop-opacity=".05"/>
+          </linearGradient>
+        </defs>
+        <rect width="512" height="512" fill="url(#spo-bg)"/>
+        <path d="M38 0h167l45 168-104 68L0 162V0z" fill="url(#spo-glass)" stroke="#fff" stroke-opacity=".13" stroke-width="3"/>
+        <path d="M307 0h205v178l-148 56-102-69L307 0z" fill="url(#spo-glass)" stroke="#fff" stroke-opacity=".12" stroke-width="3"/>
+        <path d="M0 352l145-76 101 70-43 166H0V352z" fill="url(#spo-glass)" stroke="#fff" stroke-opacity=".12" stroke-width="3"/>
+        <path d="M365 274l147 68v170H303l-39-166 101-72z" fill="url(#spo-glass)" stroke="#fff" stroke-opacity=".12" stroke-width="3"/>
+        <rect x="121" y="164" width="270" height="184" rx="45" fill="#ff764f" opacity=".26" filter="url(#spo-glow)"/>
+        <rect x="126" y="169" width="260" height="174" rx="41" fill="url(#spo-hot)" stroke="#fff7d2" stroke-opacity=".8" stroke-width="5"/>
+        <rect x="158" y="199" width="196" height="114" rx="25" fill="#3c1533" fill-opacity=".72"/>
+        <circle cx="193" cy="227" r="13" fill="#ffe780"/>
+        <path d="M221 227h99M190 259h132M190 289h84" stroke="#fff0c5" stroke-opacity=".76" stroke-width="13" stroke-linecap="round"/>
+        <path d="M92 255h32M388 255h32M256 132v30M256 350v31" stroke="#fff2bb" stroke-opacity=".7" stroke-width="8" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="concept-head">
+      <h3>C. Spotlight Crop</h3>
+      <span class="concept-type">Focus</span>
+    </div>
+    <p>Four dim glass shutters converge on a bright central region: “everything else falls away; this is what viewers see.”</p>
+    <div class="signal-row">
+      <span class="signal">expressive</span>
+      <span class="signal">amber + magenta</span>
+      <span class="signal">high-energy focal point</span>
+    </div>
+  </div>
+
+  <div class="icon-card" data-choice="outcut-glyph" onclick="toggleSelect(this)">
+    <div class="icon-preview">
+      <svg viewBox="0 0 512 512" role="img" aria-label="Outcut Glyph icon concept">
+        <defs>
+          <linearGradient id="gly-bg" x1="0" y1="0" x2="1" y2="1">
+            <stop stop-color="#19443b"/>
+            <stop offset=".52" stop-color="#0c2929"/>
+            <stop offset="1" stop-color="#06181f"/>
+          </linearGradient>
+          <linearGradient id="gly-lime" x1=".1" y1="0" x2=".9" y2="1">
+            <stop stop-color="#eaff84"/>
+            <stop offset=".45" stop-color="#94f28a"/>
+            <stop offset="1" stop-color="#37d7b8"/>
+          </linearGradient>
+          <linearGradient id="gly-glass" x1="0" y1="0" x2="1" y2="1">
+            <stop stop-color="#fff" stop-opacity=".52"/>
+            <stop offset=".48" stop-color="#c9fff4" stop-opacity=".22"/>
+            <stop offset="1" stop-color="#8bd8cc" stop-opacity=".10"/>
+          </linearGradient>
+          <filter id="gly-shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="17" stdDeviation="15" flood-color="#020c0d" flood-opacity=".68"/>
+          </filter>
+        </defs>
+        <rect width="512" height="512" fill="url(#gly-bg)"/>
+        <circle cx="401" cy="88" r="128" fill="#6cffe2" opacity=".08"/>
+        <g filter="url(#gly-shadow)">
+          <path d="M238 93H159c-41 0-74 33-74 74v178c0 41 33 74 74 74h79v-75h-62c-13 0-24-11-24-24V192c0-13 11-24 24-24h62V93z"
+                fill="url(#gly-glass)" stroke="#effffb" stroke-opacity=".48" stroke-width="4"/>
+          <path d="M274 93h79c41 0 74 33 74 74v178c0 41-33 74-74 74h-79v-75h62c13 0 24-11 24-24V192c0-13-11-24-24-24h-62V93z"
+                fill="url(#gly-glass)" stroke="#effffb" stroke-opacity=".48" stroke-width="4"/>
+          <rect x="189" y="192" width="134" height="128" rx="30" fill="url(#gly-lime)" stroke="#fbffd9" stroke-opacity=".72" stroke-width="5"/>
+          <rect x="216" y="219" width="80" height="74" rx="18" fill="#0d302d" fill-opacity=".68"/>
+        </g>
+        <path d="M128 128h66M318 128h66M128 384h66M318 384h66" stroke="#d6fff2" stroke-opacity=".32" stroke-width="9" stroke-linecap="round"/>
+        <path d="M224 243h64" stroke="#dffff2" stroke-opacity=".58" stroke-width="10" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="concept-head">
+      <h3>D. Outcut Glyph</h3>
+      <span class="concept-type">Abstract brand</span>
+    </div>
+    <p>Two glass brackets form an “O” around a vivid extracted rectangle. Less literal, more ownable as a lasting product mark.</p>
+    <div class="signal-row">
+      <span class="signal">brandable</span>
+      <span class="signal">lime + deep teal</span>
+      <span class="signal">clean silhouette</span>
+    </div>
+  </div>
+</div>
+
+<div class="spread-note">
+  <strong>Recommended generation strategy:</strong>
+  keep all four concepts, palettes, and metaphors separate while holding the macOS 26 construction rules constant:
+  centered content, few bold layers, rounded geometry, strong small-size silhouette, and restrained glass depth.
+</div>

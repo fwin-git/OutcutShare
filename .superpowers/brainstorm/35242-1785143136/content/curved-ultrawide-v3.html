@@ -1,0 +1,165 @@
+<style>
+  .revision-wrap {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .revision-card {
+    margin-top: 24px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 24px;
+    padding: 22px;
+  }
+  .preview-row {
+    display: grid;
+    grid-template-columns: minmax(300px, 430px) 1fr;
+    gap: 28px;
+    align-items: center;
+  }
+  .icon-preview {
+    aspect-ratio: 1;
+    border-radius: 28%;
+    overflow: hidden;
+    box-shadow: 0 26px 54px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.38);
+  }
+  .icon-preview svg { display: block; width: 100%; height: 100%; }
+  .revision-points {
+    margin: 16px 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 11px;
+  }
+  .revision-points li {
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 8px;
+    align-items: start;
+    color: var(--text-secondary);
+  }
+  .tick {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 900;
+  }
+  .review-note {
+    margin-top: 22px;
+    padding: 15px 17px;
+    border-radius: 15px;
+    border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+    background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  }
+  @media (max-width: 760px) {
+    .preview-row { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="revision-wrap">
+  <div class="label">Curved Ultrawide · revision 3</div>
+  <h2>Convex shell, straight content</h2>
+  <p class="subtitle">
+    Only the physical monitor body bows outward. Everything rendered inside it stays
+    unwarped and axis-aligned.
+  </p>
+
+  <div class="revision-card">
+    <div class="preview-row">
+      <div class="icon-preview">
+        <svg viewBox="0 0 512 512" role="img" aria-label="Convex ultrawide with straight selection content">
+          <defs>
+            <radialGradient id="cvx-bg" cx="34%" cy="20%" r="96%">
+              <stop stop-color="#33578d"/>
+              <stop offset=".48" stop-color="#16284d"/>
+              <stop offset="1" stop-color="#071120"/>
+            </radialGradient>
+            <linearGradient id="cvx-screen" x1="0" y1="0" x2="1" y2="1">
+              <stop stop-color="#58ddeb"/>
+              <stop offset=".36" stop-color="#5b88ef"/>
+              <stop offset=".72" stop-color="#9c5bd4"/>
+              <stop offset="1" stop-color="#ed6992"/>
+            </linearGradient>
+            <linearGradient id="cvx-shell" x1="0" y1="0" x2="1" y2="1">
+              <stop stop-color="#f0ffff" stop-opacity=".47"/>
+              <stop offset=".42" stop-color="#b9dfff" stop-opacity=".14"/>
+              <stop offset="1" stop-color="#879cff" stop-opacity=".08"/>
+            </linearGradient>
+            <linearGradient id="cvx-spec" x1="0" y1="0" x2="1" y2="0">
+              <stop stop-color="#fff" stop-opacity="0"/>
+              <stop offset=".5" stop-color="#fff" stop-opacity=".26"/>
+              <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+            </linearGradient>
+            <filter id="cvx-shadow" x="-60%" y="-60%" width="220%" height="220%">
+              <feDropShadow dx="0" dy="21" stdDeviation="17" flood-color="#020813" flood-opacity=".76"/>
+            </filter>
+            <filter id="cvx-cursor" x="-80%" y="-80%" width="260%" height="260%">
+              <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#071126" flood-opacity=".72"/>
+            </filter>
+          </defs>
+
+          <rect width="512" height="512" fill="url(#cvx-bg)"/>
+          <circle cx="90" cy="78" r="154" fill="#61ddff" opacity=".08"/>
+          <circle cx="423" cy="423" r="145" fill="#be68ff" opacity=".07"/>
+
+          <!-- Rear side edges emphasize that the center of the display bows toward the viewer. -->
+          <path d="M48 180 73 156v182l-19-25z" fill="#7596bd" fill-opacity=".24"/>
+          <path d="m464 180-25-24v182l19-25z" fill="#7596bd" fill-opacity=".24"/>
+
+          <g filter="url(#cvx-shadow)">
+            <!-- Convex physical shell: outward-bulging top and bottom contours. -->
+            <path d="M56 176C148 120 364 120 456 176L440 328C354 388 158 388 72 328L56 176z"
+                  fill="url(#cvx-shell)" stroke="#e7fbff" stroke-opacity=".48" stroke-width="5"/>
+
+            <!-- Flat, uncurved screen content. -->
+            <rect x="88" y="174" width="336" height="166" rx="34"
+                  fill="url(#cvx-screen)" stroke="#e8fbff" stroke-opacity=".29" stroke-width="3"/>
+            <rect x="102" y="187" width="308" height="140" rx="25"
+                  fill="#08162a" fill-opacity=".30"/>
+
+            <!-- Central optical highlight makes the shell read as convex. -->
+            <ellipse cx="256" cy="257" rx="112" ry="125" fill="url(#cvx-spec)" opacity=".7"/>
+
+            <path d="M241 365h30l8 38h-46l8-38z"
+                  fill="#d7edf2" fill-opacity=".48" stroke="#fff" stroke-opacity=".22"/>
+            <path d="M189 412h134" stroke="#d7eff4" stroke-opacity=".72" stroke-width="16" stroke-linecap="round"/>
+          </g>
+
+          <!-- Selection and UI stay perfectly straight. -->
+          <rect x="139" y="203" width="226" height="95" rx="23"
+                fill="#10243c" fill-opacity=".40" stroke="#fff59a" stroke-width="7"
+                stroke-dasharray="20 13"/>
+          <path d="M172 228h159M172 255h118M172 280h141"
+                stroke="#e4f8ff" stroke-opacity=".42" stroke-width="10" stroke-linecap="round"/>
+
+          <g transform="translate(327 271)" filter="url(#cvx-cursor)">
+            <path d="M0 0v74l18-18 17 34 16-8-17-33h27L0 0z"
+                  fill="#fff" stroke="#0a1730" stroke-width="5" stroke-linejoin="round"/>
+            <circle cx="68" cy="4" r="29" fill="#83f4d9" stroke="#eafff8" stroke-opacity=".86" stroke-width="4"/>
+            <path d="M55 10h25M70-4l14 14-14 14"
+                  fill="none" stroke="#103e50" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+        </svg>
+      </div>
+
+      <div>
+        <h3>What changed</h3>
+        <ul class="revision-points">
+          <li><span class="tick">✓</span><span>The outer monitor shell now bulges toward the viewer as a convex lens.</span></li>
+          <li><span class="tick">✓</span><span>The screen surface inside is a normal straight rounded rectangle.</span></li>
+          <li><span class="tick">✓</span><span>The dashed selection, content lines, cursor, and share glyph are completely uncurved.</span></li>
+          <li><span class="tick">✓</span><span>A central glass highlight and receding side edges make the convex direction readable.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="review-note">
+    <strong>Does this match the convex direction you meant?</strong>
+    If yes, I’ll lock it as one of the four final generation briefs.
+  </div>
+</div>
