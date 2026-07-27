@@ -163,7 +163,7 @@ final class PreviewWindowController: NSObject {
         view.pointerForwarder = nil
         view.passthroughActive = false
         controlButton?.isHidden = true
-        showSnapTile(nil)
+        showGrid(selection: nil)
         showPullOutHint(false)
         showControlExitHint(false)
         setResizeHighlight(false)
@@ -284,20 +284,39 @@ final class PreviewWindowController: NSObject {
         return container
     }
 
-    /// Highlights a magnet snap zone (unit rect, y up) during a window drag.
-    func showSnapTile(_ unit: CGRect?) {
+    /// 3×3 layout grid with the currently spanned selection highlighted
+    /// (unit rect, y up); nil hides the grid.
+    func showGrid(selection: CGRect?) {
         snapTileLayer?.removeFromSuperlayer()
         snapTileLayer = nil
-        guard let unit, let view = panel?.contentView else { return }
-        let layer = CALayer()
-        layer.frame = Geometry.rectByScaling(unit: unit, into: view.bounds).insetBy(dx: 3, dy: 3)
-        layer.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.25).cgColor
-        layer.borderColor = NSColor.controlAccentColor.cgColor
-        layer.borderWidth = 2
-        layer.cornerRadius = 6
-        layer.zPosition = 3
-        view.layer?.addSublayer(layer)
-        snapTileLayer = layer
+        guard let selection, let view = panel?.contentView else { return }
+        let b = view.bounds
+        let container = CALayer()
+        container.frame = b
+        container.zPosition = 3
+        for i in 1...2 {
+            let vertical = CALayer()
+            vertical.frame = CGRect(x: b.width * CGFloat(i) / 3 - 0.5, y: 0,
+                                    width: 1, height: b.height)
+            vertical.backgroundColor = NSColor.white.withAlphaComponent(0.45).cgColor
+            container.addSublayer(vertical)
+            let horizontal = CALayer()
+            horizontal.frame = CGRect(x: 0, y: b.height * CGFloat(i) / 3 - 0.5,
+                                      width: b.width, height: 1)
+            horizontal.backgroundColor = NSColor.white.withAlphaComponent(0.45).cgColor
+            container.addSublayer(horizontal)
+        }
+        let highlight = CALayer()
+        highlight.frame = Geometry.rectByScaling(unit: selection, into: b)
+            .insetBy(dx: 3, dy: 3)
+        highlight.backgroundColor = NSColor.controlAccentColor
+            .withAlphaComponent(0.28).cgColor
+        highlight.borderColor = NSColor.controlAccentColor.cgColor
+        highlight.borderWidth = 2
+        highlight.cornerRadius = 6
+        container.addSublayer(highlight)
+        view.layer?.addSublayer(container)
+        snapTileLayer = container
     }
 
     /// Ghost of a window being pulled out: a live crop of the capture
@@ -522,7 +541,7 @@ final class PreviewWindowController: NSObject {
               view.pointerForwarder != nil else { return }
         view.passthroughActive.toggle()
         if view.passthroughActive {
-            showSnapTile(nil)
+            showGrid(selection: nil)
             startWatchdog()
         } else {
             stopWatchdog()
