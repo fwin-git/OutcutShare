@@ -46,7 +46,7 @@ final class PreviewWindowController: NSObject {
     private var frameObservers: [NSObjectProtocol] = []
 
     private static let minWidth: CGFloat = 160
-    private static let cornerControlSize: CGFloat = 34
+    private static let cornerControlSize: CGFloat = 44
     private static let cornerMargin: CGFloat = 8
 
     init(session: ShareSession, settings: SettingsStore) {
@@ -129,11 +129,87 @@ final class PreviewWindowController: NSObject {
         hidePrivacyScreen()
     }
 
+    // MARK: Adaptive chip contrast
+
+    /// True = dark glyphs on light chips, for bright content beneath the
+    /// buttons; flipped by luminance sampling of each frame's top band.
+    private var darkChipStyle = false
+    private nonisolated(unsafe) var lastLumaSample: TimeInterval = 0
+
+    private var chipBackground: CGColor {
+        darkChipStyle ? NSColor.white.withAlphaComponent(0.85).cgColor
+                      : NSColor.black.withAlphaComponent(0.55).cgColor
+    }
+
+    private var chipForeground: NSColor {
+        darkChipStyle ? NSColor.black.withAlphaComponent(0.85) : .white
+    }
+
+    /// Sparse pixels from the frame's top band (where the buttons sit),
+    /// ~1.4×/s on the capture queue. BGRA layout.
+    private nonisolated func sampleLuminanceIfDue(_ surface: IOSurfaceRef) {
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastLumaSample > 0.7 else { return }
+        lastLumaSample = now
+        guard IOSurfaceLock(surface, .readOnly, nil) == kIOReturnSuccess else { return }
+        defer { IOSurfaceUnlock(surface, .readOnly, nil) }
+        let w = IOSurfaceGetWidth(surface)
+        let h = IOSurfaceGetHeight(surface)
+        let bytesPerRow = IOSurfaceGetBytesPerRow(surface)
+        guard w > 16, h > 16 else { return }
+        let base = IOSurfaceGetBaseAddress(surface).assumingMemoryBound(to: UInt8.self)
+        var total = 0.0
+        var count = 0
+        for rowFraction in [0.03, 0.06, 0.09, 0.12] {
+            let y = Int(Double(h) * rowFraction)
+            for i in 0..<24 {
+                let x = Int(Double(w) * (Double(i) + 0.5) / 24.0)
+                let p = y * bytesPerRow + x * 4
+                let blue = Double(base[p]), green = Double(base[p + 1])
+                let red = Double(base[p + 2])
+                total += (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255.0
+                count += 1
+            }
+        }
+        let luma = total / Double(max(count, 1))
+        DispatchQueue.main.async { [weak self] in
+            MainActor.assumeIsolated { self?.updateChipStyle(forLuma: luma) }
+        }
+    }
+
+    /// Hysteresis so the style never flickers around the threshold.
+    private func updateChipStyle(forLuma luma: Double) {
+        let newStyle: Bool
+        if luma > 0.6 {
+            newStyle = true
+        } else if luma < 0.45 {
+            newStyle = false
+        } else {
+            return
+        }
+        guard newStyle != darkChipStyle else { return }
+        darkChipStyle = newStyle
+        applyChipStyle()
+    }
+
+    private func applyChipStyle() {
+        grabber?.layer?.backgroundColor = chipBackground
+        pauseButton?.layer?.backgroundColor = chipBackground
+        controlButton?.layer?.backgroundColor = chipBackground
+        let grabConfig = NSImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
+            .applying(.init(paletteColors: [chipForeground]))
+        grabber?.image = NSImage(systemSymbolName: "line.3.horizontal",
+                                 accessibilityDescription: "Move preview")?
+            .withSymbolConfiguration(grabConfig)
+        refresh()
+        updateControlButton()
+    }
+
     /// Syncs the pause button with the session state (called via notifyUI).
     func refresh() {
         let paused = session?.isPaused ?? false
-        let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
-            .applying(.init(paletteColors: [paused ? .systemYellow : .white]))
+        let config = NSImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
+            .applying(.init(paletteColors: [paused ? .systemYellow : chipForeground]))
         pauseButton?.image = NSImage(systemSymbolName: paused ? "play.fill" : "pause.fill",
                                      accessibilityDescription: paused ? "Resume sharing"
                                                                       : "Pause sharing")?
@@ -148,6 +224,7 @@ final class PreviewWindowController: NSObject {
         CATransaction.setDisableActions(true)
         contentLayer.contents = surface
         CATransaction.commit()
+        sampleLuminanceIfDue(surface)
     }
 
     /// Virtual-monitor mode: picture drags manage the monitor's windows,
@@ -456,7 +533,7 @@ final class PreviewWindowController: NSObject {
         contentView.previewController = self
 
         let grabber = DraggableImageView()
-        let grabConfig = NSImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
+        let grabConfig = NSImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
             .applying(.init(paletteColors: [.white]))
         grabber.image = NSImage(systemSymbolName: "line.3.horizontal",
                                 accessibilityDescription: "Move preview")?
@@ -653,8 +730,8 @@ final class PreviewWindowController: NSObject {
     private func updateControlButton() {
         guard let view = panel?.contentView as? PreviewContentView else { return }
         let on = view.passthroughActive
-        let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
-            .applying(.init(paletteColors: [on ? .systemYellow : .white]))
+        let config = NSImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
+            .applying(.init(paletteColors: [on ? .systemYellow : chipForeground]))
         controlButton?.image = NSImage(systemSymbolName: "cursorarrow",
                                        accessibilityDescription: "Control the monitor")?
             .withSymbolConfiguration(config)
