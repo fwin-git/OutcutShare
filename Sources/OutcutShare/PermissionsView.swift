@@ -39,6 +39,19 @@ struct PermissionsStatusView: View {
                       detail: model.status.virtualDisplayAvailable
                           ? "Available — the region can appear as its own monitor."
                           : "Unavailable on this macOS — use the Hidden Window share mode.")
+
+            statusRow(state: model.status.accessibilityGranted ? .ok : .pending,
+                      title: "Accessibility (optional)",
+                      detail: model.status.accessibilityGranted
+                          ? "Granted — drag windows onto the virtual monitor's preview to move them there."
+                          : "Lets you move windows onto the Virtual Monitor by dropping them on its preview.")
+            if !model.status.accessibilityGranted {
+                HStack {
+                    Button("Request Permission") { model.requestAccessibility() }
+                    Button("Open System Settings") { model.openAccessibilitySettings() }
+                }
+                .padding(.leading, 30)
+            }
         }
     }
 

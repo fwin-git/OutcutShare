@@ -5,6 +5,7 @@ extension ShareMode {
         switch testArgument {
         case "vd": self = .virtualDisplay
         case "window": self = .hiddenWindow
+        case "monitor": self = .virtualMonitor
         default: return nil
         }
     }

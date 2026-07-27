@@ -1,0 +1,320 @@
+import AppKit
+import ApplicationServices
+
+/// CGWindowList lookups for other apps' windows (global CG coordinates are
+/// converted to AppKit space at the boundary).
+enum WindowLocator {
+    struct FoundWindow {
+        let id: CGWindowID
+        let pid: pid_t
+        /// AppKit global coordinates.
+        let frame: CGRect
+    }
+
+    private static var primaryHeight: CGFloat {
+        NSScreen.screens.first?.frame.height ?? 0
+    }
+
+    /// Frontmost normal-layer window of another app under `point`.
+    static func frontmostWindow(at appKitPoint: CGPoint,
+                                excludingPID: pid_t) -> FoundWindow? {
+        guard let list = CGWindowListCopyWindowInfo(
+            [.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID
+        ) as? [[String: Any]] else { return nil }
+        for info in list {
+            guard (info[kCGWindowLayer as String] as? Int) == 0,
+                  let pid = info[kCGWindowOwnerPID as String] as? pid_t,
+                  pid != excludingPID,
+                  let id = info[kCGWindowNumber as String] as? CGWindowID,
+                  let frame = appKitFrame(fromBoundsDict: info[kCGWindowBounds as String])
+            else { continue }
+            if frame.contains(appKitPoint) {
+                return FoundWindow(id: id, pid: pid, frame: frame)
+            }
+        }
+        return nil
+    }
+
+    /// Current AppKit frame of a specific window (nil once it's gone).
+    static func frame(ofWindow id: CGWindowID) -> CGRect? {
+        guard let list = CGWindowListCopyWindowInfo(.optionIncludingWindow, id)
+                as? [[String: Any]],
+              let info = list.first else { return nil }
+        return appKitFrame(fromBoundsDict: info[kCGWindowBounds as String])
+    }
+
+    private static func appKitFrame(fromBoundsDict value: Any?) -> CGRect? {
+        guard let b = value as? [String: CGFloat] else { return nil }
+        let cg = CGRect(x: b["X"] ?? 0, y: b["Y"] ?? 0,
+                        width: b["Width"] ?? 0, height: b["Height"] ?? 0)
+        return Geometry.appKitRect(fromCGTopLeft: cg, primaryHeight: primaryHeight)
+    }
+}
+
+/// Moves other apps' windows via the Accessibility API. Requires the
+/// (optional) Accessibility permission; everything degrades gracefully
+/// without it.
+enum WindowMover {
+    static var hasPermission: Bool { AXIsProcessTrusted() }
+
+    /// Triggers the one-time system prompt.
+    static func requestPermission() {
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
+        AXIsProcessTrustedWithOptions(options as CFDictionary)
+    }
+
+    /// Repositions another app's window (AppKit-global target origin) and
+    /// raises it. Returns false when the AX window can't be resolved.
+    @discardableResult
+    static func move(window: WindowLocator.FoundWindow, toAppKitOrigin origin: CGPoint) -> Bool {
+        guard let currentFrame = WindowLocator.frame(ofWindow: window.id),
+              let axWindow = axWindow(for: window, frame: currentFrame) else { return false }
+        setPosition(axWindow, appKitOrigin: origin, size: currentFrame.size)
+        AXUIElementPerformAction(axWindow, kAXRaiseAction as CFString)
+        return true
+    }
+
+    /// Resolves the AX element once so repeated per-drag-event moves stay
+    /// cheap (no window-list walks per event).
+    static func resolveAXWindow(for window: WindowLocator.FoundWindow) -> AXUIElement? {
+        guard let currentFrame = WindowLocator.frame(ofWindow: window.id) else { return nil }
+        return axWindow(for: window, frame: currentFrame)
+    }
+
+    static func setPosition(_ axWindow: AXUIElement, appKitOrigin origin: CGPoint,
+                            size: CGSize) {
+        let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
+        var point = Geometry.cgTopLeftPoint(forAppKit: CGRect(origin: origin, size: size),
+                                            primaryHeight: primaryHeight)
+        if let value = AXValueCreate(.cgPoint, &point) {
+            AXUIElementSetAttributeValue(axWindow, kAXPositionAttribute as CFString, value)
+        }
+    }
+
+    /// Position + size in one go (snap tiles).
+    static func setFrame(_ axWindow: AXUIElement, appKitFrame frame: CGRect) {
+        setPosition(axWindow, appKitOrigin: frame.origin, size: frame.size)
+        var size = frame.size
+        if let value = AXValueCreate(.cgSize, &size) {
+            AXUIElementSetAttributeValue(axWindow, kAXSizeAttribute as CFString, value)
+        }
+        // Resizing anchors the top-left; re-apply the position so the frame
+        // lands exactly where the tile is.
+        setPosition(axWindow, appKitOrigin: frame.origin, size: frame.size)
+    }
+
+    /// There is no public CGWindowID → AXUIElement bridge: match the app's
+    /// AX windows against the CG window's current frame.
+    private static func axWindow(for window: WindowLocator.FoundWindow,
+                                 frame target: CGRect) -> AXUIElement? {
+        let app = AXUIElementCreateApplication(window.pid)
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(app, kAXWindowsAttribute as CFString,
+                                            &value) == .success,
+              let windows = value as? [AXUIElement] else { return nil }
+        var best: (element: AXUIElement, distance: CGFloat)?
+        for element in windows {
+            guard let frame = frame(of: element) else { continue }
+            let distance = abs(frame.minX - target.minX) + abs(frame.minY - target.minY)
+                + abs(frame.width - target.width) + abs(frame.height - target.height)
+            if best == nil || distance < best!.distance {
+                best = (element, distance)
+            }
+        }
+        // Within a few points — otherwise we'd grab the wrong window.
+        guard let best, best.distance < 8 else { return nil }
+        return best.element
+    }
+
+    private static func frame(of element: AXUIElement) -> CGRect? {
+        var positionRef: CFTypeRef?
+        var sizeRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString,
+                                            &positionRef) == .success,
+              AXUIElementCopyAttributeValue(element, kAXSizeAttribute as CFString,
+                                            &sizeRef) == .success else { return nil }
+        var point = CGPoint.zero
+        var size = CGSize.zero
+        guard AXValueGetValue(positionRef as! AXValue, .cgPoint, &point),
+              AXValueGetValue(sizeRef as! AXValue, .cgSize, &size) else { return nil }
+        let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
+        return Geometry.appKitRect(
+            fromCGTopLeft: CGRect(origin: point, size: size),
+            primaryHeight: primaryHeight)
+    }
+}
+
+/// Direct manipulation of the virtual monitor's windows through the preview
+/// picture: grab a rendered window to move it (magnet-style snap zones at
+/// the edges), or drag it off the panel to pop it back onto the real
+/// screen. Fed by the preview content view's mouse events (view-local
+/// points with the current bounds).
+@MainActor
+final class MonitorWindowManipulator {
+    private weak var session: ShareSession?
+    private let displayFrame: CGRect
+    private weak var preview: PreviewWindowController?
+    private var drag: (window: WindowLocator.FoundWindow, ax: AXUIElement,
+                       grabOffset: CGSize, startLocal: CGPoint, started: Bool)?
+    private var lastMoveTime: TimeInterval = 0
+    private var promptedForPermission = false
+
+    init(session: ShareSession, displayFrame: CGRect, preview: PreviewWindowController) {
+        self.session = session
+        self.displayFrame = displayFrame
+        self.preview = preview
+    }
+
+    func mouseDown(at local: CGPoint, in bounds: CGRect) {
+        drag = nil
+        let displayPoint = Geometry.previewPointToDisplayPoint(
+            local, panel: CGRect(origin: .zero, size: bounds.size), display: displayFrame)
+        guard let found = WindowLocator.frontmostWindow(at: displayPoint,
+                                                       excludingPID: getpid()) else { return }
+        guard WindowMover.hasPermission else {
+            if !promptedForPermission {
+                promptedForPermission = true
+                WindowMover.requestPermission()
+                session?.onPermissionsNeeded?()
+            }
+            return
+        }
+        guard let ax = WindowMover.resolveAXWindow(for: found) else { return }
+        let offset = CGSize(width: found.frame.minX - displayPoint.x,
+                            height: found.frame.minY - displayPoint.y)
+        drag = (found, ax, offset, local, false)
+    }
+
+    func mouseDragged(to local: CGPoint, in bounds: CGRect) {
+        guard var drag else { return }
+        if !drag.started {
+            guard hypot(local.x - drag.startLocal.x, local.y - drag.startLocal.y) > 6 else {
+                return
+            }
+            drag.started = true
+        }
+        self.drag = drag
+        guard bounds.contains(local) else {
+            // Outside the panel: window stays put until the drop decides.
+            preview?.showSnapTile(nil)
+            return
+        }
+        let unit = CGPoint(x: local.x / bounds.width, y: local.y / bounds.height)
+        preview?.showSnapTile(Geometry.snapTileUnit(for: unit))
+        // Live-follow, throttled to display rate.
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastMoveTime > 1.0 / 60.0 else { return }
+        lastMoveTime = now
+        let displayPoint = Geometry.previewPointToDisplayPoint(
+            local, panel: CGRect(origin: .zero, size: bounds.size), display: displayFrame)
+        let origin = Geometry.clampedRegionOrigin(
+            CGPoint(x: displayPoint.x + drag.grabOffset.width,
+                    y: displayPoint.y + drag.grabOffset.height),
+            regionSize: drag.window.frame.size, screenFrame: displayFrame)
+        WindowMover.setPosition(drag.ax, appKitOrigin: origin, size: drag.window.frame.size)
+    }
+
+    func mouseUp(at local: CGPoint, in bounds: CGRect) {
+        defer {
+            preview?.showSnapTile(nil)
+            drag = nil
+        }
+        guard let drag, drag.started else { return }
+        if bounds.contains(local) {
+            let unit = CGPoint(x: local.x / bounds.width, y: local.y / bounds.height)
+            if let tile = Geometry.snapTileUnit(for: unit) {
+                WindowMover.setFrame(drag.ax,
+                                     appKitFrame: Geometry.rectByScaling(unit: tile,
+                                                                         into: displayFrame))
+            }
+            return
+        }
+        // Dropped off the panel: pop the window back onto the real screen,
+        // centered under the cursor.
+        guard let main = NSScreen.main else { return }
+        let origin = Geometry.centeredClampedWindowOrigin(size: drag.window.frame.size,
+                                                          center: NSEvent.mouseLocation,
+                                                          bounds: main.visibleFrame)
+        WindowMover.setPosition(drag.ax, appKitOrigin: origin, size: drag.window.frame.size)
+    }
+}
+
+/// Watches global window drags while a virtual-monitor session runs:
+/// dropping another app's window onto the preview panel moves that window
+/// onto the virtual display, at the spot it was dropped.
+@MainActor
+final class MonitorDragController {
+    private weak var session: ShareSession?
+    private weak var preview: PreviewWindowController?
+    private var displayFrame: CGRect = .zero
+    private var monitors: [Any] = []
+    private var candidate: (window: WindowLocator.FoundWindow, start: CGPoint)?
+
+    init(session: ShareSession) {
+        self.session = session
+    }
+
+    func start(displayFrame: CGRect, preview: PreviewWindowController) {
+        stop()
+        self.displayFrame = displayFrame
+        self.preview = preview
+        monitors = [
+            NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { [weak self] _ in
+                MainActor.assumeIsolated { self?.mouseDown() }
+            },
+            NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDragged) { [weak self] _ in
+                MainActor.assumeIsolated { self?.mouseDragged() }
+            },
+            NSEvent.addGlobalMonitorForEvents(matching: .leftMouseUp) { [weak self] _ in
+                MainActor.assumeIsolated { self?.mouseUp() }
+            },
+        ].compactMap { $0 }
+    }
+
+    func stop() {
+        monitors.forEach { NSEvent.removeMonitor($0) }
+        monitors = []
+        candidate = nil
+        preview?.setDropTargetHighlight(false)
+    }
+
+    private func mouseDown() {
+        let point = NSEvent.mouseLocation
+        // Presses on our own panel are never window drags from outside.
+        if preview?.panelFrame?.contains(point) == true {
+            candidate = nil
+            return
+        }
+        candidate = WindowLocator.frontmostWindow(at: point, excludingPID: getpid())
+            .map { ($0, point) }
+    }
+
+    private func mouseDragged() {
+        guard candidate != nil, let panel = preview?.panelFrame else { return }
+        preview?.setDropTargetHighlight(panel.contains(NSEvent.mouseLocation))
+    }
+
+    private func mouseUp() {
+        defer {
+            preview?.setDropTargetHighlight(false)
+            candidate = nil
+        }
+        guard let candidate, let panel = preview?.panelFrame else { return }
+        let end = NSEvent.mouseLocation
+        guard let currentFrame = WindowLocator.frame(ofWindow: candidate.window.id),
+              Geometry.isWindowDropOnPanel(start: candidate.start, end: end, panel: panel,
+                                           windowFrameAtStart: candidate.window.frame,
+                                           windowFrameAtEnd: currentFrame) else { return }
+        guard WindowMover.hasPermission else {
+            WindowMover.requestPermission()
+            session?.onPermissionsNeeded?()
+            return
+        }
+        let center = Geometry.previewPointToDisplayPoint(end, panel: panel,
+                                                         display: displayFrame)
+        let origin = Geometry.centeredClampedWindowOrigin(size: currentFrame.size,
+                                                          center: center,
+                                                          bounds: displayFrame)
+        WindowMover.move(window: candidate.window, toAppKitOrigin: origin)
+    }
+}

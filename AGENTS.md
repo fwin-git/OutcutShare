@@ -10,10 +10,14 @@ region as its own monitor** in Zoom/Teams/Meet. Built for ultrawide users:
 share one clean slice instead of the whole 5120×1440, without being locked
 to a single app window. Everything else grew around that core:
 
-- **Two share modes** (`ShareMode`): a **virtual display** created via the
-  private `CGVirtualDisplay` API (viewers pick it under "share screen"), or
-  a **hidden window** pinned 1×1 px on a screen corner (picked under "share
-  window" — macOS stops rendering fully offscreen windows, hence the pixel).
+- **Three share modes** (`ShareMode`): a **virtual display** created via the
+  private `CGVirtualDisplay` API (viewers pick it under "share screen"), a
+  **hidden window** pinned 1×1 px on a screen corner (picked under "share
+  window" — macOS stops rendering fully offscreen windows, hence the pixel),
+  and a **virtual monitor** — a standalone empty screen the user drags
+  windows onto (regionless; the prominent preview panel is the window into
+  it, with AX-powered drag-in/out and magnet snap zones; Accessibility
+  permission optional, only for the window moving).
 - **Local feedback**: click-through dim overlay outside the region with a
   configurable border; the region stays clear.
 - **Live region control**: move/resize while sharing (stream is re-pointed
@@ -135,7 +139,8 @@ Key invariants:
 
 ```
 --vd-test[=2x]                          virtual display on/off(line) check
---share-test=x,y,w,h,secs[,vd|window]   full pipeline, prints frame count
+--share-test=x,y,w,h,secs[,vd|window|monitor]   full pipeline, frame count
+   (monitor ignores the rect — regionless virtual-monitor session)
    companions: --move-by=dx,dy  --resize-by=dw,dh  --pause-at=t1,t2
                --record-at=t1,t2  --follow=activeWindow|cursor  --preview
 --hotkeys-test                          registered shortcuts

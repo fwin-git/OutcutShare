@@ -10,6 +10,8 @@ final class PermissionsModel: ObservableObject {
         var screenRecordingGranted = false
         var captureWorks = false
         var virtualDisplayAvailable = false
+        /// Optional: only drag & drop onto the virtual monitor needs it.
+        var accessibilityGranted = false
 
         /// Everything the app strictly needs to share a region.
         var allSatisfied: Bool { screenRecordingGranted && captureWorks }
@@ -23,6 +25,7 @@ final class PermissionsModel: ObservableObject {
     private let preflight: () -> Bool
     private let captureProbe: () async -> Bool
     private let virtualDisplayCheck: () -> Bool
+    private let accessibilityCheck: () -> Bool
     private var pollTask: Task<Void, Never>?
 
     init(preflight: @escaping () -> Bool = { CGPreflightScreenCaptureAccess() },
@@ -30,10 +33,12 @@ final class PermissionsModel: ObservableObject {
              (try? await SCShareableContent.excludingDesktopWindows(false,
                                                                     onScreenWindowsOnly: true)) != nil
          },
-         virtualDisplayCheck: @escaping () -> Bool = { CVDApi.available() }) {
+         virtualDisplayCheck: @escaping () -> Bool = { CVDApi.available() },
+         accessibilityCheck: @escaping () -> Bool = { WindowMover.hasPermission }) {
         self.preflight = preflight
         self.captureProbe = captureProbe
         self.virtualDisplayCheck = virtualDisplayCheck
+        self.accessibilityCheck = accessibilityCheck
     }
 
     func refresh() async {
@@ -43,8 +48,20 @@ final class PermissionsModel: ObservableObject {
         // system UI; only verify capture actually works once TCC says yes.
         next.captureWorks = next.screenRecordingGranted ? await captureProbe() : false
         next.virtualDisplayAvailable = virtualDisplayCheck()
+        next.accessibilityGranted = accessibilityCheck()
         if next != status {
             status = next
+        }
+    }
+
+    func requestAccessibility() {
+        WindowMover.requestPermission()
+    }
+
+    func openAccessibilitySettings() {
+        let url = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        if let url = URL(string: url) {
+            NSWorkspace.shared.open(url)
         }
     }
 

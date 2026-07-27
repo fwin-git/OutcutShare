@@ -219,6 +219,21 @@ enum Geometry {
                       y: screenFrame.minY + margin, width: w, height: h)
     }
 
+    /// Large, centered placement for the virtual-monitor preview — the
+    /// primary way to see the otherwise invisible screen. 55% of the screen
+    /// width, height-clamped to 75% with the aspect kept.
+    static func prominentPreviewFrame(aspect: CGFloat, screenFrame: CGRect) -> CGRect {
+        var w = screenFrame.width * 0.55
+        var h = w / aspect
+        let maxH = screenFrame.height * 0.75
+        if h > maxH {
+            h = maxH
+            w = h * aspect
+        }
+        return CGRect(x: screenFrame.midX - w / 2, y: screenFrame.midY - h / 2,
+                      width: w, height: h)
+    }
+
     /// Docking spot for the preview panel next to the shared region: the
     /// first fully-on-screen position outside the region, so the panel never
     /// covers what's being shared. Preference: right of the region (bottom-
@@ -269,6 +284,72 @@ enum Geometry {
     /// Windows are listed front-to-back; first hit wins.
     static func frontmostWindowFrame(at point: CGPoint, windows: [CGRect]) -> CGRect? {
         windows.first { $0.contains(point) }
+    }
+
+    /// Linear map of a point inside the preview panel onto the virtual
+    /// display it mirrors (both AppKit global coordinates).
+    static func previewPointToDisplayPoint(_ p: CGPoint, panel: CGRect,
+                                           display: CGRect) -> CGPoint {
+        guard panel.width > 0, panel.height > 0 else { return display.origin }
+        return CGPoint(x: display.minX + (p.x - panel.minX) / panel.width * display.width,
+                       y: display.minY + (p.y - panel.minY) / panel.height * display.height)
+    }
+
+    /// Origin (AppKit) centering a window of `size` at `center`, clamped
+    /// fully inside `bounds`.
+    static func centeredClampedWindowOrigin(size: CGSize, center: CGPoint,
+                                            bounds: CGRect) -> CGPoint {
+        clampedRegionOrigin(CGPoint(x: center.x - size.width / 2,
+                                    y: center.y - size.height / 2),
+                            regionSize: size, screenFrame: bounds)
+    }
+
+    /// AX window position (CG global, top-left origin) for an AppKit rect.
+    static func cgTopLeftPoint(forAppKit rect: CGRect, primaryHeight: CGFloat) -> CGPoint {
+        CGPoint(x: rect.minX, y: primaryHeight - rect.maxY)
+    }
+
+    /// A completed global drag counts as "window dropped onto the preview"
+    /// only when it ends inside the panel, travelled a real distance, and
+    /// the candidate window actually moved along (filters plain clicks and
+    /// in-window drags like text selection).
+    static func isWindowDropOnPanel(start: CGPoint, end: CGPoint, panel: CGRect,
+                                    windowFrameAtStart: CGRect,
+                                    windowFrameAtEnd: CGRect) -> Bool {
+        guard panel.contains(end) else { return false }
+        guard hypot(end.x - start.x, end.y - start.y) > 30 else { return false }
+        let moved = hypot(windowFrameAtEnd.minX - windowFrameAtStart.minX,
+                          windowFrameAtEnd.minY - windowFrameAtStart.minY)
+        return moved > 20
+    }
+
+    /// Magnet-style snap zone for a drag position in unit space (y up):
+    /// corners → quarters, left/right edges → halves, top-center → full
+    /// screen, anywhere else → free placement (nil).
+    static func snapTileUnit(for p: CGPoint) -> CGRect? {
+        let nearLeft = p.x < 0.18, nearRight = p.x > 0.82
+        let nearBottom = p.y < 0.18, nearTop = p.y > 0.82
+        switch (nearLeft, nearRight, nearBottom, nearTop) {
+        case (true, _, true, _): return CGRect(x: 0, y: 0, width: 0.5, height: 0.5)
+        case (true, _, _, true): return CGRect(x: 0, y: 0.5, width: 0.5, height: 0.5)
+        case (_, true, true, _): return CGRect(x: 0.5, y: 0, width: 0.5, height: 0.5)
+        case (_, true, _, true): return CGRect(x: 0.5, y: 0.5, width: 0.5, height: 0.5)
+        default: break
+        }
+        if p.x < 0.12 { return CGRect(x: 0, y: 0, width: 0.5, height: 1) }
+        if p.x > 0.88 { return CGRect(x: 0.5, y: 0, width: 0.5, height: 1) }
+        if p.y > 0.88 && (0.35...0.65).contains(p.x) {
+            return CGRect(x: 0, y: 0, width: 1, height: 1)
+        }
+        return nil
+    }
+
+    /// Scales a unit-space rect (0…1) into `target`.
+    static func rectByScaling(unit: CGRect, into target: CGRect) -> CGRect {
+        CGRect(x: target.minX + unit.minX * target.width,
+               y: target.minY + unit.minY * target.height,
+               width: unit.width * target.width,
+               height: unit.height * target.height)
     }
 
     /// Capture size in pixels: region points × display scale, floored to even
