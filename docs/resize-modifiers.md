@@ -1,5 +1,7 @@
 # Selection & resize modifiers
 
+![All selection modes in action — freeform, standard sizes, aspect lock, Space move, window pick](media/demo-region.gif)
+
 The same modifier language works in both overlays: the initial **selection**
 (Select Region & Share) and the later **adjustment** (Move / Resize Region,
 ⌃⌥⌘M). They follow the macOS screenshot conventions.

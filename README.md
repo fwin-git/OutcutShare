@@ -15,7 +15,7 @@ Two ways:
   windows onto its preview and *only they* are ever shared; the rest of
   your desktop stays private by construction.
 
-## See it in action
+## Feature showcase
 
 **Select a region — freeform, standard sizes (⌃), locked aspect (⇧), move
 with Space, or pick a whole window — while the call mirrors it live:**
