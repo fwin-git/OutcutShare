@@ -18,7 +18,7 @@ endif
 
 app: $(APP)
 
-$(APP): Support/Info.plist $(shell find Sources -type f) Package.swift
+$(APP): Support/Info.plist $(shell find Sources -type f) Package.swift Makefile
 	swift build -c release
 	rm -rf $(APP)
 	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources
