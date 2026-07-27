@@ -174,8 +174,6 @@ final class ShareSession {
     private lazy var follow = FollowController(session: self, settings: settings)
     private lazy var cursorEmphasis = CursorEmphasisController(session: self, settings: settings)
     private lazy var hotbar = HotbarController(session: self, settings: settings)
-    /// Set when the user dismisses the hotbar with ✕; resets on stop.
-    var hotbarHiddenForSession = false
     private var lastHotbarEnabled = true
     private var recorder: RecordingEngine?
     var isRecording: Bool { recorder?.isRecording ?? false }
@@ -295,7 +293,7 @@ final class ShareSession {
             // overlay, mirror window and hotbar are excluded from capture.
             overlay = DimOverlay(region: region.rect, screen: region.screen, settings: settings)
             lastHotbarEnabled = settings.hotbarEnabled
-            if settings.hotbarEnabled && !hotbarHiddenForSession {
+            if settings.hotbarEnabled {
                 hotbar.show(region: region.rect, screen: region.screen)
             }
 
@@ -358,7 +356,6 @@ final class ShareSession {
             if settings.hotbarEnabled != lastHotbarEnabled {
                 lastHotbarEnabled = settings.hotbarEnabled
                 if settings.hotbarEnabled {
-                    hotbarHiddenForSession = false
                     if let region = currentRegion {
                         hotbar.show(region: region.rect, screen: region.screen)
                     }
@@ -410,7 +407,6 @@ final class ShareSession {
         isPaused = false
         follow.set(mode: .off)
         hotbar.close()
-        hotbarHiddenForSession = false
         cursorEmphasis.stop()
         if let recorder {
             self.recorder = nil
