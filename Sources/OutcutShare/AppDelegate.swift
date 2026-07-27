@@ -66,6 +66,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let controller = SettingsWindowController(settings: .shared)
             debugSettingsWindow = controller
             controller.show(tab: tab)
+            if CommandLine.arguments.contains("--dim-preview") {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    DimPreview.shared.begin()
+                }
+            }
             return
         }
         if CommandLine.arguments.contains("--show-selector") {

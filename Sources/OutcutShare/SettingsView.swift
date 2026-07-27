@@ -288,16 +288,28 @@ private struct AppearancePage: View {
 
     var body: some View {
         Form {
+            Section("Preview") {
+                AppearancePreview(settings: settings)
+            }
             Section("Dimming") {
                 Toggle("Dim screen outside region", isOn: $settings.dimmingEnabled)
-                HStack {
-                    Slider(value: $settings.dimOpacity, in: 0...0.9) {
-                        Text("Dim amount")
+                LabeledContent("Dim amount") {
+                    HStack {
+                        Slider(value: $settings.dimOpacity, in: 0...0.9,
+                               onEditingChanged: { editing in
+                                   // Live full-screen dim behind the settings
+                                   // window while dragging.
+                                   if editing {
+                                       DimPreview.shared.begin()
+                                   } else {
+                                       DimPreview.shared.end()
+                                   }
+                               })
+                            .disabled(!settings.dimmingEnabled)
+                        Text("\(Int((settings.dimOpacity * 100).rounded())) %")
+                            .monospacedDigit()
+                            .frame(width: 44, alignment: .trailing)
                     }
-                    .disabled(!settings.dimmingEnabled)
-                    Text("\(Int((settings.dimOpacity * 100).rounded())) %")
-                        .monospacedDigit()
-                        .frame(width: 44, alignment: .trailing)
                 }
             }
             Section("Cursor emphasis (viewers only)") {
@@ -401,7 +413,7 @@ final class SettingsWindowController {
                 rootView: AnyView(PresetsPage(settings: settings).frame(width: 470, height: 360)))
         case .appearance:
             controller = NSHostingController(
-                rootView: AnyView(AppearancePage(settings: settings).frame(width: 470, height: 540)))
+                rootView: AnyView(AppearancePage(settings: settings).frame(width: 470, height: 780)))
         case .shortcuts:
             controller = NSHostingController(
                 rootView: AnyView(ShortcutsPage(settings: settings).frame(width: 470, height: 400)))
