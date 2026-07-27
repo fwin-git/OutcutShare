@@ -46,7 +46,7 @@ final class PreviewWindowController: NSObject {
     private var frameObservers: [NSObjectProtocol] = []
 
     private static let minWidth: CGFloat = 160
-    private static let cornerControlSize: CGFloat = 26
+    private static let cornerControlSize: CGFloat = 34
     private static let cornerMargin: CGFloat = 8
 
     init(session: ShareSession, settings: SettingsStore) {
@@ -132,7 +132,7 @@ final class PreviewWindowController: NSObject {
     /// Syncs the pause button with the session state (called via notifyUI).
     func refresh() {
         let paused = session?.isPaused ?? false
-        let config = NSImage.SymbolConfiguration(pointSize: 11, weight: .semibold)
+        let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
             .applying(.init(paletteColors: [paused ? .systemYellow : .white]))
         pauseButton?.image = NSImage(systemSymbolName: paused ? "play.fill" : "pause.fill",
                                      accessibilityDescription: paused ? "Resume sharing"
@@ -456,7 +456,7 @@ final class PreviewWindowController: NSObject {
         contentView.previewController = self
 
         let grabber = DraggableImageView()
-        let grabConfig = NSImage.SymbolConfiguration(pointSize: 11, weight: .semibold)
+        let grabConfig = NSImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
             .applying(.init(paletteColors: [.white]))
         grabber.image = NSImage(systemSymbolName: "line.3.horizontal",
                                 accessibilityDescription: "Move preview")?
@@ -653,7 +653,7 @@ final class PreviewWindowController: NSObject {
     private func updateControlButton() {
         guard let view = panel?.contentView as? PreviewContentView else { return }
         let on = view.passthroughActive
-        let config = NSImage.SymbolConfiguration(pointSize: 11, weight: .semibold)
+        let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
             .applying(.init(paletteColors: [on ? .systemYellow : .white]))
         controlButton?.image = NSImage(systemSymbolName: "cursorarrow",
                                        accessibilityDescription: "Control the monitor")?
