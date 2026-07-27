@@ -1,26 +1,14 @@
 import AppKit
 import SwiftUI
 
-struct PermissionsView: View {
+/// The permission/health rows with live checkmarks, guide steps and action
+/// buttons — reused by the standalone onboarding window and the Permissions
+/// settings tab.
+struct PermissionsStatusView: View {
     @ObservedObject var model: PermissionsModel
-    var onDone: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 10) {
-                Image(systemName: "rectangle.dashed.badge.record")
-                    .font(.system(size: 28))
-                    .foregroundStyle(.tint)
-                VStack(alignment: .leading) {
-                    Text("Welcome to OutcutShare").font(.title3).bold()
-                    Text("One system permission is needed before you can share a region.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Divider()
-
             statusRow(state: screenRecordingState,
                       title: "Screen & System Audio Recording",
                       detail: screenRecordingDetail)
@@ -28,7 +16,7 @@ struct PermissionsView: View {
             if !model.status.screenRecordingGranted {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("1.  Click **Request Permission** and choose *Allow* in the macOS dialog.")
-                    Text("2.  No dialog? Enable **OutcutShare** in *System Settings → Privacy & Security → Screen & System Audio Recording*.")
+                    Text("2.  No dialog? Enable **Outcut Share** in *System Settings → Privacy & Security → Screen & System Audio Recording*.")
                     Text("3.  Come back here — the checkmark updates by itself.")
                 }
                 .font(.callout)
@@ -41,7 +29,7 @@ struct PermissionsView: View {
                 }
                 .padding(.leading, 30)
             } else if model.status.needsRelaunch {
-                Button("Relaunch OutcutShare") { model.relaunch() }
+                Button("Relaunch Outcut Share") { model.relaunch() }
                     .keyboardShortcut(.defaultAction)
                     .padding(.leading, 30)
             }
@@ -51,20 +39,7 @@ struct PermissionsView: View {
                       detail: model.status.virtualDisplayAvailable
                           ? "Available — the region can appear as its own monitor."
                           : "Unavailable on this macOS — use the Hidden Window share mode.")
-
-            Divider()
-
-            HStack {
-                if model.status.allSatisfied {
-                    Label("All set — you're ready to share.", systemImage: "checkmark.seal.fill")
-                        .foregroundStyle(.green)
-                }
-                Spacer()
-                Button(model.status.allSatisfied ? "Done" : "Later") { onDone() }
-            }
         }
-        .padding(20)
-        .frame(width: 470)
     }
 
     private enum RowState { case ok, pending, warning }
@@ -80,7 +55,7 @@ struct PermissionsView: View {
             return "Granted."
         }
         if model.status.needsRelaunch {
-            return "Granted — relaunch OutcutShare so it takes effect."
+            return "Granted — relaunch Outcut Share so it takes effect."
         }
         return "Required to capture the selected screen region."
     }
@@ -106,6 +81,46 @@ struct PermissionsView: View {
     }
 }
 
+struct PermissionsView: View {
+    @ObservedObject var model: PermissionsModel
+    var onDone: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 10) {
+                Image(systemName: "rectangle.dashed.badge.record")
+                    .font(.system(size: 28))
+                    .foregroundStyle(.tint)
+                VStack(alignment: .leading) {
+                    Text("Welcome to Outcut Share").font(.title3).bold()
+                    Text(model.status.allSatisfied
+                         ? "All permissions are in place — nothing to do here."
+                         : "One system permission is needed before you can share a region.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Divider()
+
+            PermissionsStatusView(model: model)
+
+            Divider()
+
+            HStack {
+                if model.status.allSatisfied {
+                    Label("All set — you're ready to share.", systemImage: "checkmark.seal.fill")
+                        .foregroundStyle(.green)
+                }
+                Spacer()
+                Button(model.status.allSatisfied ? "Done" : "Later") { onDone() }
+            }
+        }
+        .padding(20)
+        .frame(width: 470)
+    }
+}
+
 @MainActor
 final class PermissionsWindowController {
     let model = PermissionsModel()
@@ -118,7 +133,7 @@ final class PermissionsWindowController {
                 self?.window?.close()
             })
             let window = NSWindow(contentViewController: hosting)
-            window.title = "OutcutShare Permissions"
+            window.title = "Outcut Share Permissions"
             window.styleMask = [.titled, .closable]
             window.isReleasedWhenClosed = false
             window.center()

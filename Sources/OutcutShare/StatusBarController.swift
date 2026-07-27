@@ -35,6 +35,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         menu.autoenablesItems = false
         menu.delegate = self
         selectItem.target = self
+        selectItem.image = NSImage(systemSymbolName: "rectangle.dashed.badge.record",
+                                   accessibilityDescription: nil)
+        stopItem.image = NSImage(systemSymbolName: "stop.circle",
+                                 accessibilityDescription: nil)
         shareLastItem.target = self
         moveItem.target = self
         pauseItem.target = self
