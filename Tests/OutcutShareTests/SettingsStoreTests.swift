@@ -64,6 +64,13 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(store.excludedBundleIDs, ["com.apple.mail"])
     }
 
+    func testDockIconSettingDefaultsOffAndPersists() {
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertFalse(store.dockIconWhileActive)
+        store.dockIconWhileActive = true
+        XCTAssertTrue(SettingsStore(defaults: defaults).dockIconWhileActive)
+    }
+
     func testCrispOutputDefaultsOffAndPersists() {
         let store = SettingsStore(defaults: defaults)
         XCTAssertFalse(store.crispOutput)
