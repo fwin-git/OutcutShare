@@ -36,6 +36,9 @@ private struct PrivacyPage: View {
 
     var body: some View {
         Form {
+            Section("Preview — while paused") {
+                RegionPreviewCanvas(settings: settings, paused: true, showsCursor: false)
+            }
             Section("Pausing") {
                 Picker("When paused, viewers see", selection: $settings.pauseStyle) {
                     Text("Frozen last frame").tag(PauseStyle.freeze)
@@ -96,9 +99,19 @@ private struct PrivacyPage: View {
 
 private struct GeneralPage: View {
     @ObservedObject var settings: SettingsStore
+    @State private var followHover = false
 
     var body: some View {
         Form {
+            Section("Preview") {
+                RegionPreviewCanvas(settings: settings, showsHotbar: true,
+                                    demoActive: followHover)
+                if settings.followMode != .off {
+                    Text("Hover the follow controls below to see follow mode in action.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
             Section("Sharing") {
                 Picker("Share as", selection: $settings.shareMode) {
                     Text("Virtual Display").tag(ShareMode.virtualDisplay)
@@ -127,18 +140,22 @@ private struct GeneralPage: View {
                     .foregroundStyle(.secondary)
             }
             Section("Follow mode") {
-                Picker("Follow", selection: $settings.followMode) {
-                    ForEach(FollowMode.allCases, id: \.self) { mode in
-                        Text(mode.displayName).tag(mode)
+                VStack(alignment: .leading, spacing: 12) {
+                    Picker("Follow", selection: $settings.followMode) {
+                        ForEach(FollowMode.allCases, id: \.self) { mode in
+                            Text(mode.displayName).tag(mode)
+                        }
                     }
+                    .pickerStyle(.segmented)
+                    Picker("Movement", selection: $settings.followBehavior) {
+                        Text("Snap").tag(FollowBehavior.snap)
+                        Text("Smooth glide").tag(FollowBehavior.glide)
+                    }
+                    .pickerStyle(.segmented)
+                    Toggle("Resize region to the followed window", isOn: $settings.followResizes)
                 }
-                .pickerStyle(.segmented)
-                Picker("Movement", selection: $settings.followBehavior) {
-                    Text("Snap").tag(FollowBehavior.snap)
-                    Text("Smooth glide").tag(FollowBehavior.glide)
-                }
-                .pickerStyle(.segmented)
-                Toggle("Resize region to the followed window", isOn: $settings.followResizes)
+                .contentShape(Rectangle())
+                .onHover { followHover = $0 }
             }
             Section("Hotbar") {
                 Toggle("Show floating hotbar while sharing", isOn: $settings.hotbarEnabled)
@@ -289,7 +306,7 @@ private struct AppearancePage: View {
     var body: some View {
         Form {
             Section("Preview") {
-                AppearancePreview(settings: settings)
+                RegionPreviewCanvas(settings: settings)
             }
             Section("Dimming") {
                 Toggle("Dim screen outside region", isOn: $settings.dimmingEnabled)
@@ -401,10 +418,10 @@ final class SettingsWindowController {
         switch tab {
         case .general:
             controller = NSHostingController(
-                rootView: AnyView(GeneralPage(settings: settings).frame(width: 470, height: 660)))
+                rootView: AnyView(GeneralPage(settings: settings).frame(width: 470, height: 900)))
         case .privacy:
             controller = NSHostingController(
-                rootView: AnyView(PrivacyPage(settings: settings).frame(width: 470, height: 560)))
+                rootView: AnyView(PrivacyPage(settings: settings).frame(width: 470, height: 800)))
         case .recording:
             controller = NSHostingController(
                 rootView: AnyView(RecordingPage(settings: settings).frame(width: 470, height: 230)))
