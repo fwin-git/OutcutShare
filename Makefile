@@ -27,6 +27,7 @@ $(APP): Support/Info.plist $(ASSET_FILES) $(shell find Sources -type f) Package.
 	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources
 	cp $(BINARY) $(APP)/Contents/MacOS/OutcutShare
 	cp Support/Info.plist $(APP)/Contents/Info.plist
+	cp Resources/DemoBackdrop.jpg $(APP)/Contents/Resources/
 	xcrun actool \
 		--compile $(APP)/Contents/Resources \
 		--platform macosx \
