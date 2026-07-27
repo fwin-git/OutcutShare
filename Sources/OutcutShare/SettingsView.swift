@@ -3,13 +3,14 @@ import ServiceManagement
 import SwiftUI
 
 enum SettingsTab: String, CaseIterable {
-    case general, appearance, privacy, presets, shortcuts, about
+    case general, appearance, privacy, recording, presets, shortcuts, about
 
     var title: String {
         switch self {
         case .general: return "General"
         case .appearance: return "Appearance"
         case .privacy: return "Privacy"
+        case .recording: return "Recording"
         case .presets: return "Presets"
         case .shortcuts: return "Shortcuts"
         case .about: return "About"
@@ -21,6 +22,7 @@ enum SettingsTab: String, CaseIterable {
         case .general: return "gearshape"
         case .appearance: return "paintbrush"
         case .privacy: return "hand.raised"
+        case .recording: return "record.circle"
         case .presets: return "square.grid.2x2"
         case .shortcuts: return "keyboard"
         case .about: return "info.circle"
@@ -30,9 +32,17 @@ enum SettingsTab: String, CaseIterable {
 
 private struct PrivacyPage: View {
     @ObservedObject var settings: SettingsStore
+    @State private var showAppPicker = false
 
     var body: some View {
         Form {
+            Section("Pausing") {
+                Picker("When paused, viewers see", selection: $settings.pauseStyle) {
+                    Text("Frozen last frame").tag(PauseStyle.freeze)
+                    Text("Privacy screen").tag(PauseStyle.privacyScreen)
+                }
+                .pickerStyle(.menu)
+            }
             Section("Notifications") {
                 Toggle("Hide notification banners from viewers", isOn: $settings.hideNotificationBanners)
                 Text("Banners still appear on your screen — they're removed only from the shared picture.")
@@ -66,32 +76,16 @@ private struct PrivacyPage: View {
                         .foregroundStyle(.secondary)
                     }
                 }
-                Button("Add App…") { addApps() }
+                Button("Add App…") { showAppPicker = true }
             }
         }
         .formStyle(.grouped)
-    }
-
-    private func addApps() {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = true
-        panel.allowedContentTypes = [.application]
-        panel.directoryURL = URL(fileURLWithPath: "/Applications")
-        guard panel.runModal() == .OK else { return }
-        for url in panel.urls {
-            guard let bundleID = Bundle(url: url)?.bundleIdentifier,
-                  !settings.hiddenApps.contains(where: { $0.bundleID == bundleID }) else {
-                continue
-            }
-            let name = FileManager.default.displayName(atPath: url.path)
-                .replacingOccurrences(of: ".app", with: "")
-            settings.hiddenApps.append(HiddenApp(bundleID: bundleID, name: name))
+        .sheet(isPresented: $showAppPicker) {
+            AppPickerSheet(settings: settings)
         }
     }
 
-    private static func icon(forBundleID bundleID: String) -> NSImage {
+    static func icon(forBundleID bundleID: String) -> NSImage {
         if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
             return NSWorkspace.shared.icon(forFile: url.path)
         }
@@ -123,6 +117,14 @@ private struct GeneralPage: View {
                      + "Virtual Display mode only.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Picker("Capture frame rate", selection: $settings.frameRate) {
+                    Text("30 fps").tag(30)
+                    Text("60 fps").tag(60)
+                }
+                .pickerStyle(.segmented)
+                Text("Applies to both the shared picture and recordings.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             Section("Follow mode") {
                 Picker("Follow", selection: $settings.followMode) {
@@ -144,20 +146,35 @@ private struct GeneralPage: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Section("Pausing") {
-                Picker("When paused, viewers see", selection: $settings.pauseStyle) {
-                    Text("Frozen last frame").tag(PauseStyle.freeze)
-                    Text("Privacy screen").tag(PauseStyle.privacyScreen)
+            Section("Startup") {
+                Toggle("Launch at login", isOn: launchAtLoginBinding)
+                    .disabled(!LoginItem.available)
+                if !LoginItem.available {
+                    Text("Available when running the built app bundle.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
-                .pickerStyle(.menu)
             }
-            Section("Capture") {
-                Picker("Frame rate", selection: $settings.frameRate) {
-                    Text("30 fps").tag(30)
-                    Text("60 fps").tag(60)
-                }
-                .pickerStyle(.segmented)
-            }
+        }
+        .formStyle(.grouped)
+    }
+
+    @State private var launchAtLogin = LoginItem.isEnabled
+
+    private var launchAtLoginBinding: Binding<Bool> {
+        Binding(get: { launchAtLogin },
+                set: { on in
+                    LoginItem.setEnabled(on)
+                    launchAtLogin = LoginItem.isEnabled
+                })
+    }
+}
+
+private struct RecordingPage: View {
+    @ObservedObject var settings: SettingsStore
+
+    var body: some View {
+        Form {
             Section("Recording") {
                 HStack {
                     Text("Save recordings to")
@@ -169,15 +186,11 @@ private struct GeneralPage: View {
                         .truncationMode(.middle)
                     Button("Choose…") { chooseRecordingFolder() }
                 }
-            }
-            Section("Startup") {
-                Toggle("Launch at login", isOn: launchAtLoginBinding)
-                    .disabled(!LoginItem.available)
-                if !LoginItem.available {
-                    Text("Available when running the built app bundle.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                Text("Start/stop with ⌃⌥⌘R, the hotbar, or the menu bar while sharing. "
+                     + "Recordings use the capture frame rate set under General and pause "
+                     + "together with privacy pause.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
@@ -192,16 +205,6 @@ private struct GeneralPage: View {
         if panel.runModal() == .OK, let url = panel.url {
             settings.recordingFolder = url.path
         }
-    }
-
-    @State private var launchAtLogin = LoginItem.isEnabled
-
-    private var launchAtLoginBinding: Binding<Bool> {
-        Binding(get: { launchAtLogin },
-                set: { on in
-                    LoginItem.setEnabled(on)
-                    launchAtLogin = LoginItem.isEnabled
-                })
     }
 }
 
@@ -386,10 +389,13 @@ final class SettingsWindowController {
         switch tab {
         case .general:
             controller = NSHostingController(
-                rootView: AnyView(GeneralPage(settings: settings).frame(width: 470, height: 800)))
+                rootView: AnyView(GeneralPage(settings: settings).frame(width: 470, height: 660)))
         case .privacy:
             controller = NSHostingController(
-                rootView: AnyView(PrivacyPage(settings: settings).frame(width: 470, height: 460)))
+                rootView: AnyView(PrivacyPage(settings: settings).frame(width: 470, height: 560)))
+        case .recording:
+            controller = NSHostingController(
+                rootView: AnyView(RecordingPage(settings: settings).frame(width: 470, height: 230)))
         case .presets:
             controller = NSHostingController(
                 rootView: AnyView(PresetsPage(settings: settings).frame(width: 470, height: 360)))

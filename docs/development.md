@@ -32,9 +32,12 @@ End-to-end verification without clicking through the UI:
 ## Releases
 
 ```sh
-git tag v1.3.0 && git push origin v1.3.0
+make release
 ```
 
-CI runs the tests, builds the bundle with the tag version, and publishes a
-GitHub release whose changelog is generated from `feat:`/`fix:` commit
-subjects (`Scripts/changelog.sh`) — so keep commit messages feature-oriented.
+`Scripts/release.sh` derives the next version from conventional commits since
+the last tag (`feat:` → minor, `fix:`/other → patch, breaking → major), runs
+the tests, tags, and pushes. CI builds the bundle with the tag version and
+publishes a GitHub release whose changelog is generated from `feat:`/`fix:`
+commit subjects (`Scripts/changelog.sh`) — so keep commit messages
+feature-oriented.

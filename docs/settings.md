@@ -1,6 +1,6 @@
 # Settings reference
 
-Menu bar → **Settings…** — four pages.
+Menu bar → **Settings…** — seven pages.
 
 ## General
 
@@ -10,11 +10,9 @@ Menu bar → **Settings…** — four pages.
 | Crisp text (Retina output) | Gives the virtual display 2× pixel density — sharpest with Retina sources, reduces compression artifacts otherwise; more bandwidth. Virtual Display mode only | off |
 | Follow movement | Snap or smooth glide when follow mode moves the region | Glide |
 | Resize region to followed window | Follow mode adopts the window's size (aspect-fitted in Virtual Display mode) | on |
-| When paused, viewers see | Frozen last frame, or a blurred privacy screen with a slashed-eye note | Privacy screen |
 | Follow | Off / Active Window / Cursor (also in menu bar → Follow) | Off |
 | Show floating hotbar | Quick-action bar next to the region: stop, pause, record, highlights, resize, save preset, follow. Auto-positions below → side → top; drag the ≡ grabber to place it manually; ✕ hides it until re-enabled | on |
-| Frame rate | Capture rate (30/60 fps) | 30 fps |
-| Save recordings to | Folder for .mp4 recordings | ~/Movies/Outcut Share |
+| Capture frame rate | 30/60 fps — applies to both the shared picture and recordings | 30 fps |
 | Launch at login | Start with macOS (app bundle only) | off |
 | Version | Current version + build for support | — |
 
@@ -38,8 +36,15 @@ Dimming and border are local-only: they're excluded from what viewers see.
 
 | Setting | Effect | Default |
 | --- | --- | --- |
+| When paused, viewers see | Frozen last frame, or a blurred privacy screen with a slashed-eye note | Privacy screen |
 | Hide notification banners from viewers | Notification Center is excluded from the capture — banners stay visible on your screen but never appear in the shared picture | on |
-| Hidden apps | Windows of the apps you add (Mail, Messages, …) never appear in the shared picture; viewers see what's behind them. Changes apply live | empty |
+| Hidden apps | Windows of the apps you add never appear in the shared picture; viewers see what's behind them. “Add App…” opens a searchable list of installed apps (sensitive apps suggested first, Browse… for unusual locations). Changes apply live | empty |
+
+## Recording
+
+| Setting | Effect | Default |
+| --- | --- | --- |
+| Save recordings to | Folder for .mp4 recordings | ~/Movies/OutcutShare |
 
 ## Presets
 
