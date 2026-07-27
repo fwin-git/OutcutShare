@@ -251,9 +251,11 @@ final class MonitorWindowManipulator {
     }
 
     /// The configurable layout-grid modifier is held right now (the raw
-    /// setting keeps its historical "dragOutModifier" storage key).
+    /// setting keeps its historical "dragOutModifier" storage key). The
+    /// demo harness forces it — synthetic events can't set hardware state.
     private var gridHeld: Bool {
         NSEvent.modifierFlags.contains(settings.dragOutModifier.flag)
+            || DemoState.gridModifierForced
     }
 
     /// The physical screen windows pop out to. NEVER NSScreen.main — that's

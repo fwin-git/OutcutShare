@@ -384,6 +384,37 @@ enum Geometry {
                            : CGPoint(x: primaryWidth, y: 0)
     }
 
+    /// The demo recording stage: the largest 16:9 rect (up to 1080p, even
+    /// dimensions) centered in the visible frame — everything choreographed
+    /// and recorded stays inside it, so menu bar, Dock and the rest of an
+    /// ultrawide never appear in the footage.
+    static func demoStageRect(visibleFrame v: CGRect) -> CGRect {
+        var h = min(1080, v.height - 16)
+        var w = h * 16 / 9
+        if w > v.width {
+            w = v.width
+            h = w * 9 / 16
+        }
+        w = (w / 2).rounded(.down) * 2
+        h = (h / 2).rounded(.down) * 2
+        return CGRect(x: (v.midX - w / 2).rounded(.down),
+                      y: (v.midY - h / 2).rounded(.down), width: w, height: h)
+    }
+
+    /// Where the helper's fake app windows start: arranged over the stage's
+    /// left half, leaving the right side for the monitor preview.
+    static func demoWindowFrames(stage: CGRect) -> [CGRect] {
+        let w = stage.width, h = stage.height
+        return [
+            CGRect(x: stage.minX + 0.05 * w, y: stage.minY + 0.44 * h,
+                   width: 0.24 * w, height: 0.42 * h),
+            CGRect(x: stage.minX + 0.10 * w, y: stage.minY + 0.08 * h,
+                   width: 0.26 * w, height: 0.34 * h),
+            CGRect(x: stage.minX + 0.30 * w, y: stage.minY + 0.28 * h,
+                   width: 0.21 * w, height: 0.36 * h),
+        ]
+    }
+
     /// True when the gap between two frames is within `threshold` — used to
     /// decide whether the hotbar counts as "attached" to the preview panel.
     static func framesAreNear(_ a: CGRect, _ b: CGRect, threshold: CGFloat) -> Bool {

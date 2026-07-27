@@ -312,6 +312,37 @@ final class MonitorInteractionTests: XCTestCase {
     }
 }
 
+final class DemoStageTests: XCTestCase {
+    func testStageIs1080pOnTheUltrawide() {
+        let stage = Geometry.demoStageRect(
+            visibleFrame: CGRect(x: 80, y: 0, width: 5040, height: 1415))
+        XCTAssertEqual(stage.width, 1920)
+        XCTAssertEqual(stage.height, 1080)
+        XCTAssertEqual(stage.width / stage.height, 16.0 / 9.0, accuracy: 0.001)
+        XCTAssertTrue(CGRect(x: 80, y: 0, width: 5040, height: 1415).contains(stage))
+    }
+
+    func testStageShrinksToFitSmallScreensKeeping16By9() {
+        let visible = CGRect(x: 0, y: 0, width: 1440, height: 875)
+        let stage = Geometry.demoStageRect(visibleFrame: visible)
+        XCTAssertTrue(visible.contains(stage))
+        XCTAssertEqual(stage.width / stage.height, 16.0 / 9.0, accuracy: 0.01)
+        // Even dimensions — the video encoder needs them.
+        XCTAssertEqual(Int(stage.width) % 2, 0)
+        XCTAssertEqual(Int(stage.height) % 2, 0)
+    }
+
+    func testDemoWindowFramesSitInsideTheStageLeftHalf() {
+        let stage = CGRect(x: 1600, y: 160, width: 1920, height: 1080)
+        let frames = Geometry.demoWindowFrames(stage: stage)
+        XCTAssertEqual(frames.count, 3)
+        for frame in frames {
+            XCTAssertTrue(stage.contains(frame))
+            XCTAssertLessThan(frame.maxX, stage.midX + stage.width * 0.1)
+        }
+    }
+}
+
 final class LayoutGridTests: XCTestCase {
     func testCellMapping() {
         XCTAssertEqual(Geometry.gridCell(for: CGPoint(x: 0.1, y: 0.1)).col, 0)

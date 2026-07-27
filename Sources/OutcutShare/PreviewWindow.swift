@@ -94,6 +94,12 @@ final class PreviewWindowController: NSObject {
         panel.orderFrontRegardless()
     }
 
+    /// Exact placement (demo harness stages the panel on the recording
+    /// stage; the aspect is the caller's responsibility).
+    func setPanelFrame(_ frame: CGRect) {
+        panel?.setFrame(frame, display: true)
+    }
+
     /// Current on-screen frame (nil while hidden) — used to anchor the
     /// hotbar next to the panel in virtual-monitor mode.
     var panelFrame: CGRect? {

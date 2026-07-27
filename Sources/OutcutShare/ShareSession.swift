@@ -218,6 +218,12 @@ final class ShareSession {
     var isRecording: Bool { recorder?.isRecording ?? false }
     var followMode: FollowMode { follow.mode }
 
+    /// Demo harness only: places the monitor preview at an exact frame on
+    /// the recording stage.
+    func demoPositionPreview(frame: CGRect) {
+        preview.setPanelFrame(frame)
+    }
+
     /// Menu/hotbar entry point — persists the choice; the active session
     /// applies it via the settings observer.
     func setFollow(mode: FollowMode) {
@@ -380,7 +386,9 @@ final class ShareSession {
                                                               size: region.rect.size),
                                     pixelWidth: pw, pixelHeight: ph,
                                     fps: settings.frameRate,
-                                    excludedBundleIDs: activeExclusions)
+                                    excludedBundleIDs: activeExclusions,
+                                    ownAppExclusion: DemoState.active ? .pidOnly
+                                                                      : .pidAndBundle)
 
             currentRegion = region
             activeFrameRate = settings.frameRate
@@ -487,7 +495,9 @@ final class ShareSession {
             activeExclusions = settings.excludedBundleIDs
             try await capture.start(displayID: region.displayID, sourceRectTopLeft: sourceRect,
                                     pixelWidth: pw, pixelHeight: ph, fps: settings.frameRate,
-                                    excludedBundleIDs: activeExclusions)
+                                    excludedBundleIDs: activeExclusions,
+                                    ownAppExclusion: DemoState.active ? .pidOnly
+                                                                      : .pidAndBundle)
 
             currentRegion = region
             activeFrameRate = settings.frameRate

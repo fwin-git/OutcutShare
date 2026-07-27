@@ -34,11 +34,23 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
     private var display: SCDisplay?
     private let sampleQueue = DispatchQueue(label: "com.outcutshare.capture")
 
+    /// How the app's own windows are kept out of the capture. `.pidAndBundle`
+    /// is the norm; the demo harness needs `.pidOnly` (its helper process
+    /// shares the bundle id but must stay visible) and `.none` (the demo
+    /// recorder films our own overlays and panels on purpose).
+    enum OwnAppExclusion {
+        case pidAndBundle, pidOnly, none
+    }
+
+    private var ownAppExclusion: OwnAppExclusion = .pidAndBundle
+
     /// - Parameter sourceRectTopLeft: region in display-local, top-left-origin
     ///   points (see `Geometry.displayLocalTopLeftRect`).
     func start(displayID: CGDirectDisplayID, sourceRectTopLeft: CGRect,
                pixelWidth: Int, pixelHeight: Int, fps: Int,
-               excludedBundleIDs: [String]) async throws {
+               excludedBundleIDs: [String],
+               ownAppExclusion: OwnAppExclusion = .pidAndBundle) async throws {
+        self.ownAppExclusion = ownAppExclusion
         let content: SCShareableContent
         do {
             content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
@@ -50,7 +62,8 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
         }
         self.display = display
         let filter = Self.makeFilter(content: content, display: display,
-                                     excludedBundleIDs: excludedBundleIDs)
+                                     excludedBundleIDs: excludedBundleIDs,
+                                     ownAppExclusion: ownAppExclusion)
 
         let config = SCStreamConfiguration()
         config.sourceRect = sourceRectTopLeft
@@ -81,15 +94,24 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
     /// privacy exclusions. Excluding whole applications also covers windows
     /// they create later (e.g. future notification banners).
     private static func makeFilter(content: SCShareableContent, display: SCDisplay,
-                                   excludedBundleIDs: [String]) -> SCContentFilter {
+                                   excludedBundleIDs: [String],
+                                   ownAppExclusion: OwnAppExclusion) -> SCContentFilter {
         let ownPID = ProcessInfo.processInfo.processIdentifier
         // Bundle-id match also hides OTHER Outcut Share instances (e.g. the
         // user's running copy while a debug build captures).
         let ownBundleID = Bundle.main.bundleIdentifier
         let excluded = content.applications.filter {
-            $0.processID == ownPID
-                || (ownBundleID != nil && $0.bundleIdentifier == ownBundleID)
-                || excludedBundleIDs.contains($0.bundleIdentifier)
+            let ownApp: Bool
+            switch ownAppExclusion {
+            case .pidAndBundle:
+                ownApp = $0.processID == ownPID
+                    || (ownBundleID != nil && $0.bundleIdentifier == ownBundleID)
+            case .pidOnly:
+                ownApp = $0.processID == ownPID
+            case .none:
+                ownApp = false
+            }
+            return ownApp || excludedBundleIDs.contains($0.bundleIdentifier)
         }
         return SCContentFilter(display: display, excludingApplications: excluded,
                                exceptingWindows: [])
@@ -102,7 +124,8 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
                                                                            onScreenWindowsOnly: true)
         let current = content.displays.first { $0.displayID == display.displayID } ?? display
         try await stream.updateContentFilter(Self.makeFilter(content: content, display: current,
-                                                             excludedBundleIDs: excludedBundleIDs))
+                                                             excludedBundleIDs: excludedBundleIDs,
+                                                             ownAppExclusion: ownAppExclusion))
     }
 
     /// Re-points (and optionally re-sizes) the running stream without

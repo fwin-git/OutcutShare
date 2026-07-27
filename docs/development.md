@@ -33,6 +33,21 @@ End-to-end verification without clicking through the UI:
 `--show-settings` composes with `--close-settings-after=secs` (teardown /
 performance verification).
 
+## Demo recordings
+
+```sh
+.build/debug/OutcutShare --demo=monitor   # Virtual Monitor showcase
+.build/debug/OutcutShare --demo=region    # region sharing showcase
+```
+
+Records a feature walkthrough to `~/Movies/OutcutShare/Demos/` — a clean
+16:9 stage (1080p on large screens) with a backdrop and fake app windows
+(spawned by a helper process so the real cross-app machinery runs), driven
+by synthetic input with a keystroke chip for held modifiers. Nothing
+personal appears in frame. The run takes over the mouse for ~30 s (3 s
+countdown, Ctrl-C aborts) and needs Screen Recording + Accessibility for
+the invoking binary.
+
 ## Releases
 
 ```sh
