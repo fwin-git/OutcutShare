@@ -4,10 +4,16 @@
   <img src="Resources/AppIcon.png" alt="Outcut Share app icon" width="160">
 </p>
 
-Share **any part of your screen as its own monitor** in Zoom, Teams, Meet —
-drag a rectangle and it appears as a virtual display (or an invisible
-shareable window). Made for ultrawides: present one clean slice instead of
-the whole desert, without being locked to a single app window.
+Share exactly what you mean to share in Zoom, Teams, Meet — nothing else.
+Two ways:
+
+- **Region sharing** — drag a rectangle over any part of your screen and it
+  becomes an invisible shareable window. Made for ultrawides: present one
+  clean slice instead of the whole desert, without being locked to a single
+  app window.
+- **Virtual Monitor** — a separate, empty screen only you can fill. Drag
+  windows onto its preview and *only they* are ever shared; the rest of
+  your desktop stays private by construction.
 
 ## Install
 
@@ -16,26 +22,52 @@ Download the latest zip from
 app anywhere. Not notarized: right-click → Open once (or
 `xattr -d com.apple.quarantine`). Requires macOS 14+.
 
-## Quick start
+## Quick start — share a region
 
 1. Menu bar → **Select Region & Share** (⌃⌥⌘S), drag a rectangle — or press
    **Space** and click a window.
-2. In your meeting app, share the **"Outcut Share"** screen (or window,
-   depending on the mode).
+2. In your meeting app, share the window named **"Outcut Share (Share
+   Region)"** (rename it in Settings).
 3. Done. **⌃⌥⌘L** re-shares the last region next time; **⌃⌥⌘X** stops.
+
+Region sharing runs as a **hidden window** — the intended mode: it lists
+under "share window", resizes live without interrupting the share, and your
+cursor can't wander onto it. If your meeting tool can't capture windows,
+switch *Settings → Share as* to **Virtual Display** — the same region
+appears as an extra monitor under "share screen" instead (fallback; see
+[how it works](docs/how-it-works.md) for the trade-offs).
 
 The first launch guides you through the one required permission
 (Screen & System Audio Recording) with live checkmarks.
 
-## What it can do
+## Quick start — Virtual Monitor
 
-- **Two share modes** — virtual display ("share screen") or hidden window
-  ("share window"), switchable in Settings. → [how it works](docs/how-it-works.md)
-- **Live move & resize** while sharing — viewers see the content follow, the
-  share never interrupts. Corners + edges, snapping, aspect lock, standard
-  sizes. → [modifiers](docs/resize-modifiers.md)
+1. *Settings → Share as →* **Virtual Monitor**, then menu bar → **Start
+   Virtual Monitor & Share**.
+2. A large preview panel opens — your window into the new screen. **Drag
+   any window onto it** to move it there; share the monitor under "share
+   screen" in your meeting app.
+3. Arrange through the preview: drag windows around (a live ghost follows),
+   hold **⇧** for a 3 × 3 layout grid — drop in a cell or sweep across
+   cells to span rows, columns and blocks. Drag a window off the panel to
+   bring it back to your real screen.
+4. The cursor button turns on **control mode**: click through the preview
+   to drive folders and browsers on the monitor; push any edge of the
+   virtual screen to bring the cursor home.
+
+Everything on the monitor comes back to your screen (and your current
+Space) when you stop. Window moving uses the optional Accessibility
+permission; a guided row appears when it's needed.
+
+## What else it can do
+
+- **Live move & resize** while sharing a region — viewers see the content
+  follow, the share never interrupts. Corners + edges, snapping, aspect
+  lock, standard sizes. → [modifiers](docs/resize-modifiers.md)
 - **Dimming & border** — everything outside the region dims locally, with a
   configurable border; viewers never see either. → [settings](docs/settings.md)
+- **Shared-output preview** — a small floating window with exactly what
+  viewers see, no need to keep the meeting app open.
 - **Presets & last region** — save regions, re-share with ⌃⌥⌘1–9 or ⌃⌥⌘L.
 - **Follow mode** — the region tracks your active window or cursor
   (snap or glide).
@@ -46,9 +78,9 @@ The first launch guides you through the one required permission
   visible to you. → [settings](docs/settings.md)
 - **Cursor emphasis** — halo + click ripples, drawn for viewers only.
 - **Recording** (⌃⌥⌘R) — the region straight to .mp4, no meeting needed.
-- **Hotbar** — floating quick actions next to the region (stop, pause,
-  record, highlights, resize, preset, follow); draggable, dismissible,
-  toggleable from menu & Settings.
+- **Hotbar** — floating quick actions next to the region or monitor preview
+  (stop, pause, record, highlights, preview, resize, preset, follow);
+  draggable, dismissible, toggleable from menu & Settings.
 - **Global hotkeys** — all rebindable to any combo, with duplicate warnings.
   → [hotkeys](docs/hotkeys.md)
 
@@ -58,6 +90,6 @@ The first launch guides you through the one required permission
 | --- | --- |
 | [Hotkeys](docs/hotkeys.md) | Defaults, recording combos, duplicate handling |
 | [Selection & resize modifiers](docs/resize-modifiers.md) | Space/⇧/⌃ in both overlays, edge handles |
-| [How it works & caveats](docs/how-it-works.md) | Virtual display, hidden window, capture pipeline, limitations |
-| [Settings reference](docs/settings.md) | Every option on all four pages |
+| [How it works & caveats](docs/how-it-works.md) | Hidden window, virtual displays, capture pipeline, limitations |
+| [Settings reference](docs/settings.md) | Every option on all pages, incl. the Virtual Monitor |
 | [Development](docs/development.md) | Build, debug flags, cutting releases |
