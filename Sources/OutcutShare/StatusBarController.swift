@@ -101,9 +101,11 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         }
         statusItem.button?.image = NSImage(systemSymbolName: symbol,
                                            accessibilityDescription: "OutcutShare")
+        selectItem.title = SettingsStore.shared.shareMode == .virtualMonitor
+            ? "Start Virtual Monitor & Share" : "Select Region & Share"
         selectItem.isEnabled = session.state == .idle
         shareLastItem.isEnabled = session.state == .idle && SettingsStore.shared.lastRegion != nil
-        moveItem.isEnabled = session.isActive
+        moveItem.isEnabled = session.isActive && !session.isVirtualMonitor
         if let items = followItem.submenu?.items {
             for item in items {
                 item.state = (item.representedObject as? String)

@@ -124,20 +124,29 @@ private struct GeneralPage: View {
                 Picker("Share as", selection: $settings.shareMode) {
                     Text("Virtual Display").tag(ShareMode.virtualDisplay)
                     Text("Hidden Window").tag(ShareMode.hiddenWindow)
+                    Text("Virtual Monitor").tag(ShareMode.virtualMonitor)
                 }
                 .pickerStyle(.menu)
-                Text(settings.shareMode == .virtualDisplay
-                     ? "The region appears as an extra monitor — pick it under “share screen”."
-                     : "The region mirrors into an invisible window named “\(settings.effectiveShareWindowTitle)” — pick it under “share window”.")
+                Text(shareModeCaption)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                TextField("Share window title", text: $settings.shareWindowTitle,
-                          prompt: Text(SettingsStore.defaultShareWindowTitle))
-                Text("The name sharing apps list for the share window in their window pickers.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if settings.shareMode == .virtualMonitor {
+                    Picker("Monitor resolution", selection: monitorResolutionBinding) {
+                        ForEach(Self.monitorResolutions, id: \.self) { res in
+                            Text(res).tag(res)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
+                if settings.shareMode == .hiddenWindow {
+                    TextField("Share window title", text: $settings.shareWindowTitle,
+                              prompt: Text(SettingsStore.defaultShareWindowTitle))
+                    Text("The name sharing apps list for the share window in their window pickers.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 Toggle("Crisp text (Retina output)", isOn: $settings.crispOutput)
-                    .disabled(settings.shareMode != .virtualDisplay)
+                    .disabled(settings.shareMode == .hiddenWindow)
                 Text("Renders the shared monitor at 2× pixel density: sharpest with Retina "
                      + "sources, reduces compression artifacts otherwise. Uses more bandwidth. "
                      + "Virtual Display mode only.")
@@ -213,6 +222,34 @@ private struct GeneralPage: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    private var shareModeCaption: String {
+        switch settings.shareMode {
+        case .virtualDisplay:
+            return "The region appears as an extra monitor — pick it under “share screen”."
+        case .hiddenWindow:
+            return "The region mirrors into an invisible window named “\(settings.effectiveShareWindowTitle)” — pick it under “share window”."
+        case .virtualMonitor:
+            return "A separate empty screen — drag windows onto it and only they are shared. "
+                + "A large preview panel shows what's on it; share it under “share screen”."
+        }
+    }
+
+    static let monitorResolutions = ["1280 × 720", "1600 × 900", "1920 × 1080",
+                                     "2560 × 1440", "3440 × 1440"]
+
+    private var monitorResolutionBinding: Binding<String> {
+        Binding(get: {
+            "\(settings.virtualMonitorWidth) × \(settings.virtualMonitorHeight)"
+        }, set: { label in
+            let parts = label.split(separator: "×").compactMap {
+                Int($0.trimmingCharacters(in: .whitespaces))
+            }
+            guard parts.count == 2 else { return }
+            settings.virtualMonitorWidth = parts[0]
+            settings.virtualMonitorHeight = parts[1]
+        })
     }
 
     @State private var launchAtLogin = LoginItem.isEnabled

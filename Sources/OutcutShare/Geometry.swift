@@ -219,6 +219,21 @@ enum Geometry {
                       y: screenFrame.minY + margin, width: w, height: h)
     }
 
+    /// Large, centered placement for the virtual-monitor preview — the
+    /// primary way to see the otherwise invisible screen. 55% of the screen
+    /// width, height-clamped to 75% with the aspect kept.
+    static func prominentPreviewFrame(aspect: CGFloat, screenFrame: CGRect) -> CGRect {
+        var w = screenFrame.width * 0.55
+        var h = w / aspect
+        let maxH = screenFrame.height * 0.75
+        if h > maxH {
+            h = maxH
+            w = h * aspect
+        }
+        return CGRect(x: screenFrame.midX - w / 2, y: screenFrame.midY - h / 2,
+                      width: w, height: h)
+    }
+
     /// Docking spot for the preview panel next to the shared region: the
     /// first fully-on-screen position outside the region, so the panel never
     /// covers what's being shared. Preference: right of the region (bottom-

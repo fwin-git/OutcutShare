@@ -53,6 +53,12 @@ final class ShareSession {
             onPermissionsNeeded?()
             return
         }
+        if settings.shareMode == .virtualMonitor {
+            // Regionless: nothing on the real screen is selected or shared.
+            state = .selecting
+            Task { await activateMonitor() }
+            return
+        }
         state = .selecting
         let selector = RegionSelector()
         self.selector = selector
@@ -93,7 +99,7 @@ final class ShareSession {
     }
 
     func saveCurrentRegionAsPreset(named name: String) {
-        guard let region = currentRegion else { return }
+        guard let region = currentRegion, activeShareMode != .virtualMonitor else { return }
         settings.presets.append(RegionPreset(
             name: name,
             region: StoredRegion(rect: region.rect, displayID: region.displayID),
@@ -147,9 +153,26 @@ final class ShareSession {
 
     /// Pauses/resumes what viewers see without touching the stream: frames
     /// stop being forwarded; the privacy style optionally covers the output.
+    /// The virtual monitor is captured directly by the sharing app, so pause
+    /// covers the whole virtual screen with a privacy window instead (a
+    /// frozen frame can't be faked there).
     func togglePause() {
         guard state == .active else { return }
         isPaused.toggle()
+        if activeShareMode == .virtualMonitor {
+            if isPaused, let screen = currentRegion?.screen {
+                let cover = LiveFrameWindow(contentRect: screen.frame, level: .screenSaver)
+                cover.showPrivacyScreen()
+                monitorPrivacyCover = cover
+                preview.showPrivacyScreen()
+            } else {
+                monitorPrivacyCover?.close()
+                monitorPrivacyCover = nil
+                preview.hidePrivacyScreen()
+            }
+            notifyUI()
+            return
+        }
         if isPaused && settings.pauseStyle == .privacyScreen {
             output?.showPrivacyScreen()
             preview.showPrivacyScreen()
@@ -162,8 +185,9 @@ final class ShareSession {
 
     func stop() {
         guard state != .idle else { return }
-        if let region = currentRegion {
+        if let region = currentRegion, activeShareMode != .virtualMonitor {
             // Keep the final (possibly moved/resized) rect for re-sharing.
+            // The virtual monitor has no real-screen region to remember.
             settings.lastRegion = StoredRegion(rect: region.rect, displayID: region.displayID)
         }
         teardown()
@@ -183,6 +207,12 @@ final class ShareSession {
     private var lastHotbarEnabled = true
     private lazy var preview = PreviewWindowController(session: self, settings: settings)
     private var lastPreviewEnabled = false
+    private var monitorPrivacyCover: LiveFrameWindow?
+    private var activeMonitorSize: CGSize = .zero
+
+    /// True while a standalone virtual-monitor session runs (regionless:
+    /// no dim overlay, no adjust/follow/presets).
+    var isVirtualMonitor: Bool { state != .idle && activeShareMode == .virtualMonitor }
     private var recorder: RecordingEngine?
     var isRecording: Bool { recorder?.isRecording ?? false }
     var followMode: FollowMode { follow.mode }
@@ -198,7 +228,8 @@ final class ShareSession {
     /// corners to resize (aspect-locked in virtual-display mode), arrow keys
     /// nudge, Esc reverts.
     func startAdjust() {
-        guard state == .active, let region = currentRegion, mover == nil else { return }
+        guard state == .active, activeShareMode != .virtualMonitor,
+              let region = currentRegion, mover == nil else { return }
         moveBackupRect = region.rect
         let mover = RegionMover()
         self.mover = mover
@@ -242,7 +273,8 @@ final class ShareSession {
     /// capture output, while virtual-display mode keeps its display
     /// resolution and scales the (aspect-identical) region into it.
     func setRegionRect(_ rect: CGRect) {
-        guard state == .active, let region = currentRegion, rect != region.rect else { return }
+        guard state == .active, activeShareMode != .virtualMonitor,
+              let region = currentRegion, rect != region.rect else { return }
         let sizeChanged = rect.size != region.rect.size
         currentRegion = SelectedRegion(rect: rect, screen: region.screen)
         overlay?.update(region: rect)
@@ -282,7 +314,78 @@ final class ShareSession {
         }
     }
 
+    /// Standalone virtual monitor: an empty extra screen the user drags
+    /// windows onto. Sharing apps capture the display directly; our own
+    /// capture only feeds the prominent preview panel and recordings.
+    private func activateMonitor() async {
+        do {
+            let size = settings.virtualMonitorSize
+            let vd = try VirtualDisplay(sizeInPoints: size, scale: 1,
+                                        name: "Outcut Share Monitor",
+                                        forceHiDPI: settings.crispOutput)
+            virtualDisplay = vd
+            let virtualScreen = try await vd.waitForScreen()
+            let region = SelectedRegion(rect: virtualScreen.frame, screen: virtualScreen)
+
+            let capture = CaptureEngine()
+            self.capture = capture
+            let preview = self.preview
+            capture.onFrame = { [weak self, weak preview] surface in
+                guard self?.isPaused != true else { return }
+                preview?.display(surface: surface)
+            }
+            capture.onStopped = { [weak self] error in
+                Task { @MainActor in self?.handleStreamStopped(error) }
+            }
+            let scale = virtualScreen.backingScaleFactor
+            let (pw, ph) = Geometry.capturePixelSize(region: region.rect, scale: scale)
+            activeExclusions = settings.excludedBundleIDs
+            try await capture.start(displayID: region.displayID,
+                                    sourceRectTopLeft: CGRect(origin: .zero,
+                                                              size: region.rect.size),
+                                    pixelWidth: pw, pixelHeight: ph,
+                                    fps: settings.frameRate,
+                                    excludedBundleIDs: activeExclusions)
+
+            currentRegion = region
+            activeFrameRate = settings.frameRate
+            activeShareMode = .virtualMonitor
+            activeCrisp = settings.crispOutput
+            activeMonitorSize = size
+            activeAspect = size.width / size.height
+            activeOutputPixelSize = (pw, ph)
+            observeSettingsChanges()
+            state = .active
+            // The preview is the only way to see the monitor — always shown,
+            // large and centered on the real screen.
+            if !settings.previewWindowEnabled {
+                settings.previewWindowEnabled = true
+            }
+            lastPreviewEnabled = true
+            if let main = NSScreen.main {
+                preview.showProminent(aspect: size.width / size.height, screen: main)
+                lastHotbarEnabled = settings.hotbarEnabled
+                if settings.hotbarEnabled {
+                    hotbar.show(region: preview.panelFrame
+                                    ?? Geometry.prominentPreviewFrame(
+                                        aspect: size.width / size.height,
+                                        screenFrame: main.visibleFrame),
+                                screen: main)
+                }
+            }
+        } catch {
+            teardown()
+            state = .idle
+            presentError(error)
+        }
+    }
+
     private func activate(region: SelectedRegion) async {
+        if settings.shareMode == .virtualMonitor {
+            // Regionless mode — stored regions/presets don't translate.
+            await activateMonitor()
+            return
+        }
         do {
             let mode = settings.shareMode
             let sourceScale = region.screen.backingScaleFactor
@@ -300,6 +403,8 @@ final class ShareSession {
                                                        screenFrame: region.screen.frame)
                 output = LiveFrameWindow(contentRect: frame, level: .normal,
                                          title: settings.effectiveShareWindowTitle)
+            case .virtualMonitor:
+                return // handled by activateMonitor() before this switch
             }
             self.output = output
             // Created before the capture filter snapshots the window list so
@@ -369,8 +474,21 @@ final class ShareSession {
 
     private func settingsDidChange() {
         guard state == .active else { return }
-        if settings.shareMode != activeShareMode
-            || (activeShareMode == .virtualDisplay && settings.crispOutput != activeCrisp) {
+        if settings.shareMode != activeShareMode {
+            if settings.shareMode == .virtualMonitor || activeShareMode == .virtualMonitor {
+                // A real-screen region and the standalone monitor don't
+                // translate into each other — end the session cleanly.
+                stop()
+                return
+            }
+            restartSession()
+        } else if activeShareMode == .virtualMonitor
+                    && (settings.crispOutput != activeCrisp
+                        || settings.virtualMonitorSize != activeMonitorSize) {
+            teardown()
+            state = .selecting
+            Task { await activateMonitor() }
+        } else if activeShareMode == .virtualDisplay && settings.crispOutput != activeCrisp {
             restartSession()
         } else {
             frameRateChangedIfNeeded()
@@ -383,7 +501,7 @@ final class ShareSession {
                 let exclusions = activeExclusions
                 Task { try? await capture.updateExclusions(exclusions) }
             }
-            if follow.mode != settings.followMode {
+            if activeShareMode != .virtualMonitor, follow.mode != settings.followMode {
                 follow.set(mode: settings.followMode)
             }
             if settings.hotbarEnabled != lastHotbarEnabled {
@@ -399,7 +517,11 @@ final class ShareSession {
             if settings.previewWindowEnabled != lastPreviewEnabled {
                 lastPreviewEnabled = settings.previewWindowEnabled
                 if settings.previewWindowEnabled {
-                    if let region = currentRegion {
+                    if activeShareMode == .virtualMonitor {
+                        if let main = NSScreen.main, let aspect = activeAspect {
+                            preview.showProminent(aspect: aspect, screen: main)
+                        }
+                    } else if let region = currentRegion {
                         preview.show(region: region.rect, screen: region.screen)
                     }
                 } else {
@@ -452,6 +574,8 @@ final class ShareSession {
         follow.set(mode: .off)
         hotbar.close()
         preview.close()
+        monitorPrivacyCover?.close()
+        monitorPrivacyCover = nil
         cursorEmphasis.stop()
         if let recorder {
             self.recorder = nil

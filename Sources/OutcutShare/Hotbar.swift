@@ -8,6 +8,9 @@ final class HotbarModel: ObservableObject {
     @Published var followOn = false
     @Published var highlightsOn = false
     @Published var previewOn = false
+    /// Virtual-monitor sessions have no on-screen region: adjust, presets,
+    /// follow and highlights don't apply and their buttons are hidden.
+    @Published var regionless = false
 }
 
 struct HotbarActions {
@@ -85,16 +88,20 @@ struct HotbarView: View {
             barButton(model.isRecording ? "stop.circle.fill" : "record.circle",
                       help: model.isRecording ? "Stop recording" : "Start recording",
                       tint: model.isRecording ? .red : nil, action: actions.record)
-            barButton("cursorarrow.rays", help: "Presenter highlights",
-                      active: model.highlightsOn, action: actions.highlights)
+            if !model.regionless {
+                barButton("cursorarrow.rays", help: "Presenter highlights",
+                          active: model.highlightsOn, action: actions.highlights)
+            }
             barButton("eye", help: "Preview shared output",
                       active: model.previewOn, action: actions.preview)
-            barButton("arrow.up.left.and.arrow.down.right", help: "Move / resize region",
-                      action: actions.adjust)
-            barButton("plus.square.on.square", help: "Save region as preset",
-                      action: actions.savePreset)
-            barButton("scope", help: "Follow mode",
-                      active: model.followOn, action: actions.follow)
+            if !model.regionless {
+                barButton("arrow.up.left.and.arrow.down.right", help: "Move / resize region",
+                          action: actions.adjust)
+                barButton("plus.square.on.square", help: "Save region as preset",
+                          action: actions.savePreset)
+                barButton("scope", help: "Follow mode",
+                          active: model.followOn, action: actions.follow)
+            }
 
             Divider().frame(height: 16)
 
@@ -160,6 +167,11 @@ final class HotbarController {
             build()
         }
         refresh()
+        // The button set varies by mode (regionless hides region actions) —
+        // refit the panel to the current content.
+        if let panel, let hosting = panel.contentView as? NSHostingView<HotbarView> {
+            panel.setContentSize(hosting.fittingSize)
+        }
         position()
         panel?.orderFrontRegardless()
     }
@@ -181,6 +193,7 @@ final class HotbarController {
         model.followOn = settings.followMode != .off
         model.highlightsOn = settings.cursorHighlight || settings.clickRipples
         model.previewOn = settings.previewWindowEnabled
+        model.regionless = session?.isVirtualMonitor ?? false
     }
 
     private func position() {

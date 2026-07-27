@@ -57,6 +57,31 @@ final class PreviewWindowController: NSObject {
         panel.orderFrontRegardless()
     }
 
+    /// Virtual-monitor mode: the preview is the primary way to see the
+    /// otherwise invisible screen — large and centered instead of docked.
+    func showProminent(aspect: CGFloat, screen: NSScreen) {
+        self.aspect = aspect
+        screenFrame = screen.visibleFrame
+        if panel == nil {
+            build()
+        }
+        guard let panel else { return }
+        panel.setFrame(Geometry.prominentPreviewFrame(aspect: aspect,
+                                                      screenFrame: screenFrame),
+                       display: true)
+        applyAspectConstraints()
+        relayout()
+        refresh()
+        panel.orderFrontRegardless()
+    }
+
+    /// Current on-screen frame (nil while hidden) — used to anchor the
+    /// hotbar next to the panel in virtual-monitor mode.
+    var panelFrame: CGRect? {
+        guard let panel, panel.isVisible else { return nil }
+        return panel.frame
+    }
+
     /// The shared region was resized: refit the panel (in place) to the new
     /// aspect.
     func aspectChanged(_ aspect: CGFloat) {

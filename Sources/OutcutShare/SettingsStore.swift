@@ -37,6 +37,9 @@ enum ShareMode: String {
     case virtualDisplay
     /// A hidden normal-level window mirroring the region ("share window").
     case hiddenWindow
+    /// A standalone virtual screen the user places windows on — nothing from
+    /// the real screen is shared; a large preview panel peeks into it.
+    case virtualMonitor
 }
 
 /// UserDefaults-backed app settings. All writes persist immediately and post
@@ -231,6 +234,25 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    /// Resolution of the standalone virtual monitor (points).
+    @Published var virtualMonitorWidth: Int {
+        didSet {
+            defaults.set(virtualMonitorWidth, forKey: "virtualMonitorWidth")
+            notifyChange()
+        }
+    }
+
+    @Published var virtualMonitorHeight: Int {
+        didSet {
+            defaults.set(virtualMonitorHeight, forKey: "virtualMonitorHeight")
+            notifyChange()
+        }
+    }
+
+    var virtualMonitorSize: CGSize {
+        CGSize(width: virtualMonitorWidth, height: virtualMonitorHeight)
+    }
+
     static let defaultShareWindowTitle = "Outcut Share (Share Region)"
 
     /// Title sharing apps show for the hidden share window in their window
@@ -348,6 +370,10 @@ final class SettingsStore: ObservableObject {
         self.previewWindowEnabled = defaults.bool(forKey: "previewWindowEnabled")
         self.shareWindowTitle = defaults.string(forKey: "shareWindowTitle")
             ?? Self.defaultShareWindowTitle
+        defaults.register(defaults: ["virtualMonitorWidth": 1920,
+                                     "virtualMonitorHeight": 1080])
+        self.virtualMonitorWidth = defaults.integer(forKey: "virtualMonitorWidth")
+        self.virtualMonitorHeight = defaults.integer(forKey: "virtualMonitorHeight")
         self.crispOutput = defaults.bool(forKey: "crispOutput")
         self.dockIconWhileActive = defaults.bool(forKey: "dockIconWhileActive")
         defaults.register(defaults: ["hideNotificationBanners": true])
