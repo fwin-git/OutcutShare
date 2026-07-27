@@ -1,5 +1,6 @@
 import AppKit
 import CoreGraphics
+import CoreMedia
 
 /// Demo-mode toggles read by the normal pipeline.
 @MainActor
@@ -67,6 +68,38 @@ final class DemoDriver {
     }
 }
 
+/// Compresses presentation timestamps so the finished file plays back
+/// sped up (all frames kept — just closer together). Called from the
+/// capture sample queue, which is serial.
+final class SampleRetimer: @unchecked Sendable {
+    private let speed: Double
+    private var anchor: CMTime?
+
+    init(speed: Double) {
+        self.speed = speed
+    }
+
+    func retimed(_ sample: CMSampleBuffer) -> CMSampleBuffer {
+        let pts = CMSampleBufferGetPresentationTimeStamp(sample)
+        if anchor == nil {
+            anchor = pts
+        }
+        guard let anchor else { return sample }
+        let scaled = CMTimeMultiplyByFloat64(CMTimeSubtract(pts, anchor),
+                                             multiplier: 1.0 / speed)
+        var timing = CMSampleTimingInfo(duration: CMSampleBufferGetDuration(sample),
+                                        presentationTimeStamp: CMTimeAdd(anchor, scaled),
+                                        decodeTimeStamp: .invalid)
+        var out: CMSampleBuffer?
+        CMSampleBufferCreateCopyWithNewTiming(allocator: kCFAllocatorDefault,
+                                              sampleBuffer: sample,
+                                              sampleTimingEntryCount: 1,
+                                              sampleTimingArray: &timing,
+                                              sampleBufferOut: &out)
+        return out ?? sample
+    }
+}
+
 /// Screencast-style keystroke indicator: a chip at the stage's bottom
 /// center whenever the choreography holds a key, so viewers can follow the
 /// modifier-driven interactions.
@@ -82,9 +115,12 @@ final class DemoKeystrokeHUD {
     func show(_ label: String) {
         hide()
         let font = NSFont.systemFont(ofSize: 34, weight: .bold)
+        // White chip, dark glyph — a black chip drowned in the dark
+        // wallpaper.
         let text = NSAttributedString(string: label,
                                       attributes: [.font: font,
-                                                   .foregroundColor: NSColor.white])
+                                                   .foregroundColor: NSColor.black
+                                                       .withAlphaComponent(0.85)])
         let textSize = text.size()
         let frame = CGRect(x: stage.midX - (textSize.width + 60) / 2,
                            y: stage.minY + 24,
@@ -100,7 +136,7 @@ final class DemoKeystrokeHUD {
         panel.collectionBehavior = [.canJoinAllSpaces, .stationary]
         let view = NSView(frame: CGRect(origin: .zero, size: frame.size))
         view.wantsLayer = true
-        view.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.72).cgColor
+        view.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.92).cgColor
         view.layer?.cornerRadius = 14
         let field = NSTextField(labelWithAttributedString: text)
         field.frame = CGRect(x: (frame.width - textSize.width) / 2,
@@ -341,6 +377,17 @@ final class DemoDirector {
                 y: panel.minY + (CGFloat(row) + 0.5) / 3 * panel.height)
     }
 
+    /// The bundled demo wallpaper — app bundle first, repo-relative for
+    /// debug-binary runs from the checkout, gradient as the last resort.
+    private func backdropImage() -> NSImage? {
+        if let url = Bundle.main.url(forResource: "DemoBackdrop", withExtension: "jpg"),
+           let image = NSImage(contentsOf: url) {
+            return image
+        }
+        return NSImage(contentsOfFile:
+            FileManager.default.currentDirectoryPath + "/Resources/DemoBackdrop.jpg")
+    }
+
     private func showBackdrop() {
         let window = NSWindow(contentRect: stage, styleMask: .borderless,
                               backing: .buffered, defer: false)
@@ -353,13 +400,18 @@ final class DemoDirector {
         window.collectionBehavior = [.canJoinAllSpaces, .stationary]
         let view = NSView(frame: CGRect(origin: .zero, size: stage.size))
         view.wantsLayer = true
-        let gradient = CAGradientLayer()
-        gradient.frame = view.bounds
-        gradient.colors = [NSColor(calibratedRed: 0.13, green: 0.17, blue: 0.32, alpha: 1).cgColor,
-                           NSColor(calibratedRed: 0.34, green: 0.19, blue: 0.38, alpha: 1).cgColor]
-        gradient.startPoint = CGPoint(x: 0, y: 1)
-        gradient.endPoint = CGPoint(x: 1, y: 0)
-        view.layer?.addSublayer(gradient)
+        if let image = backdropImage() {
+            view.layer?.contents = image
+            view.layer?.contentsGravity = .resizeAspectFill
+        } else {
+            let gradient = CAGradientLayer()
+            gradient.frame = view.bounds
+            gradient.colors = [NSColor(calibratedRed: 0.13, green: 0.17, blue: 0.32, alpha: 1).cgColor,
+                               NSColor(calibratedRed: 0.34, green: 0.19, blue: 0.38, alpha: 1).cgColor]
+            gradient.startPoint = CGPoint(x: 0, y: 1)
+            gradient.endPoint = CGPoint(x: 1, y: 0)
+            view.layer?.addSublayer(gradient)
+        }
         window.contentView = view
         // In FRONT of the user's windows (the whole point: nothing personal
         // in frame); the helper's windows launch afterwards and stack above.
@@ -396,8 +448,10 @@ final class DemoDirector {
         let scale = screen.backingScaleFactor
         let (pw, ph) = Geometry.capturePixelSize(region: stage, scale: scale)
         try recorder.start(pixelWidth: pw, pixelHeight: ph, to: url)
+        // 1.4× playback baked into the file — no post-processing step.
+        let retimer = SampleRetimer(speed: 1.4)
         capture.onSampleBuffer = { [recorder] sample in
-            recorder.append(sample)
+            recorder.append(retimer.retimed(sample))
         }
         let local = Geometry.displayLocalTopLeftRect(appKitGlobal: stage,
                                                      screenFrame: screen.frame)
