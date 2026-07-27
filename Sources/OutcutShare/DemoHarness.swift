@@ -114,7 +114,7 @@ final class DemoKeystrokeHUD {
 
     func show(_ label: String) {
         hide()
-        let font = NSFont.systemFont(ofSize: 34, weight: .bold)
+        let font = NSFont.systemFont(ofSize: 52, weight: .bold)
         // White chip, dark glyph — a black chip drowned in the dark
         // wallpaper.
         let text = NSAttributedString(string: label,
@@ -124,7 +124,7 @@ final class DemoKeystrokeHUD {
         let textSize = text.size()
         let frame = CGRect(x: stage.midX - (textSize.width + 60) / 2,
                            y: stage.minY + 24,
-                           width: textSize.width + 60, height: textSize.height + 26)
+                           width: textSize.width + 76, height: textSize.height + 34)
         let panel = NSPanel(contentRect: frame,
                             styleMask: [.borderless, .nonactivatingPanel],
                             backing: .buffered, defer: false)
@@ -137,7 +137,7 @@ final class DemoKeystrokeHUD {
         let view = NSView(frame: CGRect(origin: .zero, size: frame.size))
         view.wantsLayer = true
         view.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.92).cgColor
-        view.layer?.cornerRadius = 14
+        view.layer?.cornerRadius = 18
         let field = NSTextField(labelWithAttributedString: text)
         field.frame = CGRect(x: (frame.width - textSize.width) / 2,
                              y: (frame.height - textSize.height) / 2,
@@ -236,7 +236,7 @@ final class DemoDirector {
             throw DemoError.unknownScenario
         }
 
-        await driver.pause(1.5)
+        await driver.pause(0.8)
         capture.onSampleBuffer = nil
         await capture.stop()
         _ = await recorder.stop()
@@ -264,10 +264,10 @@ final class DemoDirector {
             await driver.press(at: p)
             await driver.release(at: p)
         }
-        await driver.move(to: CGPoint(x: stage.minX + 60, y: stage.minY + 60), over: 0.4)
-        await driver.pause(0.6)
+        await driver.move(to: CGPoint(x: stage.minX + 60, y: stage.minY + 60), over: 0.35)
+        await driver.pause(0.4)
         let url = try startRecording(screen: screen)
-        await driver.pause(1.2)
+        await driver.pause(0.7)
 
         // Drag two fake app windows onto the monitor.
         guard let notes = try helperWindows(in: stage).first else {
@@ -276,16 +276,16 @@ final class DemoDirector {
         await driver.drag(from: titleBarPoint(of: notes.frame),
                           to: CGPoint(x: panel.minX + panel.width * 0.30,
                                       y: panel.minY + panel.height * 0.62),
-                          over: 1.6)
-        await driver.pause(1.4)
+                          over: 1.2)
+        await driver.pause(0.7)
         guard let second = try helperWindows(in: stage).first else {
             throw DemoError.missingDemoWindow
         }
         await driver.drag(from: titleBarPoint(of: second.frame),
                           to: CGPoint(x: panel.minX + panel.width * 0.62,
                                       y: panel.minY + panel.height * 0.52),
-                          over: 1.8)
-        await driver.pause(1.4)
+                          over: 1.3)
+        await driver.pause(0.7)
 
         // Grid layout: grab a window inside the preview, sweep a block.
         guard let displayFrame = session.currentRegionRect else { return url }
@@ -294,20 +294,20 @@ final class DemoDirector {
             let grab = panelPoint(forDisplayPoint:
                 CGPoint(x: target.frame.midX, y: target.frame.maxY - 14),
                 display: displayFrame, panel: panel)
-            await driver.move(to: grab, over: 0.7)
+            await driver.move(to: grab, over: 0.5)
             await driver.press(at: grab)
             await driver.move(to: cellCenter(panel, col: 0, row: 1), over: 0.7,
                               dragging: true)
             DemoState.gridModifierForced = true
             keystrokeHUD?.show(settings.dragOutModifier.symbol)
-            await driver.move(to: cellCenter(panel, col: 0, row: 1), over: 0.4,
+            await driver.move(to: cellCenter(panel, col: 0, row: 1), over: 0.35,
                               dragging: true)
-            await driver.move(to: cellCenter(panel, col: 0, row: 0), over: 0.8,
+            await driver.move(to: cellCenter(panel, col: 0, row: 0), over: 0.6,
                               dragging: true)
             await driver.release(at: cellCenter(panel, col: 0, row: 0))
             DemoState.gridModifierForced = false
             keystrokeHUD?.hide()
-            await driver.pause(1.4)
+            await driver.pause(0.7)
         }
 
         // Pull a window back out: ghost rides the cursor off the panel.
@@ -319,12 +319,12 @@ final class DemoDirector {
             await driver.drag(from: grab,
                               to: CGPoint(x: stage.minX + stage.width * 0.24,
                                           y: stage.minY + stage.height * 0.30),
-                              over: 1.8)
-            await driver.pause(1.6)
+                              over: 1.4)
+            await driver.pause(0.9)
         }
 
         session.stop() // remaining windows return automatically
-        await driver.pause(2.2)
+        await driver.pause(1.5)
         return url
     }
 
@@ -340,13 +340,13 @@ final class DemoDirector {
                            y: stage.minY + stage.height * 0.06)
         let to = CGPoint(x: stage.minX + stage.width * 0.56,
                          y: stage.minY + stage.height * 0.92)
-        await driver.drag(from: from, to: to, over: 1.6)
+        await driver.drag(from: from, to: to, over: 1.2)
         try await waitForActive()
-        await driver.pause(2.0)
+        await driver.pause(1.2)
         session.togglePause()
-        await driver.pause(1.8)
+        await driver.pause(1.1)
         session.togglePause()
-        await driver.pause(1.4)
+        await driver.pause(0.9)
         session.stop()
         await driver.pause(1.0)
         return url
@@ -448,8 +448,8 @@ final class DemoDirector {
         let scale = screen.backingScaleFactor
         let (pw, ph) = Geometry.capturePixelSize(region: stage, scale: scale)
         try recorder.start(pixelWidth: pw, pixelHeight: ph, to: url)
-        // 1.4× playback baked into the file — no post-processing step.
-        let retimer = SampleRetimer(speed: 1.4)
+        // 1.8× playback baked into the file — no post-processing step.
+        let retimer = SampleRetimer(speed: 1.8)
         capture.onSampleBuffer = { [recorder] sample in
             recorder.append(retimer.retimed(sample))
         }
