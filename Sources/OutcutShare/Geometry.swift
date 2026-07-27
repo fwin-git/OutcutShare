@@ -344,6 +344,17 @@ enum Geometry {
         return nil
     }
 
+    /// Where a monitor window lands when the session ends: its center maps
+    /// proportionally from the virtual display onto the real screen, then
+    /// the window is clamped fully on screen.
+    static func rehomedWindowOrigin(window: CGRect, display: CGRect,
+                                    target: CGRect) -> CGPoint {
+        let center = previewPointToDisplayPoint(
+            CGPoint(x: window.midX, y: window.midY), panel: display, display: target)
+        return centeredClampedWindowOrigin(size: window.size, center: center,
+                                           bounds: target)
+    }
+
     enum DockSide {
         case left, right, bottom
     }

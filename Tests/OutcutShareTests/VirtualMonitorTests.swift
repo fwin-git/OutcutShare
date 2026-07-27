@@ -172,6 +172,28 @@ final class MonitorInteractionTests: XCTestCase {
         XCTAssertEqual(bottom.x, panel.minX + 0.1 * panel.width, accuracy: 0.5)
     }
 
+    func testRehomedWindowKeepsRelativePlacement() {
+        let display = CGRect(x: 5120, y: 360, width: 1920, height: 1080)
+        let target = CGRect(x: 0, y: 25, width: 5120, height: 1390)
+
+        // Centered on the monitor → centered on the real screen.
+        let centered = Geometry.rehomedWindowOrigin(
+            window: CGRect(x: 5120 + 760, y: 360 + 390, width: 400, height: 300),
+            display: display, target: target)
+        XCTAssertEqual(centered.x, target.midX - 200, accuracy: 1)
+        XCTAssertEqual(centered.y, target.midY - 150, accuracy: 1)
+
+        // Top-left corner region: the center maps proportionally
+        // (t = 300/1920 across, 980/1080 up) and stays fully on screen.
+        let corner = Geometry.rehomedWindowOrigin(
+            window: CGRect(x: 5120, y: 360 + 1080 - 200, width: 600, height: 200),
+            display: display, target: target)
+        XCTAssertEqual(corner.x, 300.0 / 1920 * 5120 - 300, accuracy: 1)
+        XCTAssertEqual(corner.y, 25 + 980.0 / 1080 * 1390 - 100, accuracy: 1)
+        XCTAssertTrue(target.contains(CGRect(origin: corner,
+                                             size: CGSize(width: 600, height: 200))))
+    }
+
     func testDockSideDetection() {
         let frame = CGRect(x: 0, y: 0, width: 5120, height: 1440)
         XCTAssertEqual(Geometry.dockSide(

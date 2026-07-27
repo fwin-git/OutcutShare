@@ -35,6 +35,26 @@ enum WindowLocator {
         return nil
     }
 
+    /// All normal-layer windows whose center sits inside `area` (front to
+    /// back), excluding ours.
+    static func windows(in area: CGRect, excludingPID: pid_t) -> [FoundWindow] {
+        guard let list = CGWindowListCopyWindowInfo(
+            [.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID
+        ) as? [[String: Any]] else { return [] }
+        var found: [FoundWindow] = []
+        for info in list {
+            guard (info[kCGWindowLayer as String] as? Int) == 0,
+                  let pid = info[kCGWindowOwnerPID as String] as? pid_t,
+                  pid != excludingPID,
+                  let id = info[kCGWindowNumber as String] as? CGWindowID,
+                  let frame = appKitFrame(fromBoundsDict: info[kCGWindowBounds as String]),
+                  area.contains(CGPoint(x: frame.midX, y: frame.midY))
+            else { continue }
+            found.append(FoundWindow(id: id, pid: pid, frame: frame))
+        }
+        return found
+    }
+
     /// Current AppKit frame of a specific window (nil once it's gone).
     static func frame(ofWindow id: CGWindowID) -> CGRect? {
         guard let list = CGWindowListCopyWindowInfo(.optionIncludingWindow, id)
@@ -141,6 +161,22 @@ enum WindowMover {
         return Geometry.appKitRect(
             fromCGTopLeft: CGRect(origin: point, size: size),
             primaryHeight: primaryHeight)
+    }
+}
+
+/// Brings every window home from the virtual display before it's torn
+/// down: macOS leaves windows of a disconnected virtual display at stale
+/// coordinates (no migration), so they'd be lost off-screen otherwise.
+@MainActor
+enum MonitorWindowRescue {
+    static func returnWindows(from displayFrame: CGRect, to target: CGRect) {
+        guard WindowMover.hasPermission else { return }
+        for window in WindowLocator.windows(in: displayFrame, excludingPID: getpid()) {
+            let origin = Geometry.rehomedWindowOrigin(window: window.frame,
+                                                      display: displayFrame,
+                                                      target: target)
+            WindowMover.move(window: window, toAppKitOrigin: origin)
+        }
     }
 }
 

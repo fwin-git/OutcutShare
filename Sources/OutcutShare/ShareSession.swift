@@ -611,6 +611,14 @@ final class ShareSession {
 
     private func teardown() {
         isPaused = false
+        // Before the virtual display disappears: macOS does NOT migrate its
+        // windows back — they'd be stranded at coordinates outside every
+        // screen. Bring them home to the real screen (relative placement).
+        if activeShareMode == .virtualMonitor, let region = currentRegion,
+           let home = NSScreen.screens.first(where: { $0 != region.screen }) {
+            MonitorWindowRescue.returnWindows(from: region.rect,
+                                              to: home.visibleFrame)
+        }
         follow.set(mode: .off)
         hotbar.close()
         preview.close()
