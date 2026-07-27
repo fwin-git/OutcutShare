@@ -153,6 +153,8 @@ final class HotbarController {
     private var dragAnchor: (origin: CGPoint, mouse: CGPoint)?
     private var screenFrame: CGRect = .zero
     private var lastRegion: CGRect = .zero
+    private var panelGestureAttached: Bool?
+    private var lastPanelMoveAt: TimeInterval = 0
     private var lastFollowChoice: FollowMode = .activeWindow
 
     init(session: ShareSession, settings: SettingsStore) {
@@ -185,12 +187,21 @@ final class HotbarController {
     /// Monitor mode: the preview panel moved or resized. The hotbar follows
     /// while it sits near the panel (auto placement re-runs; a manual spot
     /// keeps its relative offset). Parked far away, it stays — that
-    /// placement was deliberate.
+    /// placement was deliberate. Attachment is decided ONCE at the start of
+    /// each drag gesture and held: a detached panel dragged past the hotbar
+    /// must not pick it up mid-flight.
     func panelMoved(to frame: CGRect) {
         let previous = lastRegion
         lastRegion = frame
         guard let panel, panel.isVisible, previous != frame else { return }
-        guard Geometry.framesAreNear(panel.frame, previous, threshold: 80) else { return }
+        let now = ProcessInfo.processInfo.systemUptime
+        let isNewGesture = now - lastPanelMoveAt > 0.4
+        lastPanelMoveAt = now
+        if isNewGesture {
+            panelGestureAttached = Geometry.framesAreNear(panel.frame, previous,
+                                                          threshold: 80)
+        }
+        guard panelGestureAttached == true else { return }
         if let manual = manualOrigin {
             let moved = CGPoint(x: manual.x + frame.minX - previous.minX,
                                 y: manual.y + frame.minY - previous.minY)
