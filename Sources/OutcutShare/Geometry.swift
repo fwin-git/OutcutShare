@@ -345,12 +345,13 @@ enum Geometry {
     }
 
     /// Crop of a window inside its display's captured image, in CALayer
-    /// contentsRect unit space (top-left origin) — used by the pull-out
-    /// drag ghost.
+    /// contentsRect unit space — used by the pull-out drag ghost. macOS
+    /// layers use a BOTTOM-left unit origin here (a top-left crop showed a
+    /// strip of wallpaper instead of the window).
     static func unitCropRect(of window: CGRect, in display: CGRect) -> CGRect {
         guard display.width > 0, display.height > 0 else { return CGRect(x: 0, y: 0, width: 1, height: 1) }
         return CGRect(x: (window.minX - display.minX) / display.width,
-                      y: (display.maxY - window.maxY) / display.height,
+                      y: (window.minY - display.minY) / display.height,
                       width: window.width / display.width,
                       height: window.height / display.height)
     }

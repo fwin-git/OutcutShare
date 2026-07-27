@@ -169,18 +169,31 @@ enum WindowMover {
     }
 }
 
-/// Brings every window home from the virtual display before it's torn
-/// down: macOS leaves windows of a disconnected virtual display at stale
+/// Brings every window home from the virtual display when it's torn down:
+/// macOS leaves windows of a disconnected virtual display at stale
 /// coordinates (no migration), so they'd be lost off-screen otherwise.
+/// The moves run AFTER the display is destroyed — moving them while the
+/// display still existed attached them to the wrong Space; once the
+/// display dies, macOS adopts them onto the CURRENT Space and our delayed
+/// move only fixes their coordinates.
 @MainActor
 enum MonitorWindowRescue {
-    static func returnWindows(from displayFrame: CGRect, to target: CGRect) {
-        guard WindowMover.hasPermission else { return }
-        for window in WindowLocator.windows(in: displayFrame, excludingPID: getpid()) {
-            let origin = Geometry.rehomedWindowOrigin(window: window.frame,
-                                                      display: displayFrame,
-                                                      target: target)
-            WindowMover.move(window: window, toAppKitOrigin: origin, raise: false)
+    typealias Plan = [(window: WindowLocator.FoundWindow, origin: CGPoint)]
+
+    /// Capture the window list and targets while the display still exists.
+    static func plan(from displayFrame: CGRect, to target: CGRect) -> Plan {
+        guard WindowMover.hasPermission else { return [] }
+        return WindowLocator.windows(in: displayFrame, excludingPID: getpid()).map {
+            ($0, Geometry.rehomedWindowOrigin(window: $0.frame,
+                                              display: displayFrame, target: target))
+        }
+    }
+
+    /// Execute after the display is gone and the window server settled.
+    static func execute(_ plan: Plan) {
+        for entry in plan {
+            WindowMover.move(window: entry.window, toAppKitOrigin: entry.origin,
+                             raise: false)
         }
     }
 }
