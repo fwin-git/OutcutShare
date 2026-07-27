@@ -281,6 +281,7 @@ final class MonitorPointerForwarder {
     private let displayFrame: CGRect
     private var savedCursor: CGPoint?
     private var promptedForPermission = false
+    private var upMonitors: [Any] = []
     /// True from mouse-down until the warp-back completed — the stranded-
     /// cursor watchdog must not fight an in-flight gesture.
     private(set) var gestureActive = false
@@ -290,6 +291,12 @@ final class MonitorPointerForwarder {
         self.displayFrame = displayFrame
     }
 
+    deinit {
+        for monitor in upMonitors {
+            NSEvent.removeMonitor(monitor)
+        }
+    }
+
     func mouseDown(clickCount: Int, at local: CGPoint, in bounds: CGRect,
                    button: CGMouseButton) {
         guard ensurePermission() else { return }
@@ -297,30 +304,63 @@ final class MonitorPointerForwarder {
         savedCursor = currentCursor()
         post(button == .left ? .leftMouseDown : .rightMouseDown,
              at: target(local, bounds), button: button, clickCount: clickCount)
+        // The injected mouse-down makes the window server hand the physical
+        // drag/up tracking to the app under the SYNTHETIC location — our
+        // view then never receives the mouse-up, which used to leave the
+        // gesture (and the cursor) stranded on the virtual display. A
+        // global monitor sees that other app's mouse-up and finalizes.
+        installUpMonitor()
     }
 
     func mouseDragged(at local: CGPoint, in bounds: CGRect, button: CGMouseButton) {
-        guard WindowMover.hasPermission else { return }
+        guard WindowMover.hasPermission, gestureActive else { return }
         post(button == .left ? .leftMouseDragged : .rightMouseDragged,
              at: target(local, bounds), button: button, clickCount: 1)
     }
 
     func mouseUp(clickCount: Int, at local: CGPoint, in bounds: CGRect,
                  button: CGMouseButton) {
-        guard WindowMover.hasPermission else { return }
+        guard WindowMover.hasPermission, gestureActive else { return }
         post(button == .left ? .leftMouseUp : .rightMouseUp,
              at: target(local, bounds), button: button, clickCount: clickCount)
-        // The warp-back must run AFTER the queued synthetic events have been
-        // processed — the posted mouse-up carries the monitor position, and
-        // an immediate warp would be undone when it lands, stranding the
-        // cursor on the virtual display.
+        finalizeGesture()
+    }
+
+    private func installUpMonitor() {
+        removeUpMonitors()
+        let monitor = NSEvent.addGlobalMonitorForEvents(
+            matching: [.leftMouseUp, .rightMouseUp],
+            handler: { [weak self] _ in
+                MainActor.assumeIsolated { self?.finalizeGesture() }
+            })
+        if let monitor {
+            upMonitors.append(monitor)
+        }
+    }
+
+    private func removeUpMonitors() {
+        upMonitors.forEach { NSEvent.removeMonitor($0) }
+        upMonitors = []
+    }
+
+    /// Ends the gesture from whichever side saw the mouse-up (our view or
+    /// the target app via the global monitor). The warp-back runs as a
+    /// short burst: queued synthetic events carry the monitor position and
+    /// would undo a single immediate warp.
+    private func finalizeGesture() {
+        guard gestureActive else { return }
+        removeUpMonitors()
         let saved = savedCursor
         savedCursor = nil
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            if let saved {
-                CGWarpMouseCursorPosition(saved)
-                CGAssociateMouseAndMouseCursorPosition(1)
+        if let saved {
+            for delay in [0.08, 0.22, 0.4] {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                    CGWarpMouseCursorPosition(saved)
+                    CGAssociateMouseAndMouseCursorPosition(1)
+                }
             }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak self] in
             MainActor.assumeIsolated { self?.gestureActive = false }
         }
     }
@@ -411,6 +451,7 @@ final class MonitorDragController {
         monitors = []
         candidate = nil
         preview?.setDropTargetHighlight(false)
+        preview?.lowerBehindDraggedWindow(nil)
     }
 
     private func mouseDown() {
@@ -425,13 +466,18 @@ final class MonitorDragController {
     }
 
     private func mouseDragged() {
-        guard candidate != nil, let panel = preview?.panelFrame else { return }
-        preview?.setDropTargetHighlight(panel.contains(NSEvent.mouseLocation))
+        guard let candidate, let panel = preview?.panelFrame else { return }
+        let over = panel.contains(NSEvent.mouseLocation)
+        preview?.setDropTargetHighlight(over)
+        // Keep the dragged window visible IN FRONT of the panel so the user
+        // sees what they're placing.
+        preview?.lowerBehindDraggedWindow(over ? candidate.window.id : nil)
     }
 
     private func mouseUp() {
         defer {
             preview?.setDropTargetHighlight(false)
+            preview?.lowerBehindDraggedWindow(nil)
             candidate = nil
         }
         guard let candidate, let panel = preview?.panelFrame else { return }
