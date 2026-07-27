@@ -17,7 +17,7 @@ ifeq ($(strip $(CODESIGN_ID)),)
 CODESIGN_ID := -
 endif
 
-.PHONY: app test run clean
+.PHONY: app test run clean release
 
 app: $(APP)
 
@@ -54,3 +54,6 @@ run: app
 
 clean:
 	rm -rf build .build
+
+release:
+	Scripts/release.sh
