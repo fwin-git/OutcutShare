@@ -44,6 +44,10 @@ enum WindowCatalog {
 ///    faded colored rectangles with resolution labels.
 @MainActor
 final class RegionSelector {
+    /// Demo harness only: receives the live selection rect (global AppKit
+    /// coordinates) on every overlay redraw.
+    static var demoSelectionObserver: ((CGRect) -> Void)?
+
     private var windows: [SelectionWindow] = []
     private var completion: ((SelectedRegion?) -> Void)?
 
@@ -350,6 +354,13 @@ private final class SelectionView: NSView {
 
         if presetActive, let start = dragStart {
             SnapPresets.draw(candidates: presetCandidates, snapped: snappedPreset, anchor: start)
+        }
+
+        // Demo harness: reports the live selection so the mock call can
+        // mirror it in real time while the user is still dragging.
+        if let observer = RegionSelector.demoSelectionObserver, let window,
+           let selection = currentSelection() {
+            observer(window.convertToScreen(selection))
         }
     }
 

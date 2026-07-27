@@ -37,7 +37,8 @@ performance verification).
 
 ```sh
 .build/debug/OutcutShare --demo=monitor   # Virtual Monitor showcase
-.build/debug/OutcutShare --demo=region    # region sharing showcase
+.build/debug/OutcutShare --demo=region    # selection modifiers + mock call mirror
+.build/debug/OutcutShare --demo=follow    # follow modes (window / cursor)
 ```
 
 Records a feature walkthrough to `~/Movies/OutcutShare/Demos/` — a clean

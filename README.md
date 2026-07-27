@@ -15,6 +15,27 @@ Two ways:
   windows onto its preview and *only they* are ever shared; the rest of
   your desktop stays private by construction.
 
+## See it in action
+
+**Select a region — freeform, standard sizes (⌃), locked aspect (⇧), move
+with Space, or pick a whole window — while the call mirrors it live:**
+
+![Region selection with all modifier modes, mirrored into a mock call](docs/media/demo-region.gif)
+
+**Follow mode — the region tracks your active window, then trails the
+cursor:**
+
+![Follow modes tracking the active window and the cursor](docs/media/demo-follow.gif)
+
+**Virtual Monitor — drag windows onto a private screen, lay them out on
+the 3 × 3 grid (⇧), pull them back out:**
+
+![Virtual Monitor with drag & drop, layout grid and pull-out](docs/media/demo-monitor.gif)
+
+*(All clips are recorded by the app itself — `--demo=region|follow|monitor`
+produces them on a synthetic stage with fake content, see
+[development](docs/development.md).)*
+
 ## Install
 
 Download the latest zip from

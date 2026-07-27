@@ -18,25 +18,32 @@ enum DemoState {
 /// binary).
 @MainActor
 final class DemoDriver {
+    /// Global pacing: every scripted pause is shortened for a snappy cut.
+    private static let pauseScale = 0.67
+
     private var primaryHeight: CGFloat { NSScreen.screens.first?.frame.height ?? 0 }
 
     private func post(_ type: CGEventType, at appKit: CGPoint,
-                      button: CGMouseButton = .left) {
+                      button: CGMouseButton = .left, flags: CGEventFlags = []) {
         let point = Geometry.cgPoint(fromAppKit: appKit, primaryHeight: primaryHeight)
         guard let event = CGEvent(mouseEventSource: nil, mouseType: type,
                                   mouseCursorPosition: point, mouseButton: button) else {
             return
         }
+        event.flags = flags
         event.post(tap: .cghidEventTap)
     }
 
     func pause(_ seconds: TimeInterval) async {
-        try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+        try? await Task.sleep(nanoseconds: UInt64(seconds * Self.pauseScale
+                                                  * 1_000_000_000))
     }
 
-    /// Eased cursor glide, ~60 Hz.
+    /// Eased cursor glide, ~60 Hz. `flags` ride on every event — the
+    /// selector and other overlays read per-event modifiers, so synthetic
+    /// ⇧/⌃ work exactly like held keys.
     func move(to target: CGPoint, over duration: TimeInterval,
-              dragging: Bool = false) async {
+              dragging: Bool = false, flags: CGEventFlags = []) async {
         let start = NSEvent.mouseLocation
         let steps = max(2, Int(duration * 60))
         for i in 1...steps {
@@ -44,19 +51,40 @@ final class DemoDriver {
             let eased = t * t * (3 - 2 * t) // smoothstep
             let p = CGPoint(x: start.x + (target.x - start.x) * eased,
                             y: start.y + (target.y - start.y) * eased)
-            post(dragging ? .leftMouseDragged : .mouseMoved, at: p)
-            await pause(duration / Double(steps))
+            post(dragging ? .leftMouseDragged : .mouseMoved, at: p, flags: flags)
+            try? await Task.sleep(nanoseconds: UInt64(duration / Double(steps)
+                                                      * 1_000_000_000))
         }
     }
 
-    func press(at p: CGPoint) async {
-        post(.leftMouseDown, at: p)
+    func press(at p: CGPoint, flags: CGEventFlags = []) async {
+        post(.leftMouseDown, at: p, flags: flags)
         await pause(0.08)
     }
 
-    func release(at p: CGPoint) async {
-        post(.leftMouseUp, at: p)
+    func release(at p: CGPoint, flags: CGEventFlags = []) async {
+        post(.leftMouseUp, at: p, flags: flags)
         await pause(0.15)
+    }
+
+    func click(at p: CGPoint) async {
+        await move(to: p, over: 0.4)
+        await press(at: p)
+        await release(at: p)
+    }
+
+    /// Key tap (e.g. Space = 49) delivered to the focused window.
+    func tapKey(_ keyCode: CGKeyCode) async {
+        if let down = CGEvent(keyboardEventSource: nil, virtualKey: keyCode,
+                              keyDown: true) {
+            down.post(tap: .cghidEventTap)
+        }
+        await pause(0.08)
+        if let up = CGEvent(keyboardEventSource: nil, virtualKey: keyCode,
+                            keyDown: false) {
+            up.post(tap: .cghidEventTap)
+        }
+        await pause(0.1)
     }
 
     /// A full grab-move-drop of whatever is under `from`.
@@ -113,16 +141,28 @@ final class DemoKeystrokeHUD {
     }
 
     func show(_ label: String) {
+        show(key: label, caption: nil)
+    }
+
+    /// Key chip with an optional explanation, sliding in so each modifier
+    /// beat reads as its own interaction. White chip, dark text — a black
+    /// chip drowned in the dark wallpaper.
+    func show(key: String, caption: String?) {
         hide()
-        let font = NSFont.systemFont(ofSize: 52, weight: .bold)
-        // White chip, dark glyph — a black chip drowned in the dark
-        // wallpaper.
-        let text = NSAttributedString(string: label,
-                                      attributes: [.font: font,
-                                                   .foregroundColor: NSColor.black
-                                                       .withAlphaComponent(0.85)])
+        // Big glyphs for single keys, readable size for text labels.
+        let keyFont = NSFont.systemFont(ofSize: key.count > 2 ? 30 : 44, weight: .bold)
+        let text = NSMutableAttributedString(
+            string: key,
+            attributes: [.font: keyFont,
+                         .foregroundColor: NSColor.black.withAlphaComponent(0.88)])
+        if let caption {
+            text.append(NSAttributedString(
+                string: "   \(caption)",
+                attributes: [.font: NSFont.systemFont(ofSize: 21, weight: .semibold),
+                             .foregroundColor: NSColor.black.withAlphaComponent(0.62)]))
+        }
         let textSize = text.size()
-        let frame = CGRect(x: stage.midX - (textSize.width + 60) / 2,
+        let frame = CGRect(x: stage.midX - (textSize.width + 76) / 2,
                            y: stage.minY + 24,
                            width: textSize.width + 76, height: textSize.height + 34)
         let panel = NSPanel(contentRect: frame,
@@ -138,14 +178,27 @@ final class DemoKeystrokeHUD {
         view.wantsLayer = true
         view.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.92).cgColor
         view.layer?.cornerRadius = 18
-        let field = NSTextField(labelWithAttributedString: text)
-        field.frame = CGRect(x: (frame.width - textSize.width) / 2,
-                             y: (frame.height - textSize.height) / 2,
-                             width: textSize.width, height: textSize.height)
-        view.addSubview(field)
+        // CATextLayer, not NSTextField: label fields wrapped at the exact
+        // measured width and clipped the text ("⇧ Shift" → "⇧").
+        let textLayer = CATextLayer()
+        textLayer.string = text
+        textLayer.alignmentMode = .center
+        textLayer.contentsScale = 2
+        textLayer.frame = CGRect(x: 0, y: (frame.height - textSize.height) / 2 - 2,
+                                 width: frame.width, height: textSize.height + 4)
+        view.layer?.addSublayer(textLayer)
         panel.contentView = view
         panel.level = NSWindow.Level(rawValue: NSWindow.Level.screenSaver.rawValue + 2)
+        // Slide up + fade in.
+        panel.alphaValue = 0
+        panel.setFrame(frame.offsetBy(dx: 0, dy: -14), display: false)
         panel.orderFrontRegardless()
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.28
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel.animator().alphaValue = 1
+            panel.animator().setFrame(frame, display: true)
+        }
         self.panel = panel
     }
 
@@ -172,6 +225,9 @@ final class DemoDirector {
     private var stage: CGRect = .zero
     private var savedMode: ShareMode = .virtualDisplay
     private var savedPreview = false
+    private var savedFollowBehavior: FollowBehavior = .glide
+    private var savedFollowResizes = true
+    private var meetMock: DemoMeetMock?
 
     init(session: ShareSession, scenario: String) {
         self.session = session
@@ -219,6 +275,8 @@ final class DemoDirector {
         DemoState.active = true
         savedMode = settings.shareMode
         savedPreview = settings.previewWindowEnabled
+        savedFollowBehavior = settings.followBehavior
+        savedFollowResizes = settings.followResizes
         stage = Geometry.demoStageRect(visibleFrame: screen.visibleFrame)
         keystrokeHUD = DemoKeystrokeHUD(stage: stage)
         showBackdrop()
@@ -232,6 +290,8 @@ final class DemoDirector {
             url = try await monitorScenario(screen: screen)
         case "region":
             url = try await regionScenario(screen: screen)
+        case "follow":
+            url = try await followScenario(screen: screen)
         default:
             throw DemoError.unknownScenario
         }
@@ -328,27 +388,164 @@ final class DemoDirector {
         return url
     }
 
+    /// Region sharing showcase: selection with ALL modifier modes (Space
+    /// window-pick, ⇧ aspect lock, ⌃ standard sizes), then a mock Meet-style
+    /// call mirrors exactly what viewers see while the region moves live.
     private func regionScenario(screen: NSScreen) async throws -> URL {
         settings.shareMode = .hiddenWindow
-        settings.previewWindowEnabled = true
+        settings.previewWindowEnabled = false // the call mock is the mirror
+        let callFrame = CGRect(x: stage.maxX - stage.width * 0.40 - 16,
+                               y: stage.minY + stage.height * 0.16,
+                               width: stage.width * 0.40, height: stage.height * 0.52)
+        let meet = DemoMeetMock(frame: callFrame)
+        meetMock = meet
+        session.demoFrameTap = { [weak meet] surface in
+            meet?.display(surface: surface)
+        }
         let url = try startRecording(screen: screen)
-        await driver.pause(0.8)
+        // The call mock mirrors the LIVE selection the whole time: crop of
+        // the stage capture while dragging, the true share feed once active.
+        capture.onFrame = { [weak meet] surface in
+            meet?.display(surface: surface)
+        }
+        RegionSelector.demoSelectionObserver = { [weak self] rect in
+            guard let self, let meet = self.meetMock else { return }
+            meet.setCrop(Geometry.unitCropRect(of: rect.intersection(self.stage),
+                                               in: self.stage))
+        }
+        await driver.pause(0.6)
         session.startSelection()
+        await driver.pause(0.5)
+
+        // The selection modes, one deliberate beat each — a sliding caption
+        // chip introduces every mode before its effect plays.
+        let origin = CGPoint(x: stage.minX + stage.width * 0.04,
+                             y: stage.minY + stage.height * 0.10)
+
+        // Beat 1: freeform drag.
+        keystrokeHUD?.show(key: "Drag", caption: "Freeform selection")
+        await driver.move(to: origin, over: 0.5)
+        await driver.press(at: origin)
+        await driver.move(to: CGPoint(x: origin.x + stage.width * 0.22,
+                                      y: origin.y + stage.height * 0.40),
+                          over: 1.1, dragging: true)
         await driver.pause(0.8)
-        // Draw a region around the fake windows on the stage's left side.
-        let from = CGPoint(x: stage.minX + stage.width * 0.03,
-                           y: stage.minY + stage.height * 0.06)
-        let to = CGPoint(x: stage.minX + stage.width * 0.56,
-                         y: stage.minY + stage.height * 0.92)
-        await driver.drag(from: from, to: to, over: 1.2)
+
+        // Beat 2: ⌃ snaps to standard screen sizes — settle on one.
+        keystrokeHUD?.show(key: "⌃", caption: "Standard screen sizes")
+        await driver.pause(0.7)
+        await driver.move(to: CGPoint(x: origin.x + stage.width * 0.36,
+                                      y: origin.y + stage.height * 0.52),
+                          over: 1.5, dragging: true, flags: .maskControl)
+        await driver.pause(1.0)
+
+        // Beat 3: back to freeform — any size, any shape.
+        keystrokeHUD?.show(key: "Drag", caption: "Back to freeform")
+        await driver.pause(0.6)
+        await driver.move(to: CGPoint(x: origin.x + stage.width * 0.30,
+                                      y: origin.y + stage.height * 0.62),
+                          over: 1.0, dragging: true)
+        await driver.pause(0.7)
+
+        // Beat 4: ⇧ locks the current aspect ratio.
+        keystrokeHUD?.show(key: "⇧", caption: "Locked aspect ratio")
+        await driver.pause(0.7)
+        await driver.move(to: CGPoint(x: origin.x + stage.width * 0.42,
+                                      y: origin.y + stage.height * 0.74),
+                          over: 1.3, dragging: true, flags: .maskShift)
+        await driver.pause(0.8)
+
+        // Beat 5: holding Space moves the selection as-is.
+        keystrokeHUD?.show(key: "Space", caption: "Hold to move the selection")
+        await driver.pause(0.7)
+        if let down = CGEvent(keyboardEventSource: nil, virtualKey: 49, keyDown: true) {
+            down.post(tap: .cghidEventTap)
+        }
+        await driver.move(to: CGPoint(x: origin.x + stage.width * 0.30,
+                                      y: origin.y + stage.height * 0.60),
+                          over: 1.1, dragging: true)
+        if let up = CGEvent(keyboardEventSource: nil, virtualKey: 49, keyDown: false) {
+            up.post(tap: .cghidEventTap)
+        }
+        await driver.pause(0.8)
+
+        // Finale: Esc this selection, then Space toggles whole-window
+        // selection — pick a window and the call mirrors it for real.
+        keystrokeHUD?.hide()
+        await driver.tapKey(53) // Esc cancels the overlay mid-drag
+        await driver.release(at: NSEvent.mouseLocation) // lands on the shield
+        await driver.pause(0.5)
+        session.startSelection()
+        await driver.pause(0.4)
+        keystrokeHUD?.show(key: "Space", caption: "Toggle window selection")
+        await driver.pause(0.7)
+        await driver.tapKey(49)
+        guard let pick = try helperWindows(in: stage)
+            .first(where: { $0.frame.midX < stage.midX }) else {
+            throw DemoError.missingDemoWindow
+        }
+        await driver.move(to: CGPoint(x: pick.frame.midX, y: pick.frame.midY),
+                          over: 0.9)
+        await driver.pause(0.9)
+        await driver.press(at: CGPoint(x: pick.frame.midX, y: pick.frame.midY))
+        await driver.release(at: CGPoint(x: pick.frame.midX, y: pick.frame.midY))
+        keystrokeHUD?.hide()
+        try await waitForActive()
+        // Switch the mirror to the true share feed.
+        RegionSelector.demoSelectionObserver = nil
+        capture.onFrame = nil
+        meet.setCrop(nil)
+        await driver.pause(1.6)
+        session.stop()
+        await driver.pause(0.8)
+        return url
+    }
+
+    /// Follow modes: the region tracks the active window (with resize),
+    /// then trails the cursor.
+    private func followScenario(screen: NSScreen) async throws -> URL {
+        settings.shareMode = .hiddenWindow
+        settings.previewWindowEnabled = true
+        settings.followBehavior = .glide
+        settings.followResizes = true
+        let url = try startRecording(screen: screen)
+        await driver.pause(0.5)
+        guard let first = try helperWindows(in: stage).last else {
+            throw DemoError.missingDemoWindow
+        }
+        // Make the helper the ACTIVE app before follow engages — otherwise
+        // follow's first glide targets the user's terminal (still frontmost
+        // and hidden under the shield).
+        await driver.click(at: CGPoint(x: first.frame.midX, y: first.frame.midY))
+        session.startSharing(rect: first.frame.insetBy(dx: -24, dy: -24), on: screen)
         try await waitForActive()
         await driver.pause(1.2)
-        session.togglePause()
-        await driver.pause(1.1)
-        session.togglePause()
-        await driver.pause(0.9)
+
+        keystrokeHUD?.show(key: "Follow", caption: "Active window")
+        session.setFollow(mode: .activeWindow)
+        let targets = try helperWindows(in: stage)
+        for window in targets.prefix(2) {
+            await driver.click(at: CGPoint(x: window.frame.midX,
+                                           y: window.frame.midY))
+            await driver.pause(1.6)
+        }
+        keystrokeHUD?.show(key: "Follow", caption: "Cursor")
+        session.setFollow(mode: .cursor)
+        await driver.pause(0.5)
+        for point in [CGPoint(x: stage.minX + stage.width * 0.62,
+                              y: stage.minY + stage.height * 0.30),
+                      CGPoint(x: stage.minX + stage.width * 0.30,
+                              y: stage.minY + stage.height * 0.70),
+                      CGPoint(x: stage.minX + stage.width * 0.55,
+                              y: stage.minY + stage.height * 0.55)] {
+            await driver.move(to: point, over: 1.2)
+            await driver.pause(0.6)
+        }
+        keystrokeHUD?.hide()
+        session.setFollow(mode: .off)
+        await driver.pause(0.5)
         session.stop()
-        await driver.pause(1.0)
+        await driver.pause(0.8)
         return url
     }
 
@@ -473,10 +670,15 @@ final class DemoDirector {
         if session.state != .idle {
             session.stop()
         }
+        session.demoFrameTap = nil
+        RegionSelector.demoSelectionObserver = nil
+        meetMock?.close()
         helper?.terminate()
         backdrop?.orderOut(nil)
         settings.shareMode = savedMode
         settings.previewWindowEnabled = savedPreview
+        settings.followBehavior = savedFollowBehavior
+        settings.followResizes = savedFollowResizes
         try? await Task.sleep(nanoseconds: 500_000_000)
     }
 }

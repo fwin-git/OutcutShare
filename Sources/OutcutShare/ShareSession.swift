@@ -1,4 +1,5 @@
 import AppKit
+import IOSurface
 
 /// Owns the lifecycle of one sharing session: selection, virtual display,
 /// capture, projection and dimming.
@@ -19,6 +20,8 @@ final class ShareSession {
     var onStateChange: (() -> Void)?
     /// Read from the capture sample queue to gate frame forwarding.
     private(set) nonisolated(unsafe) var isPaused = false
+    /// Demo harness only: extra frame consumer (the mock call's mirror).
+    nonisolated(unsafe) var demoFrameTap: ((IOSurfaceRef) -> Void)?
     /// Set by the app delegate: opens the guided permissions window. Called
     /// instead of firing raw system prompts when the permission is missing.
     var onPermissionsNeeded: (() -> Void)?
@@ -387,7 +390,7 @@ final class ShareSession {
                                     pixelWidth: pw, pixelHeight: ph,
                                     fps: settings.frameRate,
                                     excludedBundleIDs: activeExclusions,
-                                    ownAppExclusion: DemoState.active ? .pidOnly
+                                    ownAppExclusion: DemoState.active ? .none
                                                                       : .pidAndBundle)
 
             currentRegion = region
@@ -485,6 +488,7 @@ final class ShareSession {
                 guard self?.isPaused != true else { return }
                 output?.display(surface: surface)
                 preview?.display(surface: surface)
+                self?.demoFrameTap?(surface)
             }
             capture.onStopped = { [weak self] error in
                 Task { @MainActor in self?.handleStreamStopped(error) }
@@ -496,7 +500,7 @@ final class ShareSession {
             try await capture.start(displayID: region.displayID, sourceRectTopLeft: sourceRect,
                                     pixelWidth: pw, pixelHeight: ph, fps: settings.frameRate,
                                     excludedBundleIDs: activeExclusions,
-                                    ownAppExclusion: DemoState.active ? .pidOnly
+                                    ownAppExclusion: DemoState.active ? .none
                                                                       : .pidAndBundle)
 
             currentRegion = region
