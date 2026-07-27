@@ -24,7 +24,9 @@ final class VirtualDisplay {
     let displayID: CGDirectDisplayID
     private var display: CGVirtualDisplay?
 
-    init(sizeInPoints: CGSize, scale: CGFloat, name: String) throws {
+    /// `forceHiDPI` gives the display Retina (2×) backing even when the
+    /// source screen is 1× — the "crisp output" setting.
+    init(sizeInPoints: CGSize, scale: CGFloat, name: String, forceHiDPI: Bool = false) throws {
         guard CVDApi.available(),
               let descriptor = CVDApi.makeDescriptor(),
               let settings = CVDApi.makeSettings() else {
@@ -32,7 +34,7 @@ final class VirtualDisplay {
         }
         let width = UInt32(sizeInPoints.width)
         let height = UInt32(sizeInPoints.height)
-        let isHiDPI = scale >= 2
+        let isHiDPI = forceHiDPI || scale >= 2
 
         descriptor.name = name
         descriptor.queue = DispatchQueue.main

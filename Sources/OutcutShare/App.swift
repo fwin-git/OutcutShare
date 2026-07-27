@@ -24,8 +24,8 @@ struct OutcutShareApp {
     @MainActor
     static func main() {
         SettingsMigration.run()
-        if CommandLine.arguments.contains("--vd-test") {
-            virtualDisplayTest()
+        if let vdArg = CommandLine.arguments.first(where: { $0.hasPrefix("--vd-test") }) {
+            virtualDisplayTest(forceHiDPI: vdArg.hasSuffix("=2x"))
             return
         }
         let app = NSApplication.shared
@@ -38,10 +38,11 @@ struct OutcutShareApp {
     /// Headless smoke test for the private virtual display API: creates a
     /// 1280×720 display, waits for its NSScreen, tears it down again.
     @MainActor
-    private static func virtualDisplayTest() {
+    private static func virtualDisplayTest(forceHiDPI: Bool = false) {
         do {
             let vd = try VirtualDisplay(sizeInPoints: CGSize(width: 1280, height: 720),
-                                        scale: 1, name: "Outcut Share Test")
+                                        scale: 1, name: "Outcut Share Test",
+                                        forceHiDPI: forceHiDPI)
             print("VD-TEST created displayID=\(vd.displayID)")
             var screen: NSScreen?
             let deadline = Date().addingTimeInterval(5)
