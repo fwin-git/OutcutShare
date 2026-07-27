@@ -20,8 +20,11 @@ final class DemoContentWindows {
         ]
         for (index, frame) in frames.enumerated() {
             let (title, view) = builders[index % builders.count]
+            // .resizable matters: macOS silently rejects AX size changes on
+            // non-resizable windows, which no-oped the grid resize on film.
             let window = NSWindow(contentRect: frame,
-                                  styleMask: [.titled, .closable, .miniaturizable],
+                                  styleMask: [.titled, .closable, .miniaturizable,
+                                              .resizable],
                                   backing: .buffered, defer: false)
             window.title = title
             window.isReleasedWhenClosed = false
