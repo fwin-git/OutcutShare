@@ -116,7 +116,7 @@ final class ShareSession {
                 if let url = await recorder.stop() {
                     NSWorkspace.shared.activateFileViewerSelecting([url])
                 }
-                self.onStateChange?()
+                self.notifyUI()
             }
             return
         }
@@ -138,7 +138,7 @@ final class ShareSession {
             guard let self, !self.isPaused else { return }
             recorder.append(sample)
         }
-        onStateChange?()
+        notifyUI()
     }
 
     /// Pauses/resumes what viewers see without touching the stream: frames
@@ -151,7 +151,7 @@ final class ShareSession {
         } else {
             output?.hidePrivacyScreen()
         }
-        onStateChange?()
+        notifyUI()
     }
 
     func stop() {
