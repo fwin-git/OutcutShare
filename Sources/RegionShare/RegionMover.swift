@@ -98,6 +98,9 @@ private final class AdjustView: NSView {
 
     override var acceptsFirstResponder: Bool { true }
 
+    /// First click must reach the view even while the app isn't active.
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
     func finish(cancelled: Bool) {
         guard !finished else { return }
         finished = true
