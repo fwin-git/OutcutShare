@@ -18,16 +18,20 @@ otherwise it falls back to ad-hoc signing.
 End-to-end verification without clicking through the UI:
 
 ```sh
-.build/debug/OutcutShare --vd-test                             # virtual display only
-.build/debug/OutcutShare --share-test=100,100,800,600,8        # full pipeline, 8 s
-.build/debug/OutcutShare --share-test=100,100,800,600,8,window # hidden-window mode
-.build/debug/OutcutShare --hotkeys-test                        # registered shortcuts
-.build/debug/OutcutShare --permissions-test                    # permission status
-.build/debug/OutcutShare --show-settings=shortcuts             # open a settings pane
+.build/debug/OutcutShare --vd-test                              # virtual display only
+.build/debug/OutcutShare --share-test=100,100,800,600,8         # full pipeline, 8 s
+.build/debug/OutcutShare --share-test=100,100,800,600,8,window  # hidden-window mode
+.build/debug/OutcutShare --share-test=0,0,1,1,8,monitor         # virtual monitor (rect ignored)
+.build/debug/OutcutShare --hotkeys-test                         # registered shortcuts
+.build/debug/OutcutShare --permissions-test                     # permission status
+.build/debug/OutcutShare --show-settings=shortcuts              # open a settings pane
 ```
 
 `--share-test` composes with `--move-by=dx,dy`, `--resize-by=dw,dh`,
-`--pause-at=t1,t2`, `--record-at=t1,t2` and `--follow=activeWindow|cursor`.
+`--pause-at=t1,t2`, `--record-at=t1,t2`, `--follow=activeWindow|cursor` and
+`--preview` (shows the shared-output preview panel).
+`--show-settings` composes with `--close-settings-after=secs` (teardown /
+performance verification).
 
 ## Releases
 
