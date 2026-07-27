@@ -66,6 +66,18 @@ private struct GeneralPage: View {
                 }
                 .pickerStyle(.segmented)
             }
+            Section("Recording") {
+                HStack {
+                    Text("Save recordings to")
+                    Spacer()
+                    Text(settings.recordingFolder.isEmpty
+                         ? "~/Movies/RegionShare" : settings.recordingFolder)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Button("Choose…") { chooseRecordingFolder() }
+                }
+            }
             Section("Startup") {
                 Toggle("Launch at login", isOn: launchAtLoginBinding)
                     .disabled(!LoginItem.available)
@@ -77,6 +89,17 @@ private struct GeneralPage: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    private func chooseRecordingFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.directoryURL = settings.recordingFolderURL
+        if panel.runModal() == .OK, let url = panel.url {
+            settings.recordingFolder = url.path
+        }
     }
 
     @State private var launchAtLogin = LoginItem.isEnabled
@@ -253,7 +276,7 @@ final class SettingsWindowController {
         switch tab {
         case .general:
             controller = NSHostingController(
-                rootView: AnyView(GeneralPage(settings: settings).frame(width: 470, height: 540)))
+                rootView: AnyView(GeneralPage(settings: settings).frame(width: 470, height: 620)))
         case .presets:
             controller = NSHostingController(
                 rootView: AnyView(PresetsPage(settings: settings).frame(width: 470, height: 360)))

@@ -23,6 +23,8 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
     }
 
     var onFrame: ((IOSurfaceRef) -> Void)?
+    /// Raw sample-buffer tap (with timing) for the recording sink.
+    var onSampleBuffer: ((CMSampleBuffer) -> Void)?
     var onStopped: ((Error?) -> Void)?
     /// Debug/testing aid; incremented on the sample queue, read opportunistically.
     private(set) nonisolated(unsafe) var frameCount = 0
@@ -100,6 +102,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
         else { return }
         frameCount += 1
         onFrame?(surface)
+        onSampleBuffer?(sampleBuffer)
     }
 
     func stream(_ stream: SCStream, didStopWithError error: Error) {

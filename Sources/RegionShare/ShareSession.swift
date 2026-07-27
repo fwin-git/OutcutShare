@@ -101,6 +101,41 @@ final class ShareSession {
         Task { await activate(region: SelectedRegion(rect: resolved.rect, screen: screen)) }
     }
 
+    /// Starts/stops recording the region to an .mp4 in the recording folder.
+    func toggleRecording() {
+        guard state == .active else { return }
+        if let recorder {
+            self.recorder = nil
+            capture?.onSampleBuffer = nil
+            Task {
+                if let url = await recorder.stop() {
+                    NSWorkspace.shared.activateFileViewerSelecting([url])
+                }
+                self.onStateChange?()
+            }
+            return
+        }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
+        let url = settings.recordingFolderURL
+            .appendingPathComponent("Recording \(formatter.string(from: Date())).mp4")
+        let recorder = RecordingEngine()
+        do {
+            try recorder.start(pixelWidth: activeOutputPixelSize.width,
+                               pixelHeight: activeOutputPixelSize.height, to: url)
+        } catch {
+            presentError(error, title: "Recording couldn't start")
+            return
+        }
+        self.recorder = recorder
+        capture?.onSampleBuffer = { [weak self] sample in
+            // Respect privacy pause: no raw frames reach the file while paused.
+            guard let self, !self.isPaused else { return }
+            recorder.append(sample)
+        }
+        onStateChange?()
+    }
+
     /// Pauses/resumes what viewers see without touching the stream: frames
     /// stop being forwarded; the privacy style optionally covers the output.
     func togglePause() {
@@ -133,6 +168,8 @@ final class ShareSession {
 
     private lazy var follow = FollowController(session: self, settings: settings)
     private lazy var cursorEmphasis = CursorEmphasisController(session: self, settings: settings)
+    private var recorder: RecordingEngine?
+    var isRecording: Bool { recorder?.isRecording ?? false }
     var followMode: FollowMode { follow.mode }
 
     func setFollow(mode: FollowMode) {
@@ -340,6 +377,15 @@ final class ShareSession {
         isPaused = false
         follow.set(mode: .off)
         cursorEmphasis.stop()
+        if let recorder {
+            self.recorder = nil
+            capture?.onSampleBuffer = nil
+            Task {
+                if let url = await recorder.stop() {
+                    NSWorkspace.shared.activateFileViewerSelecting([url])
+                }
+            }
+        }
         mover?.close()
         mover = nil
         moveBackupRect = nil

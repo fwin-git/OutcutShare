@@ -33,6 +33,11 @@ Requires Xcode command line tools on macOS 14+ (developed on macOS 26).
    appears if macOS needs a fresh start to apply the grant. The window is also
    available anytime via menu → **Permissions…**.
 3. Choose **Select Region & Share** and drag a rectangle (Esc cancels).
+   While selecting: **Space** picks a whole window (Space again returns to
+   dragging), **Space during a drag** freezes the size and moves the
+   selection, **⇧** locks the aspect ratio, **⌃** snaps to viewer-friendly
+   sizes (1280×720 / 1600×900 / 1920×1080) previewed as colored outlines
+   with resolution labels.
 4. Depending on the **Share as** setting:
    - **Virtual Display** (default): a display named **Region Share** comes
      online sized to your region; your sharing app lists it as another
@@ -49,7 +54,16 @@ Requires Xcode command line tools on macOS 14+ (developed on macOS 26).
    locked to the region's aspect ratio (the virtual display keeps its
    resolution and the content scales into it, so the sharing app never sees a
    display change).
-6. **Stop Sharing** removes the virtual display / hidden window and the
+6. **Pause Sharing** (⌃⌥⌘P) freezes what viewers see — either the last frame
+   or a blurred privacy screen with a slashed-eye note (General settings).
+7. **Follow** (menu) makes the region track the active window (snap or
+   smooth glide, optionally resizing to the window) or follow the cursor
+   camera-style with a dead zone.
+8. **Start Recording** (⌃⌥⌘R) writes the region to an .mp4 (folder
+   configurable in General settings; recording pauses with privacy pause).
+   Viewers-only **cursor emphasis** (halo + click ripples) is configurable
+   under Appearance.
+9. **Stop Sharing** removes the virtual display / hidden window and the
    dimming.
 
 ## Settings
@@ -92,6 +106,8 @@ clears a binding:
 | Share Last Region | ⌃⌥⌘L |
 | Move / Resize Region | ⌃⌥⌘M |
 | Stop Sharing | ⌃⌥⌘X |
+| Pause / Resume Sharing | ⌃⌥⌘P |
+| Start / Stop Recording | ⌃⌥⌘R |
 | Share preset 1–9 | ⌃⌥⌘1–9 (fixed) |
 
 Assigning the same combo twice shows a warning on both rows; only the first

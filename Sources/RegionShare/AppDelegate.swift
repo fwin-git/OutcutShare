@@ -30,6 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             case .action(.stopSharing): session.stop()
             case .action(.shareLastRegion): session.shareLastRegion()
             case .action(.togglePause): session.togglePause()
+            case .action(.toggleRecording): session.toggleRecording()
             case .preset(let index):
                 let presets = SettingsStore.shared.presets
                 if index < presets.count {
@@ -122,6 +123,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [session] in
                     session.setFollow(mode: mode)
                     print("SHARE-TEST follow=\(mode.rawValue)")
+                }
+            }
+        }
+        // --record-at=t1,t2 toggles recording at the given offsets (seconds).
+        if let recordArg = CommandLine.arguments.first(where: { $0.hasPrefix("--record-at=") }) {
+            let times = recordArg.dropFirst("--record-at=".count).split(separator: ",").compactMap { Double($0) }
+            for time in times {
+                DispatchQueue.main.asyncAfter(deadline: .now() + time) { [session] in
+                    session.toggleRecording()
+                    print("SHARE-TEST recording toggled, recording=\(session.isRecording)")
                 }
             }
         }
