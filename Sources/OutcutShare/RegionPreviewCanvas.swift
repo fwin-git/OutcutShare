@@ -6,8 +6,8 @@ import SwiftUI
 /// the play/pause control; `progress` tracks the position in the demo cycle.
 @MainActor
 final class FollowDemoModel: ObservableObject {
-    /// nil = hover-driven; false = paused; true = always playing.
-    @Published var playOverride: Bool?
+    /// Autoplay by default; the play/pause control toggles this.
+    @Published var playing = true
     @Published var progress: Double = 0
 }
 
@@ -92,14 +92,15 @@ struct RegionPreviewCanvas: View {
                 advanceDemo()
             }
             .onChange(of: demoActive) { _, active in
-                if !active {
-                    withAnimation(.easeOut(duration: 0.4)) {
-                        regionU = Self.defaultRegionU
-                        cursorU = Self.defaultCursorU
-                    }
-                    var transaction = Transaction()
-                    transaction.disablesAnimations = true
-                    withTransaction(transaction) { demoModel?.progress = 0 }
+                // Pausing freezes in place; resuming steps immediately
+                // instead of waiting for the next timer tick.
+                if active {
+                    advanceDemo()
+                }
+            }
+            .onAppear {
+                if demoActive {
+                    advanceDemo()
                 }
             }
         }

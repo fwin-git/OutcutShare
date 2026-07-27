@@ -99,24 +99,19 @@ private struct PrivacyPage: View {
 
 private struct GeneralPage: View {
     @ObservedObject var settings: SettingsStore
-    @State private var followHover = false
     @StateObject private var demoModel = FollowDemoModel()
-
-    private var demoPlaying: Bool { demoModel.playOverride ?? followHover }
 
     var body: some View {
         Form {
             Section {
                 RegionPreviewCanvas(settings: settings, showsHotbar: true,
-                                    demoActive: demoPlaying, demoModel: demoModel)
-                Text("Hover the follow controls below to see follow mode in action.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                                    demoActive: demoModel.playing, demoModel: demoModel)
             } header: {
                 HStack {
                     Text("Preview")
                     Spacer()
-                    DemoProgressRing(progress: demoModel.progress)
+                    DemoProgressRing(progress: demoModel.progress,
+                                     playing: demoModel.playing)
                 }
             }
             Section("Sharing") {
@@ -162,13 +157,16 @@ private struct GeneralPage: View {
                     Toggle("Resize region to the followed window", isOn: $settings.followResizes)
                 }
                 .contentShape(Rectangle())
-                .onHover { followHover = $0 }
             } header: {
                 HStack {
                     Text("Follow mode")
                     Spacer()
-                    Button(demoPlaying ? "Pause preview animation" : "Play preview animation") {
-                        demoModel.playOverride = demoPlaying ? false : true
+                    Button {
+                        demoModel.playing.toggle()
+                    } label: {
+                        Label(demoModel.playing ? "Pause preview animation"
+                                                : "Play preview animation",
+                              systemImage: demoModel.playing ? "pause.fill" : "play.fill")
                     }
                     .buttonStyle(.plain)
                     .font(.caption)
@@ -207,6 +205,7 @@ private struct GeneralPage: View {
 
 private struct DemoProgressRing: View {
     var progress: Double
+    var playing: Bool
 
     var body: some View {
         ZStack {
@@ -217,8 +216,11 @@ private struct DemoProgressRing: View {
                 .stroke(Color.accentColor,
                         style: StrokeStyle(lineWidth: 2, lineCap: .round))
                 .rotationEffect(.degrees(-90))
+            Image(systemName: playing ? "pause.fill" : "play.fill")
+                .font(.system(size: 5.5, weight: .bold))
+                .foregroundStyle(.secondary)
         }
-        .frame(width: 12, height: 12)
+        .frame(width: 14, height: 14)
     }
 }
 
