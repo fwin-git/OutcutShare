@@ -17,6 +17,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     private let followItem = NSMenuItem(title: "Follow", action: nil, keyEquivalent: "")
     private let pauseItem = NSMenuItem(title: "Pause Sharing",
                                        action: #selector(togglePause), keyEquivalent: "p")
+    private let recordItem = NSMenuItem(title: "Start Recording",
+                                        action: #selector(toggleRecording), keyEquivalent: "r")
     private let stopItem = NSMenuItem(title: "Stop Sharing",
                                       action: #selector(stopSharing), keyEquivalent: ".")
 
@@ -52,6 +54,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         followItem.submenu = followMenu
         menu.addItem(followItem)
         menu.addItem(pauseItem)
+        recordItem.target = self
+        menu.addItem(recordItem)
         menu.addItem(stopItem)
         menu.addItem(.separator())
         let settingsItem = NSMenuItem(title: "Settings…",
@@ -74,7 +78,9 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     private func refresh() {
         let symbol: String
-        if session.isPaused && session.isActive {
+        if session.isActive && session.isRecording {
+            symbol = "record.circle.fill"
+        } else if session.isPaused && session.isActive {
             symbol = "pause.rectangle"
         } else {
             symbol = session.isActive ? "rectangle.inset.filled.badge.record" : "rectangle.dashed"
@@ -93,6 +99,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         }
         pauseItem.isEnabled = session.isActive
         pauseItem.title = session.isPaused ? "Resume Sharing" : "Pause Sharing"
+        recordItem.isEnabled = session.isActive
+        recordItem.title = session.isRecording ? "Stop Recording" : "Start Recording"
         stopItem.isEnabled = session.isActive
     }
 
@@ -169,6 +177,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     @objc private func togglePause() {
         session.togglePause()
+    }
+
+    @objc private func toggleRecording() {
+        session.toggleRecording()
     }
 
     @objc private func stopSharing() {

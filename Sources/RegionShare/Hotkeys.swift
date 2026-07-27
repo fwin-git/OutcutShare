@@ -105,6 +105,7 @@ enum HotkeyAction: String, CaseIterable {
     case stopSharing
     case shareLastRegion
     case togglePause
+    case toggleRecording
 
     var displayName: String {
         switch self {
@@ -113,6 +114,7 @@ enum HotkeyAction: String, CaseIterable {
         case .stopSharing: return "Stop Sharing"
         case .shareLastRegion: return "Share Last Region"
         case .togglePause: return "Pause / Resume Sharing"
+        case .toggleRecording: return "Start / Stop Recording"
         }
     }
 
@@ -123,6 +125,7 @@ enum HotkeyAction: String, CaseIterable {
         case .stopSharing: return KeyCombo(keyCode: 7, modifiers: [.control, .option, .command])   // X
         case .shareLastRegion: return KeyCombo(keyCode: 37, modifiers: [.control, .option, .command]) // L
         case .togglePause: return KeyCombo(keyCode: 35, modifiers: [.control, .option, .command])     // P
+        case .toggleRecording: return KeyCombo(keyCode: 15, modifiers: [.control, .option, .command]) // R
         }
     }
 

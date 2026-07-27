@@ -122,6 +122,22 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    /// Empty = ~/Movies/RegionShare.
+    @Published var recordingFolder: String {
+        didSet {
+            defaults.set(recordingFolder, forKey: "recordingFolder")
+            notifyChange()
+        }
+    }
+
+    var recordingFolderURL: URL {
+        if !recordingFolder.isEmpty {
+            return URL(fileURLWithPath: (recordingFolder as NSString).expandingTildeInPath)
+        }
+        return FileManager.default.urls(for: .moviesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("RegionShare")
+    }
+
     @Published var cursorHighlight: Bool {
         didSet {
             defaults.set(cursorHighlight, forKey: "cursorHighlight")
@@ -232,6 +248,7 @@ final class SettingsStore: ObservableObject {
                                      "clickRipples": true])
         self.cursorHighlight = defaults.bool(forKey: "cursorHighlight")
         self.clickRipples = defaults.bool(forKey: "clickRipples")
+        self.recordingFolder = defaults.string(forKey: "recordingFolder") ?? ""
         self.followBehavior = defaults.string(forKey: "followBehavior")
             .flatMap(FollowBehavior.init(rawValue:)) ?? .glide
         self.followResizes = defaults.bool(forKey: "followResizes")
