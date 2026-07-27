@@ -31,7 +31,11 @@ hotbar hidden. It always floats above the dimming. The choice persists.
 Follow mode itself is enabled per-session from the menu bar:
 **Follow → Active Window / Cursor**.
 
+![Follow mode tracking the active window, then the cursor](media/demo-follow.gif)
+
 ### Virtual Monitor mode
+
+![Virtual Monitor — drag windows in, grid layout, pull-out](media/demo-monitor.gif)
 
 The safest way to share: a **separate, empty screen**. Nothing from your
 real display is ever shared — only windows you deliberately place on the
