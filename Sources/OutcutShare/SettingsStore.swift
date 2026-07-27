@@ -45,6 +45,16 @@ enum DragOutModifier: String, CaseIterable {
         case .control: return "⌃ Control"
         }
     }
+
+    /// Bare key glyph (demo keystroke chip).
+    var symbol: String {
+        switch self {
+        case .shift: return "⇧"
+        case .option: return "⌥"
+        case .command: return "⌘"
+        case .control: return "⌃"
+        }
+    }
 }
 
 /// An app whose windows are hidden from viewers.

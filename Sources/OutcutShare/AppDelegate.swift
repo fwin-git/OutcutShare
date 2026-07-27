@@ -20,7 +20,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var debugSettingsWindow: SettingsWindowController?
     private var policyObservers: [NSObjectProtocol] = []
 
+    private var demoContent: DemoContentWindows?
+    private var demoDirector: DemoDirector?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Demo helper process: only shows the fake stage windows, nothing
+        // else (no status item, no onboarding).
+        if let arg = CommandLine.arguments.first(where: { $0.hasPrefix("--demo-windows=") }) {
+            let parts = arg.dropFirst("--demo-windows=".count)
+                .split(separator: ",").compactMap { Double($0) }
+            if parts.count == 4 {
+                demoContent = DemoContentWindows(stage: CGRect(
+                    x: parts[0], y: parts[1], width: parts[2], height: parts[3]))
+                NSApp.activate(ignoringOtherApps: true)
+            }
+            return
+        }
         let permissions = PermissionsWindowController()
         self.permissions = permissions
         session.onPermissionsNeeded = { permissions.show() }
@@ -89,6 +104,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if CommandLine.arguments.contains("--show-selector") {
             session.startSelection()
+            return
+        }
+        // --demo=monitor|region records a feature showcase on a clean 16:9
+        // stage (see DemoHarness.swift).
+        if let arg = CommandLine.arguments.first(where: { $0.hasPrefix("--demo=") }) {
+            let director = DemoDirector(session: session,
+                                        scenario: String(arg.dropFirst("--demo=".count)))
+            demoDirector = director
+            director.run()
             return
         }
         observeForDockPolicy()
