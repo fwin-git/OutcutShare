@@ -83,14 +83,19 @@ enum WindowMover {
         AXIsProcessTrustedWithOptions(options as CFDictionary)
     }
 
-    /// Repositions another app's window (AppKit-global target origin) and
-    /// raises it. Returns false when the AX window can't be resolved.
+    /// Repositions another app's window (AppKit-global target origin).
+    /// Raising switches macOS to the window's Space — the teardown rescue
+    /// must NOT raise, or stopping the monitor yanks the user to another
+    /// Space. Returns false when the AX window can't be resolved.
     @discardableResult
-    static func move(window: WindowLocator.FoundWindow, toAppKitOrigin origin: CGPoint) -> Bool {
+    static func move(window: WindowLocator.FoundWindow, toAppKitOrigin origin: CGPoint,
+                     raise: Bool = true) -> Bool {
         guard let currentFrame = WindowLocator.frame(ofWindow: window.id),
               let axWindow = axWindow(for: window, frame: currentFrame) else { return false }
         setPosition(axWindow, appKitOrigin: origin, size: currentFrame.size)
-        AXUIElementPerformAction(axWindow, kAXRaiseAction as CFString)
+        if raise {
+            AXUIElementPerformAction(axWindow, kAXRaiseAction as CFString)
+        }
         return true
     }
 
@@ -175,7 +180,7 @@ enum MonitorWindowRescue {
             let origin = Geometry.rehomedWindowOrigin(window: window.frame,
                                                       display: displayFrame,
                                                       target: target)
-            WindowMover.move(window: window, toAppKitOrigin: origin)
+            WindowMover.move(window: window, toAppKitOrigin: origin, raise: false)
         }
     }
 }
@@ -257,19 +262,25 @@ final class MonitorWindowManipulator {
         }
         self.drag = drag
         preview?.showPullOutHint(pullOutHeld)
+        // Modifier drags never move the real window mid-drag — a ghost
+        // thumbnail rides the cursor instead (across the boundary too), and
+        // the drop decides. Snapping is off so edge drags can't collide
+        // with the pull-out gesture.
+        if pullOutHeld {
+            preview?.showSnapTile(nil)
+            preview?.updateDragProxy(windowFrame: drag.window.frame,
+                                     grabOffset: drag.grabOffset,
+                                     cursor: NSEvent.mouseLocation)
+            return
+        }
+        preview?.endDragProxy()
         guard bounds.contains(local) else {
             // Outside the panel: window stays put until the drop decides.
             preview?.showSnapTile(nil)
             return
         }
-        // Holding the pull-out modifier disables snapping so edge drags
-        // can't collide with the "drag it out" gesture.
-        if pullOutHeld {
-            preview?.showSnapTile(nil)
-        } else {
-            let unit = CGPoint(x: local.x / bounds.width, y: local.y / bounds.height)
-            preview?.showSnapTile(Geometry.snapTileUnit(for: unit))
-        }
+        let unit = CGPoint(x: local.x / bounds.width, y: local.y / bounds.height)
+        preview?.showSnapTile(Geometry.snapTileUnit(for: unit))
         // Live-follow, throttled to display rate.
         let now = ProcessInfo.processInfo.systemUptime
         guard now - lastMoveTime > 1.0 / 60.0 else { return }
@@ -287,11 +298,25 @@ final class MonitorWindowManipulator {
         defer {
             preview?.showSnapTile(nil)
             preview?.showPullOutHint(false)
+            preview?.endDragProxy()
             drag = nil
         }
         guard let drag, drag.started else { return }
         if bounds.contains(local) {
-            guard !pullOutHeld else { return } // modifier: free placement, no snap
+            if pullOutHeld {
+                // Modifier drop inside: place the window at the drop point
+                // (the ghost carried it — the real window hasn't moved yet).
+                let displayPoint = Geometry.previewPointToDisplayPoint(
+                    local, panel: CGRect(origin: .zero, size: bounds.size),
+                    display: displayFrame)
+                let origin = Geometry.clampedRegionOrigin(
+                    CGPoint(x: displayPoint.x + drag.grabOffset.width,
+                            y: displayPoint.y + drag.grabOffset.height),
+                    regionSize: drag.window.frame.size, screenFrame: displayFrame)
+                WindowMover.setPosition(drag.ax, appKitOrigin: origin,
+                                        size: drag.window.frame.size)
+                return
+            }
             let unit = CGPoint(x: local.x / bounds.width, y: local.y / bounds.height)
             if let tile = Geometry.snapTileUnit(for: unit) {
                 WindowMover.setFrame(drag.ax,

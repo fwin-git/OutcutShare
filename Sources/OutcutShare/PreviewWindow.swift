@@ -28,6 +28,8 @@ final class PreviewWindowController: NSObject {
     private var monitorDisplayFrame: CGRect = .zero
     private var loweredForDrag = false
     private var edgeExitArmed = false
+    private var dragProxy: NSPanel?
+    private nonisolated(unsafe) let dragProxyLayer = CALayer()
     /// Previous poll position while the cursor is on the monitor — the
     /// exit's motion continuation is derived from it.
     private var lastMonitorMouse: CGPoint?
@@ -165,6 +167,7 @@ final class PreviewWindowController: NSObject {
         showPullOutHint(false)
         showControlExitHint(false)
         setResizeHighlight(false)
+        endDragProxy()
         stopWatchdog()
     }
 
@@ -295,6 +298,57 @@ final class PreviewWindowController: NSObject {
         layer.zPosition = 3
         view.layer?.addSublayer(layer)
         snapTileLayer = layer
+    }
+
+    /// Ghost of a window being pulled out: a live crop of the capture
+    /// surface, sized as the window appears in the preview, riding the
+    /// cursor — across the panel boundary and onto any screen.
+    func updateDragProxy(windowFrame: CGRect, grabOffset: CGSize, cursor: CGPoint) {
+        guard let panelF = panelFrame, monitorDisplayFrame.width > 0 else { return }
+        let s = panelF.width / monitorDisplayFrame.width
+        let size = CGSize(width: max(48, windowFrame.width * s),
+                          height: max(36, windowFrame.height * s))
+        if dragProxy == nil {
+            let proxy = NSPanel(contentRect: CGRect(origin: .zero, size: size),
+                                styleMask: [.borderless, .nonactivatingPanel],
+                                backing: .buffered, defer: false)
+            proxy.isOpaque = false
+            proxy.backgroundColor = .clear
+            proxy.hasShadow = true
+            proxy.ignoresMouseEvents = true
+            proxy.isReleasedWhenClosed = false
+            proxy.alphaValue = 0.9
+            proxy.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+            let view = NSView(frame: CGRect(origin: .zero, size: size))
+            view.wantsLayer = true
+            view.layer?.cornerRadius = 6
+            view.layer?.masksToBounds = true
+            view.layer?.borderColor = NSColor.white.withAlphaComponent(0.5).cgColor
+            view.layer?.borderWidth = 1
+            dragProxyLayer.contentsGravity = .resize
+            view.layer?.addSublayer(dragProxyLayer)
+            proxy.contentView = view
+            // Above the panel and the hotbar; set last (level resets).
+            proxy.level = NSWindow.Level(rawValue: NSWindow.Level.screenSaver.rawValue + 2)
+            dragProxy = proxy
+        }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        dragProxyLayer.contents = lastSurface
+        dragProxyLayer.contentsRect = Geometry.unitCropRect(of: windowFrame,
+                                                            in: monitorDisplayFrame)
+        dragProxyLayer.frame = CGRect(origin: .zero, size: size)
+        CATransaction.commit()
+        dragProxy?.setFrame(CGRect(x: cursor.x + grabOffset.width * s,
+                                   y: cursor.y + grabOffset.height * s,
+                                   width: size.width, height: size.height),
+                            display: true)
+        dragProxy?.orderFrontRegardless()
+    }
+
+    func endDragProxy() {
+        dragProxy?.orderOut(nil)
+        dragProxy = nil
     }
 
     /// While another app's window is dragged over the panel, drop below it
