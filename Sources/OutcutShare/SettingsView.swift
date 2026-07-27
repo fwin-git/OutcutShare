@@ -115,6 +115,7 @@ private struct GeneralPage: View {
                                      playing: demoModel.playing) {
                         demoModel.playing.toggle()
                     }
+                    .focusEffectDisabled()
                 }
             }
             Section("Sharing") {
@@ -171,6 +172,7 @@ private struct GeneralPage: View {
                               systemImage: demoModel.playing ? "pause.fill" : "play.fill")
                     }
                     .buttonStyle(.plain)
+                    .focusEffectDisabled()
                     .font(.caption)
                     .foregroundStyle(.tint)
                 }

@@ -40,9 +40,12 @@ struct RegionPreviewCanvas: View {
     @State private var cursorU = Self.defaultCursorU
     @State private var step = 0
     @State private var rippleID = 0
-    private let demoTimer = Timer.publish(every: 1.6, on: .main, in: .common).autoconnect()
-    private let progressTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
-    private let rippleTimer = Timer.publish(every: 1.7, on: .main, in: .common).autoconnect()
+    // @State keeps the publishers stable across re-renders — the fine-grained
+    // progress updates re-render this view constantly, and per-render timer
+    // instances would reset before ever firing.
+    @State private var demoTimer = Timer.publish(every: 1.6, on: .main, in: .common).autoconnect()
+    @State private var progressTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
+    @State private var rippleTimer = Timer.publish(every: 1.7, on: .main, in: .common).autoconnect()
 
     var body: some View {
         GeometryReader { proxy in
