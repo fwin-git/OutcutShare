@@ -25,6 +25,7 @@ final class PreviewWindowController: NSObject {
     private var pullOutHintLayer: CALayer?
     private var passthroughWatchdog: Timer?
     private var monitorDisplayFrame: CGRect = .zero
+    private var loweredForDrag = false
     private var grabber: NSImageView?
     private var pauseButton: NSButton?
     private var controlButton: NSButton?
@@ -190,8 +191,9 @@ final class PreviewWindowController: NSObject {
         }
     }
 
-    /// Glowing inset border + note while the pull-out modifier is held
-    /// during a window drag: "drag it off the panel".
+    /// Pull-out affordance while the modifier is held during a window drag:
+    /// soft glows emanating from all four edges, a slight fade, and a
+    /// high-contrast caption on an accent capsule.
     func showPullOutHint(_ on: Bool) {
         guard on != (pullOutHintLayer != nil) else { return }
         if on, let view = panel?.contentView {
@@ -201,30 +203,60 @@ final class PreviewWindowController: NSObject {
 
             let fade = CALayer()
             fade.frame = container.bounds
-            fade.backgroundColor = NSColor.black.withAlphaComponent(0.22).cgColor
+            fade.backgroundColor = NSColor.black.withAlphaComponent(0.2).cgColor
             container.addSublayer(fade)
 
-            let glow = CALayer()
-            glow.frame = container.bounds.insetBy(dx: 5, dy: 5)
-            glow.borderColor = NSColor.controlAccentColor.cgColor
-            glow.borderWidth = 3
-            glow.cornerRadius = 8
-            glow.shadowColor = NSColor.controlAccentColor.cgColor
-            glow.shadowOpacity = 0.9
-            glow.shadowRadius = 12
-            glow.shadowOffset = .zero
-            container.addSublayer(glow)
+            let accent = NSColor.controlAccentColor
+            let glowColors = [accent.withAlphaComponent(0.65).cgColor,
+                              accent.withAlphaComponent(0.0).cgColor]
+            let depth = min(90, container.bounds.width * 0.12)
+            let b = container.bounds
+            let strips: [(CGRect, CGPoint, CGPoint)] = [
+                (CGRect(x: 0, y: 0, width: depth, height: b.height),
+                 CGPoint(x: 0, y: 0.5), CGPoint(x: 1, y: 0.5)),
+                (CGRect(x: b.maxX - depth, y: 0, width: depth, height: b.height),
+                 CGPoint(x: 1, y: 0.5), CGPoint(x: 0, y: 0.5)),
+                (CGRect(x: 0, y: b.maxY - depth, width: b.width, height: depth),
+                 CGPoint(x: 0.5, y: 0), CGPoint(x: 0.5, y: 1)),
+                (CGRect(x: 0, y: 0, width: b.width, height: depth),
+                 CGPoint(x: 0.5, y: 1), CGPoint(x: 0.5, y: 0)),
+            ]
+            for (frame, start, end) in strips {
+                let glow = CAGradientLayer()
+                glow.frame = frame
+                glow.colors = glowColors
+                glow.startPoint = start
+                glow.endPoint = end
+                container.addSublayer(glow)
+            }
 
             let fontSize = max(13, min(20, container.bounds.height * 0.045))
+            let caption = "Drag the window out of the screen"
+            let capsuleWidth = min(b.width * 0.8,
+                                   CGFloat(caption.count) * fontSize * 0.62 + 44)
+            let capsuleHeight = fontSize * 2.2
+            let capsule = CALayer()
+            capsule.frame = CGRect(x: b.midX - capsuleWidth / 2,
+                                   y: b.midY - capsuleHeight / 2,
+                                   width: capsuleWidth, height: capsuleHeight)
+            capsule.backgroundColor = accent.cgColor
+            capsule.cornerRadius = capsuleHeight / 2
+            capsule.shadowColor = NSColor.black.cgColor
+            capsule.shadowOpacity = 0.35
+            capsule.shadowRadius = 8
+            capsule.shadowOffset = CGSize(width: 0, height: -2)
+            container.addSublayer(capsule)
+
             let text = CATextLayer()
-            text.string = "Drag the window out of the screen"
-            text.font = NSFont.systemFont(ofSize: fontSize, weight: .semibold)
+            text.string = caption
+            text.font = NSFont.systemFont(ofSize: fontSize, weight: .bold)
             text.fontSize = fontSize
             text.foregroundColor = NSColor.white.cgColor
             text.alignmentMode = .center
             text.contentsScale = panel?.backingScaleFactor ?? 2
-            text.frame = CGRect(x: 0, y: container.bounds.midY - fontSize,
-                                width: container.bounds.width, height: fontSize * 1.5)
+            text.frame = CGRect(x: capsule.frame.minX,
+                                y: capsule.frame.midY - fontSize * 0.72,
+                                width: capsuleWidth, height: fontSize * 1.5)
             container.addSublayer(text)
 
             view.layer?.addSublayer(container)
@@ -249,6 +281,23 @@ final class PreviewWindowController: NSObject {
         layer.zPosition = 3
         view.layer?.addSublayer(layer)
         snapTileLayer = layer
+    }
+
+    /// While another app's window is dragged over the panel, drop below it
+    /// in the z-order so the user sees the window they're placing instead
+    /// of it vanishing behind the preview. Pass nil to restore.
+    func lowerBehindDraggedWindow(_ windowID: CGWindowID?) {
+        guard let panel else { return }
+        if let windowID {
+            guard !loweredForDrag else { return }
+            loweredForDrag = true
+            panel.level = .normal
+            panel.order(.below, relativeTo: Int(windowID))
+        } else if loweredForDrag {
+            loweredForDrag = false
+            panel.level = NSWindow.Level(rawValue: NSWindow.Level.screenSaver.rawValue + 1)
+            panel.orderFrontRegardless()
+        }
     }
 
     /// Accent border while a window drag hovers over the panel ("drop here
