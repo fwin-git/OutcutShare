@@ -132,6 +132,10 @@ private final class SelectionView: NSView {
 
     override var acceptsFirstResponder: Bool { true }
 
+    /// Deliver the first click even while the app isn't active — otherwise
+    /// macOS swallows it as an activation click and window-pick clicks die.
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
         trackingAreas.forEach(removeTrackingArea)
@@ -204,6 +208,12 @@ private final class SelectionView: NSView {
     // MARK: Mouse
 
     override func mouseMoved(with event: NSEvent) {
+        // The overlay owns the interaction while visible; take the keyboard
+        // back if another app stole it, so Space/Esc always work.
+        if window?.isKeyWindow == false {
+            NSApp.activate(ignoringOtherApps: true)
+            window?.makeKey()
+        }
         guard pickMode else { return }
         updateHover(at: convert(event.locationInWindow, from: nil))
     }
@@ -212,6 +222,9 @@ private final class SelectionView: NSView {
         window?.makeKey()
         let point = convert(event.locationInWindow, from: nil)
         if pickMode {
+            // Confirm against the window under the click itself, not stale
+            // hover state — a click may arrive without a prior mouseMoved.
+            updateHover(at: point)
             if let hovered = hoveredWindow, Geometry.meetsMinimumSize(hovered) {
                 finish(with: hovered)
             }
