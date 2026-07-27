@@ -87,6 +87,9 @@ private struct GeneralPage: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            Section("About") {
+                LabeledContent("Version", value: AppVersion.display)
+            }
         }
         .formStyle(.grouped)
     }
@@ -276,7 +279,7 @@ final class SettingsWindowController {
         switch tab {
         case .general:
             controller = NSHostingController(
-                rootView: AnyView(GeneralPage(settings: settings).frame(width: 470, height: 620)))
+                rootView: AnyView(GeneralPage(settings: settings).frame(width: 470, height: 680)))
         case .presets:
             controller = NSHostingController(
                 rootView: AnyView(PresetsPage(settings: settings).frame(width: 470, height: 360)))

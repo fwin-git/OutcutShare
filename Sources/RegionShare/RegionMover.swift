@@ -51,6 +51,8 @@ private final class MoverWindow: NSWindow {
         isOpaque = false
         backgroundColor = .clear
         hasShadow = false
+        // See SelectionWindow: disables per-pixel alpha click-through.
+        ignoresMouseEvents = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         contentView = AdjustView(frame: NSRect(origin: .zero, size: screen.frame.size),
                                  screenFrame: screen.frame, region: region, aspect: aspect,
@@ -198,6 +200,10 @@ private final class AdjustView: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
+        // Invisible floor: keeps the fully transparent interior clickable.
+        NSColor.black.withAlphaComponent(0.01).setFill()
+        bounds.fill()
+
         for corner in corners {
             let handle = CGRect(x: corner.x - Self.handleSize / 2,
                                 y: corner.y - Self.handleSize / 2,
