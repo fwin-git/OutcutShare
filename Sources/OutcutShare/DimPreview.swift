@@ -37,9 +37,11 @@ final class DimPreview {
             context.duration = 0.25
             window.animator().alphaValue = 0
         }, completionHandler: { [weak self] in
-            guard let self, let window = self.window, window.alphaValue == 0 else { return }
-            window.orderOut(nil)
-            window.alphaValue = 1
+            MainActor.assumeIsolated { // NSAnimationContext completes on main
+                guard let self, let window = self.window, window.alphaValue == 0 else { return }
+                window.orderOut(nil)
+                window.alphaValue = 1
+            }
         })
     }
 
