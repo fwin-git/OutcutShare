@@ -66,6 +66,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             controller.show(tab: tab)
             return
         }
+        if CommandLine.arguments.contains("--show-selector") {
+            session.startSelection()
+            return
+        }
         runShareTestIfRequested()
 
         // Guided onboarding: appears whenever the app can't capture yet.
