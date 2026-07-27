@@ -19,6 +19,7 @@ final class PreviewWindowController: NSObject {
     private nonisolated(unsafe) var lastSurface: IOSurfaceRef?
     private var privacyLayer: CALayer?
     private var privacyShowing = false
+    private var dropHighlight: CALayer?
     private var grabber: NSImageView?
     private var pauseButton: NSButton?
     private var aspect: CGFloat = 16.0 / 9.0
@@ -123,6 +124,25 @@ final class PreviewWindowController: NSObject {
         CATransaction.setDisableActions(true)
         contentLayer.contents = surface
         CATransaction.commit()
+    }
+
+    /// Accent border while a window drag hovers over the panel ("drop here
+    /// to move it onto the virtual monitor").
+    func setDropTargetHighlight(_ on: Bool) {
+        guard on != (dropHighlight != nil) else { return }
+        if on, let view = panel?.contentView {
+            let layer = CALayer()
+            layer.frame = view.bounds
+            layer.borderColor = NSColor.controlAccentColor.cgColor
+            layer.borderWidth = 3
+            layer.cornerRadius = 10
+            layer.zPosition = 3
+            view.layer?.addSublayer(layer)
+            dropHighlight = layer
+        } else {
+            dropHighlight?.removeFromSuperlayer()
+            dropHighlight = nil
+        }
     }
 
     func showPrivacyScreen() {

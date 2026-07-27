@@ -286,6 +286,43 @@ enum Geometry {
         windows.first { $0.contains(point) }
     }
 
+    /// Linear map of a point inside the preview panel onto the virtual
+    /// display it mirrors (both AppKit global coordinates).
+    static func previewPointToDisplayPoint(_ p: CGPoint, panel: CGRect,
+                                           display: CGRect) -> CGPoint {
+        guard panel.width > 0, panel.height > 0 else { return display.origin }
+        return CGPoint(x: display.minX + (p.x - panel.minX) / panel.width * display.width,
+                       y: display.minY + (p.y - panel.minY) / panel.height * display.height)
+    }
+
+    /// Origin (AppKit) centering a window of `size` at `center`, clamped
+    /// fully inside `bounds`.
+    static func centeredClampedWindowOrigin(size: CGSize, center: CGPoint,
+                                            bounds: CGRect) -> CGPoint {
+        clampedRegionOrigin(CGPoint(x: center.x - size.width / 2,
+                                    y: center.y - size.height / 2),
+                            regionSize: size, screenFrame: bounds)
+    }
+
+    /// AX window position (CG global, top-left origin) for an AppKit rect.
+    static func cgTopLeftPoint(forAppKit rect: CGRect, primaryHeight: CGFloat) -> CGPoint {
+        CGPoint(x: rect.minX, y: primaryHeight - rect.maxY)
+    }
+
+    /// A completed global drag counts as "window dropped onto the preview"
+    /// only when it ends inside the panel, travelled a real distance, and
+    /// the candidate window actually moved along (filters plain clicks and
+    /// in-window drags like text selection).
+    static func isWindowDropOnPanel(start: CGPoint, end: CGPoint, panel: CGRect,
+                                    windowFrameAtStart: CGRect,
+                                    windowFrameAtEnd: CGRect) -> Bool {
+        guard panel.contains(end) else { return false }
+        guard hypot(end.x - start.x, end.y - start.y) > 30 else { return false }
+        let moved = hypot(windowFrameAtEnd.minX - windowFrameAtStart.minX,
+                          windowFrameAtEnd.minY - windowFrameAtStart.minY)
+        return moved > 20
+    }
+
     /// Capture size in pixels: region points × display scale, floored to even
     /// values so the video pipeline never sees odd dimensions.
     static func capturePixelSize(region: CGRect, scale: CGFloat) -> (width: Int, height: Int) {

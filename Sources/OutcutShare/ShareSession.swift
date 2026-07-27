@@ -209,6 +209,7 @@ final class ShareSession {
     private var lastPreviewEnabled = false
     private var monitorPrivacyCover: LiveFrameWindow?
     private var activeMonitorSize: CGSize = .zero
+    private lazy var monitorDrag = MonitorDragController(session: self)
 
     /// True while a standalone virtual-monitor session runs (regionless:
     /// no dim overlay, no adjust/follow/presets).
@@ -373,6 +374,7 @@ final class ShareSession {
                                 screen: main)
                 }
             }
+            monitorDrag.start(displayFrame: region.rect, preview: preview)
         } catch {
             teardown()
             state = .idle
@@ -576,6 +578,7 @@ final class ShareSession {
         preview.close()
         monitorPrivacyCover?.close()
         monitorPrivacyCover = nil
+        monitorDrag.stop()
         cursorEmphasis.stop()
         if let recorder {
             self.recorder = nil
