@@ -15,6 +15,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     private let moveItem = NSMenuItem(title: "Move / Resize Region",
                                       action: #selector(moveRegion), keyEquivalent: "m")
     private let followItem = NSMenuItem(title: "Follow", action: nil, keyEquivalent: "")
+    private let hotbarItem = NSMenuItem(title: "Show Hotbar",
+                                        action: #selector(toggleHotbar), keyEquivalent: "")
     private let pauseItem = NSMenuItem(title: "Pause Sharing",
                                        action: #selector(togglePause), keyEquivalent: "p")
     private let recordItem = NSMenuItem(title: "Start Recording",
@@ -53,6 +55,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         }
         followItem.submenu = followMenu
         menu.addItem(followItem)
+        hotbarItem.target = self
+        menu.addItem(hotbarItem)
         menu.addItem(pauseItem)
         recordItem.target = self
         menu.addItem(recordItem)
@@ -94,13 +98,13 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         selectItem.isEnabled = session.state == .idle
         shareLastItem.isEnabled = session.state == .idle && SettingsStore.shared.lastRegion != nil
         moveItem.isEnabled = session.isActive
-        followItem.isEnabled = session.isActive
         if let items = followItem.submenu?.items {
             for item in items {
-                item.state = (item.representedObject as? String) == session.followMode.rawValue
-                    ? .on : .off
+                item.state = (item.representedObject as? String)
+                    == SettingsStore.shared.followMode.rawValue ? .on : .off
             }
         }
+        hotbarItem.state = SettingsStore.shared.hotbarEnabled ? .on : .off
         pauseItem.isEnabled = session.isActive
         pauseItem.title = session.isPaused ? "Resume Sharing" : "Pause Sharing"
         recordItem.isEnabled = session.isActive
@@ -150,19 +154,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     }
 
     @objc private func savePreset() {
-        let alert = NSAlert()
-        alert.messageText = "Save Region as Preset"
-        alert.informativeText = "Name for the current region:"
-        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 240, height: 24))
-        field.stringValue = "Preset \(SettingsStore.shared.presets.count + 1)"
-        alert.accessoryView = field
-        alert.addButton(withTitle: "Save")
-        alert.addButton(withTitle: "Cancel")
-        alert.window.initialFirstResponder = field
-        NSApp.activate(ignoringOtherApps: true)
-        guard alert.runModal() == .alertFirstButtonReturn else { return }
-        let name = field.stringValue.trimmingCharacters(in: .whitespaces)
-        session.saveCurrentRegionAsPreset(named: name.isEmpty ? "Preset" : name)
+        PresetPrompt.run(session: session)
     }
 
     @objc private func selectRegion() {
@@ -177,6 +169,11 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         guard let raw = sender.representedObject as? String,
               let mode = FollowMode(rawValue: raw) else { return }
         session.setFollow(mode: mode)
+    }
+
+    @objc private func toggleHotbar() {
+        SettingsStore.shared.hotbarEnabled.toggle()
+        refresh()
     }
 
     @objc private func togglePause() {
@@ -197,5 +194,25 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     @objc private func openPermissions() {
         permissions.show()
+    }
+}
+
+/// Shared "name this preset" dialog used by the menu bar and the hotbar.
+@MainActor
+enum PresetPrompt {
+    static func run(session: ShareSession) {
+        let alert = NSAlert()
+        alert.messageText = "Save Region as Preset"
+        alert.informativeText = "Name for the current region:"
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 240, height: 24))
+        field.stringValue = "Preset \(SettingsStore.shared.presets.count + 1)"
+        alert.accessoryView = field
+        alert.addButton(withTitle: "Save")
+        alert.addButton(withTitle: "Cancel")
+        alert.window.initialFirstResponder = field
+        NSApp.activate(ignoringOtherApps: true)
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        let name = field.stringValue.trimmingCharacters(in: .whitespaces)
+        session.saveCurrentRegionAsPreset(named: name.isEmpty ? "Preset" : name)
     }
 }
