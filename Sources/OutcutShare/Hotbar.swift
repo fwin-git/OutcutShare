@@ -18,15 +18,15 @@ struct HotbarActions {
     var savePreset: () -> Void
     var follow: () -> Void
     var hide: () -> Void
-    var beginDrag: () -> CGPoint
-    var drag: (CGPoint) -> Void
+    var beginDrag: () -> Void
+    var drag: () -> Void
     var endDrag: () -> Void
 }
 
 struct HotbarView: View {
     @ObservedObject var model: HotbarModel
     let actions: HotbarActions
-    @State private var dragStart: CGPoint?
+    @State private var dragging = false
 
     var body: some View {
         HStack(spacing: 13) {
@@ -35,19 +35,20 @@ struct HotbarView: View {
                 .frame(width: 18)
                 .contentShape(Rectangle())
                 .gesture(
+                    // Positioning is driven by NSEvent.mouseLocation, not the
+                    // gesture's translation: the gesture's coordinate space
+                    // moves with the panel, which would feed back into itself
+                    // and make the bar jitter.
                     DragGesture(coordinateSpace: .global)
-                        .onChanged { value in
-                            if dragStart == nil {
-                                dragStart = actions.beginDrag()
+                        .onChanged { _ in
+                            if !dragging {
+                                dragging = true
+                                actions.beginDrag()
                             }
-                            if let start = dragStart {
-                                // SwiftUI y grows downward; AppKit upward.
-                                actions.drag(CGPoint(x: start.x + value.translation.width,
-                                                     y: start.y - value.translation.height))
-                            }
+                            actions.drag()
                         }
                         .onEnded { _ in
-                            dragStart = nil
+                            dragging = false
                             actions.endDrag()
                         }
                 )
@@ -109,6 +110,7 @@ final class HotbarController {
     let model = HotbarModel()
     private var panel: NSPanel?
     private var manualOrigin: CGPoint?
+    private var dragAnchor: (origin: CGPoint, mouse: CGPoint)?
     private var screenFrame: CGRect = .zero
     private var lastRegion: CGRect = .zero
     private var lastFollowChoice: FollowMode = .activeWindow
@@ -176,12 +178,20 @@ final class HotbarController {
             },
             follow: { [weak self] in self?.toggleFollow() },
             hide: { [weak self] in self?.hideForSession() },
-            beginDrag: { [weak self] in self?.panel?.frame.origin ?? .zero },
-            drag: { [weak self] origin in
+            beginDrag: { [weak self] in
                 guard let self, let panel = self.panel else { return }
+                self.dragAnchor = (panel.frame.origin, NSEvent.mouseLocation)
+            },
+            drag: { [weak self] in
+                guard let self, let panel = self.panel,
+                      let anchor = self.dragAnchor else { return }
+                let mouse = NSEvent.mouseLocation
+                let origin = CGPoint(x: anchor.origin.x + mouse.x - anchor.mouse.x,
+                                     y: anchor.origin.y + mouse.y - anchor.mouse.y)
                 panel.setFrameOrigin(self.clamped(origin, size: panel.frame.size))
             },
             endDrag: { [weak self] in
+                self?.dragAnchor = nil
                 self?.manualOrigin = self?.panel?.frame.origin
             })
 
