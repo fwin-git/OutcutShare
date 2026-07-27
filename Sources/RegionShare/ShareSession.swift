@@ -128,6 +128,17 @@ final class ShareSession {
     var receivedFrameCount: Int { capture?.frameCount ?? 0 }
 
     var currentRegionRect: CGRect? { currentRegion?.rect }
+    var currentScreen: NSScreen? { currentRegion?.screen }
+    var currentAspect: CGFloat? { activeAspect }
+
+    private lazy var follow = FollowController(session: self, settings: settings)
+    var followMode: FollowMode { follow.mode }
+
+    func setFollow(mode: FollowMode) {
+        guard state == .active || mode == .off else { return }
+        follow.set(mode: mode)
+        onStateChange?()
+    }
 
     /// Enters interactive adjust mode: drag the region to move it, drag its
     /// corners to resize (aspect-locked in virtual-display mode), arrow keys
@@ -324,6 +335,7 @@ final class ShareSession {
 
     private func teardown() {
         isPaused = false
+        follow.set(mode: .off)
         mover?.close()
         mover = nil
         moveBackupRect = nil

@@ -14,6 +14,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     private let presetsItem = NSMenuItem(title: "Presets", action: nil, keyEquivalent: "")
     private let moveItem = NSMenuItem(title: "Move / Resize Region",
                                       action: #selector(moveRegion), keyEquivalent: "m")
+    private let followItem = NSMenuItem(title: "Follow", action: nil, keyEquivalent: "")
     private let pauseItem = NSMenuItem(title: "Pause Sharing",
                                        action: #selector(togglePause), keyEquivalent: "p")
     private let stopItem = NSMenuItem(title: "Stop Sharing",
@@ -39,6 +40,17 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         menu.addItem(shareLastItem)
         menu.addItem(presetsItem)
         menu.addItem(moveItem)
+        let followMenu = NSMenu(title: "Follow")
+        followMenu.autoenablesItems = false
+        for mode in FollowMode.allCases {
+            let item = NSMenuItem(title: mode.displayName,
+                                  action: #selector(setFollowMode(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = mode.rawValue
+            followMenu.addItem(item)
+        }
+        followItem.submenu = followMenu
+        menu.addItem(followItem)
         menu.addItem(pauseItem)
         menu.addItem(stopItem)
         menu.addItem(.separator())
@@ -72,6 +84,13 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         selectItem.isEnabled = session.state == .idle
         shareLastItem.isEnabled = session.state == .idle && SettingsStore.shared.lastRegion != nil
         moveItem.isEnabled = session.isActive
+        followItem.isEnabled = session.isActive
+        if let items = followItem.submenu?.items {
+            for item in items {
+                item.state = (item.representedObject as? String) == session.followMode.rawValue
+                    ? .on : .off
+            }
+        }
         pauseItem.isEnabled = session.isActive
         pauseItem.title = session.isPaused ? "Resume Sharing" : "Pause Sharing"
         stopItem.isEnabled = session.isActive
@@ -140,6 +159,12 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     @objc private func moveRegion() {
         session.startAdjust()
+    }
+
+    @objc private func setFollowMode(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String,
+              let mode = FollowMode(rawValue: raw) else { return }
+        session.setFollow(mode: mode)
     }
 
     @objc private func togglePause() {

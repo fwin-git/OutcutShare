@@ -116,6 +116,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
+        // --follow=activeWindow|cursor enables follow mode 2 s into the run.
+        if let followArg = CommandLine.arguments.first(where: { $0.hasPrefix("--follow=") }) {
+            if let mode = FollowMode(rawValue: String(followArg.dropFirst("--follow=".count))) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [session] in
+                    session.setFollow(mode: mode)
+                    print("SHARE-TEST follow=\(mode.rawValue)")
+                }
+            }
+        }
         // --pause-at=t1,t2 toggles pause at the given offsets (seconds).
         if let pauseArg = CommandLine.arguments.first(where: { $0.hasPrefix("--pause-at=") }) {
             let times = pauseArg.dropFirst("--pause-at=".count).split(separator: ",").compactMap { Double($0) }

@@ -14,6 +14,12 @@ enum PauseStyle: String, CaseIterable {
     case privacyScreen
 }
 
+/// How follow mode moves the region.
+enum FollowBehavior: String, CaseIterable {
+    case snap
+    case glide
+}
+
 /// How the region is exposed to sharing apps.
 enum ShareMode: String {
     /// A virtual display sized to the region ("share screen" in Zoom/Teams).
@@ -116,6 +122,20 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    @Published var followBehavior: FollowBehavior {
+        didSet {
+            defaults.set(followBehavior.rawValue, forKey: "followBehavior")
+            notifyChange()
+        }
+    }
+
+    @Published var followResizes: Bool {
+        didSet {
+            defaults.set(followResizes, forKey: "followResizes")
+            notifyChange()
+        }
+    }
+
     @Published var borderThickness: Double {
         didSet {
             let clamped = min(max(borderThickness, 1), 10)
@@ -193,6 +213,10 @@ final class SettingsStore: ObservableObject {
         self.borderThickness = defaults.double(forKey: Key.borderThickness)
         self.pauseStyle = defaults.string(forKey: "pauseStyle")
             .flatMap(PauseStyle.init(rawValue:)) ?? .privacyScreen
+        defaults.register(defaults: ["followResizes": true])
+        self.followBehavior = defaults.string(forKey: "followBehavior")
+            .flatMap(FollowBehavior.init(rawValue:)) ?? .glide
+        self.followResizes = defaults.bool(forKey: "followResizes")
         if let data = defaults.data(forKey: "presets"),
            let decoded = try? JSONDecoder().decode([RegionPreset].self, from: data) {
             presets = decoded
