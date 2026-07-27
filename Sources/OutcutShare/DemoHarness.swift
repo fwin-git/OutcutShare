@@ -525,8 +525,18 @@ final class DemoDirector {
         // follow's first glide targets the user's terminal (still frontmost
         // and hidden under the shield).
         await driver.click(at: CGPoint(x: first.frame.midX, y: first.frame.midY))
-        session.startSharing(rect: first.frame.insetBy(dx: -24, dy: -24), on: screen)
+        let shareRect = first.frame.insetBy(dx: -24, dy: -24)
+        session.startSharing(rect: shareRect, on: screen)
         try await waitForActive()
+        // Pin the preview to the stage's top-right, clear of the follow
+        // path: the demo capture includes our own windows, so the region
+        // gliding over the panel would create an infinite-mirror portal.
+        let previewWidth = stage.width * 0.20
+        let previewHeight = previewWidth * shareRect.height / shareRect.width
+        session.demoPositionPreview(frame: CGRect(
+            x: stage.maxX - previewWidth - 16,
+            y: stage.maxY - previewHeight - 16,
+            width: previewWidth, height: previewHeight))
         await driver.pause(1.2)
 
         keystrokeHUD?.show(key: "Follow", caption: "Active window")
@@ -540,12 +550,14 @@ final class DemoDirector {
         keystrokeHUD?.show(key: "Follow", caption: "Cursor")
         session.setFollow(mode: .cursor)
         await driver.pause(0.5)
-        for point in [CGPoint(x: stage.minX + stage.width * 0.62,
-                              y: stage.minY + stage.height * 0.30),
-                      CGPoint(x: stage.minX + stage.width * 0.30,
-                              y: stage.minY + stage.height * 0.70),
-                      CGPoint(x: stage.minX + stage.width * 0.55,
-                              y: stage.minY + stage.height * 0.55)] {
+        // Waypoints stay in the lower-left two-thirds — never near the
+        // pinned preview in the top-right corner.
+        for point in [CGPoint(x: stage.minX + stage.width * 0.55,
+                              y: stage.minY + stage.height * 0.28),
+                      CGPoint(x: stage.minX + stage.width * 0.28,
+                              y: stage.minY + stage.height * 0.66),
+                      CGPoint(x: stage.minX + stage.width * 0.48,
+                              y: stage.minY + stage.height * 0.48)] {
             await driver.move(to: point, over: 1.2)
             await driver.pause(0.6)
         }
