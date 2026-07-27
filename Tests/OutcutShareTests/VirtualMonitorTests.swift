@@ -172,6 +172,44 @@ final class MonitorInteractionTests: XCTestCase {
         XCTAssertEqual(bottom.x, panel.minX + 0.1 * panel.width, accuracy: 0.5)
     }
 
+    func testSeamlessExitContinuesTheMotionOutsideThePanel() {
+        let display = CGRect(x: 5120, y: 0, width: 1920, height: 1080)
+        let panel = CGRect(x: 1600, y: 180, width: 960, height: 540)
+        let screen = CGRect(x: 0, y: 0, width: 5120, height: 1440)
+
+        // Leftward push at 25% height: spawns LEFT of the panel, velocity
+        // scaled to panel size (half here) carried through.
+        let exit = Geometry.seamlessExitPoint(
+            mouse: CGPoint(x: 5121, y: 270), previous: CGPoint(x: 5161, y: 260),
+            display: display, panel: panel, screenBounds: screen)
+        XCTAssertLessThan(exit.x, panel.minX)
+        XCTAssertEqual(exit.x, panel.minX - 20, accuracy: 1) // vx −40 × 0.5
+        XCTAssertEqual(exit.y, panel.minY + 0.25 * panel.height + 5, accuracy: 1)
+
+        // No velocity: still guaranteed just outside the crossed edge.
+        let still = Geometry.seamlessExitPoint(
+            mouse: CGPoint(x: 5121, y: 540), previous: CGPoint(x: 5121, y: 540),
+            display: display, panel: panel, screenBounds: screen)
+        XCTAssertEqual(still.x, panel.minX - 6, accuracy: 0.01)
+
+        // A violent flick is capped so the cursor doesn't fly across the room.
+        let flick = Geometry.seamlessExitPoint(
+            mouse: CGPoint(x: 5121, y: 540), previous: CGPoint(x: 5921, y: 540),
+            display: display, panel: panel, screenBounds: screen)
+        XCTAssertGreaterThanOrEqual(flick.x, panel.minX - 90 - 0.01)
+
+        // Bottom edge: spawns below the panel.
+        let bottom = Geometry.seamlessExitPoint(
+            mouse: CGPoint(x: 5120 + 960, y: 1), previous: CGPoint(x: 5120 + 960, y: 41),
+            display: display, panel: panel, screenBounds: screen)
+        XCTAssertLessThan(bottom.y, panel.minY)
+        XCTAssertEqual(bottom.x, panel.midX, accuracy: 1)
+
+        // Never off the real screen.
+        XCTAssertTrue(screen.contains(exit))
+        XCTAssertTrue(screen.contains(bottom))
+    }
+
     func testResizeEdgeMapping() {
         let bounds = CGRect(x: 0, y: 0, width: 800, height: 500)
         XCTAssertEqual(Geometry.resizeEdge(for: CGPoint(x: 5, y: 250), bounds: bounds, band: 18), .left)
