@@ -91,6 +91,18 @@ Key invariants:
 - **The user often runs the release app while you test the debug build.**
   Their overlays/hotbar are a *different process* — before v1.5 fixes they
   appeared in your test captures. Don't chase ghosts; ask the user.
+- **macOS 26 leaks observation-tracking registrations on every render of a
+  hosted settings page** (~6 per `NSHostingView.layout` pass; shows up as
+  `Observation._ManagedCriticalState` growth in `heap`). Publishing 20 Hz
+  demo progress through a model the whole page observed grew those tables
+  until the main thread crawled (minutes!). High-frequency state must live
+  on its own tiny observable that only the small view observes
+  (`DemoProgress` → ring), and canvas timers gate on visibility.
+- **NSTabViewController's toolbar items retain the controller in a cycle
+  that outlives the window** — dropping references after close keeps every
+  page and its timers alive forever. `SettingsWindowController` tears the
+  tab items out on close; verify with `--close-settings-after` + `heap`
+  (want 0 `NSHostingController`, 0 live `TimerPublisher`).
 - **Parallel agent sessions have collided here twice** (file reverts, push
   races). If another agent is active, work in a separate git worktree.
 - Screenshots for verification: `screencapture -x out1.png out2.png`
@@ -129,6 +141,7 @@ Key invariants:
 --hotkeys-test                          registered shortcuts
 --permissions-test                      permission status line
 --show-settings[=tab] [--dim-preview]   open a settings pane
+   companion: --close-settings-after=secs (teardown/perf verification)
 --show-selector / --show-permissions    open those UIs
 ```
 

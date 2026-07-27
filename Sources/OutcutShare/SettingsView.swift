@@ -249,7 +249,9 @@ private struct PermissionsPage: View {
 }
 
 private struct DemoProgressRing: View {
-    var progress: Double
+    // The only view observing the 20 Hz progress — keeps high-frequency
+    // re-renders confined to this 14 pt circle (see FollowDemoModel).
+    @ObservedObject var progress: DemoProgress
     var playing: Bool
     var action: () -> Void
 
@@ -266,7 +268,7 @@ private struct DemoProgressRing: View {
             Circle()
                 .stroke(Color.secondary.opacity(0.25), lineWidth: 2)
             Circle()
-                .trim(from: 0, to: progress)
+                .trim(from: 0, to: progress.value)
                 .stroke(Color.accentColor,
                         style: StrokeStyle(lineWidth: 2, lineCap: .round))
                 .rotationEffect(.degrees(-90))
@@ -467,10 +469,13 @@ final class SettingsWindowController {
     private let settings: SettingsStore
     private var window: NSWindow?
     private var tabController: SettingsTabViewController?
+    private var closeObserver: NSObjectProtocol?
 
     init(settings: SettingsStore) {
         self.settings = settings
     }
+
+    var isLoaded: Bool { window != nil }
 
     func show(tab: SettingsTab? = nil) {
         if window == nil {
@@ -481,6 +486,32 @@ final class SettingsWindowController {
         }
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
+    }
+
+    /// Releases the whole tab hierarchy when the window closes. Keeping it
+    /// alive kept every page's SwiftUI graph (and its demo timers) running
+    /// forever, which on macOS 26 leaks observation-tracking registrations
+    /// per render until the main thread crawls. Rebuilding on next open is
+    /// cheap; state lives in SettingsStore anyway.
+    ///
+    /// Dropping our references is NOT enough: NSTabViewController's toolbar
+    /// items strongly target the controller while it retains the toolbar, a
+    /// cycle that outlives the window and keeps every page (and its timers)
+    /// alive. The tab items must be removed explicitly.
+    func windowDidClose() {
+        if let closeObserver {
+            NotificationCenter.default.removeObserver(closeObserver)
+            self.closeObserver = nil
+        }
+        if let tabController {
+            while let item = tabController.tabViewItems.first {
+                tabController.removeTabViewItem(item)
+            }
+        }
+        window?.toolbar = nil
+        window?.contentViewController = nil
+        window = nil
+        tabController = nil
     }
 
     private func build() {
@@ -502,6 +533,16 @@ final class SettingsWindowController {
         window.isReleasedWhenClosed = false
         window.center()
         self.window = window
+        closeObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification, object: window, queue: .main
+        ) { [weak self] _ in
+            // Deferred: tearing the toolbar/tab items out mid-close would
+            // re-enter AppKit's close handling.
+            DispatchQueue.main.async {
+                guard let self, self.window?.isVisible != true else { return }
+                self.windowDidClose()
+            }
+        }
     }
 
     private func pageController(for tab: SettingsTab) -> NSViewController {
