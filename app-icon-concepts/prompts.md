@@ -3,9 +3,9 @@
 Generation path: built-in ChatGPT image generator.
 
 For every call, the supplied reference images are style and composition
-references only. They are not edit targets. The built-in generator accepts five
-references per call, so the calls rotate five-image subsets and collectively
-use all six. Preserve the shared visual grammar—compact rounded enclosure, one
+references only. They are not edit targets. The built-in generator accepts up
+to five references per call, so the calls rotate subsets and collectively use
+all six. Preserve the shared visual grammar—compact rounded enclosure, one
 bold centered glyph, controlled color, gentle depth, high small-size
 contrast—without copying any exact reference glyph or layout.
 
@@ -57,20 +57,21 @@ Constraints: original design; no text, letters, numbers, watermark, trademark, e
 Avoid: paper stack, printer, upload cloud, glossy 3D product render, tiny details
 ```
 
-## 04 Convex Window
+## 04 Convex Ultrawide
 
 ```text
 Use case: logo-brand
 Asset type: original macOS app icon concept for Outcut Share
-Input images: Images 1, 3, 4, 5, and 6 are style and composition references only; Image 4 especially demonstrates one memorable bold ultrawide silhouette; do not edit or reproduce any reference
-Primary request: create a gold-to-umber compact icon centered on one original cream ultrawide glyph whose outer sides bow outward like a convex window while a smaller perfectly straight rectangular opening sits inside
-Scene/backdrop: edge-to-edge gold, ochre, and deep umber enclosure gradient; no exterior scene
-Subject: one thick cream convex-window outline; one straight dark rectangular inner region; two small detached accent caps above and below to suggest extraction
-Style/medium: bold flat-vector glyph with a gentle embossed bevel, front-facing, logo-like, minimal
-Composition/framing: one centered symmetrical symbol, thick geometry, large negative opening, readable at 48–64 px
-Color palette: golden yellow, umber, warm cream, small amber highlight
-Constraints: original design; no text, letters, numbers, watermark, trademark, exact bow-tie reference glyph, literal monitor, stand, cursor, isometric view, floating object, black void, pedestal, floor shadow, or cinematic lighting
-Avoid: hourglass, goggles, speaker, gaming logo, shiny metal, thin strokes
+Input images: Images 1, 2, and 4 are style and composition references only; do not edit or reproduce any reference
+Primary request: create a midnight-blue compact icon centered on a cyan ultrawide display glyph whose outer top and bottom edges bow outward like a convex panoramic lens
+Scene/backdrop: edge-to-edge midnight-blue rounded enclosure; no exterior scene
+Subject: one cyan convex ultrawide outline; one smaller perfectly straight dashed selection rectangle; one small diagonal share-arrow/cursor at the upper right inside the dashed rectangle
+Style/medium: bold front-facing vector-like macOS icon, gentle material bevel, subtle inset glow, minimal
+Composition/framing: one centered symmetrical symbol, thick geometry, readable at 48–64 px
+Color palette: midnight blue, cyan, pearl white, restrained violet
+Geometry constraint: the center of the outer top edge sits higher than both endpoints, and the center of the outer bottom edge sits lower than both endpoints; everything inside the outer frame remains straight and planar
+Constraints: original design; no text, letters, numbers, watermark, trademark, bow-tie or hourglass shape, literal monitor stand, isometric view, floating object, black void, pedestal, floor shadow, or cinematic lighting
+Avoid: inward pinch, concave screen, goggles, speaker, gaming logo, shiny metal, thin strokes
 ```
 
 ## 05 Region Out
