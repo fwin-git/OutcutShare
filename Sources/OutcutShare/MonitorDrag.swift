@@ -173,6 +173,18 @@ final class MonitorWindowManipulator {
         NSEvent.modifierFlags.contains(settings.dragOutModifier.flag)
     }
 
+    /// The physical screen windows pop out to. NEVER NSScreen.main — that's
+    /// the key window's screen, which becomes the VIRTUAL display as soon
+    /// as a window over there gains focus (pull-out then silently moved
+    /// windows "out" onto the monitor itself, i.e. nowhere).
+    private var popOutScreen: NSScreen? {
+        if let panelFrame = preview?.panelFrame,
+           let screen = NSScreen.screens.first(where: { $0.frame.intersects(panelFrame) }) {
+            return screen
+        }
+        return NSScreen.screens.first
+    }
+
     func mouseDown(at local: CGPoint, in bounds: CGRect) {
         drag = nil
         let displayPoint = Geometry.previewPointToDisplayPoint(
@@ -202,6 +214,7 @@ final class MonitorWindowManipulator {
             drag.started = true
         }
         self.drag = drag
+        preview?.showPullOutHint(pullOutHeld)
         guard bounds.contains(local) else {
             // Outside the panel: window stays put until the drop decides.
             preview?.showSnapTile(nil)
@@ -231,6 +244,7 @@ final class MonitorWindowManipulator {
     func mouseUp(at local: CGPoint, in bounds: CGRect) {
         defer {
             preview?.showSnapTile(nil)
+            preview?.showPullOutHint(false)
             drag = nil
         }
         guard let drag, drag.started else { return }
@@ -246,10 +260,10 @@ final class MonitorWindowManipulator {
         }
         // Off the panel: only the pull-out modifier pops the window back to
         // the real screen — a plain drag that strays outside does nothing.
-        guard pullOutHeld, let main = NSScreen.main else { return }
+        guard pullOutHeld, let screen = popOutScreen else { return }
         let origin = Geometry.centeredClampedWindowOrigin(size: drag.window.frame.size,
                                                           center: NSEvent.mouseLocation,
-                                                          bounds: main.visibleFrame)
+                                                          bounds: screen.visibleFrame)
         WindowMover.setPosition(drag.ax, appKitOrigin: origin, size: drag.window.frame.size)
     }
 }
@@ -267,6 +281,9 @@ final class MonitorPointerForwarder {
     private let displayFrame: CGRect
     private var savedCursor: CGPoint?
     private var promptedForPermission = false
+    /// True from mouse-down until the warp-back completed — the stranded-
+    /// cursor watchdog must not fight an in-flight gesture.
+    private(set) var gestureActive = false
 
     init(session: ShareSession, displayFrame: CGRect) {
         self.session = session
@@ -276,6 +293,7 @@ final class MonitorPointerForwarder {
     func mouseDown(clickCount: Int, at local: CGPoint, in bounds: CGRect,
                    button: CGMouseButton) {
         guard ensurePermission() else { return }
+        gestureActive = true
         savedCursor = currentCursor()
         post(button == .left ? .leftMouseDown : .rightMouseDown,
              at: target(local, bounds), button: button, clickCount: clickCount)
@@ -292,11 +310,19 @@ final class MonitorPointerForwarder {
         guard WindowMover.hasPermission else { return }
         post(button == .left ? .leftMouseUp : .rightMouseUp,
              at: target(local, bounds), button: button, clickCount: clickCount)
-        if let savedCursor {
-            CGWarpMouseCursorPosition(savedCursor)
-            CGAssociateMouseAndMouseCursorPosition(1)
-        }
+        // The warp-back must run AFTER the queued synthetic events have been
+        // processed — the posted mouse-up carries the monitor position, and
+        // an immediate warp would be undone when it lands, stranding the
+        // cursor on the virtual display.
+        let saved = savedCursor
         savedCursor = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            if let saved {
+                CGWarpMouseCursorPosition(saved)
+                CGAssociateMouseAndMouseCursorPosition(1)
+            }
+            MainActor.assumeIsolated { self?.gestureActive = false }
+        }
     }
 
     func scroll(deltaX: CGFloat, deltaY: CGFloat, at local: CGPoint, in bounds: CGRect) {

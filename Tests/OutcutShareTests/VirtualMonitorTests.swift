@@ -142,6 +142,19 @@ final class MonitorInteractionTests: XCTestCase {
         let p = Geometry.cgPoint(fromAppKit: CGPoint(x: 100, y: 400), primaryHeight: 1440)
         XCTAssertEqual(p, CGPoint(x: 100, y: 1040))
     }
+
+    func testResizeEdgeMapping() {
+        let bounds = CGRect(x: 0, y: 0, width: 800, height: 500)
+        XCTAssertEqual(Geometry.resizeEdge(for: CGPoint(x: 5, y: 250), bounds: bounds, band: 18), .left)
+        XCTAssertEqual(Geometry.resizeEdge(for: CGPoint(x: 795, y: 250), bounds: bounds, band: 18), .right)
+        XCTAssertEqual(Geometry.resizeEdge(for: CGPoint(x: 400, y: 495), bounds: bounds, band: 18), .top)
+        XCTAssertEqual(Geometry.resizeEdge(for: CGPoint(x: 400, y: 5), bounds: bounds, band: 18), .bottom)
+        // Corners resolve to the horizontal side (the aspect lock couples
+        // the axes anyway).
+        XCTAssertEqual(Geometry.resizeEdge(for: CGPoint(x: 5, y: 5), bounds: bounds, band: 18), .left)
+        XCTAssertEqual(Geometry.resizeEdge(for: CGPoint(x: 795, y: 495), bounds: bounds, band: 18), .right)
+        XCTAssertNil(Geometry.resizeEdge(for: CGPoint(x: 400, y: 250), bounds: bounds, band: 18))
+    }
 }
 
 final class SnapTileTests: XCTestCase {
