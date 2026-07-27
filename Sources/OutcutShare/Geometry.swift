@@ -344,6 +344,27 @@ enum Geometry {
         return nil
     }
 
+    enum DockSide {
+        case left, right, bottom
+    }
+
+    /// Where the Dock sits, derived from the visible-frame insets.
+    static func dockSide(frame: CGRect, visibleFrame: CGRect) -> DockSide {
+        if visibleFrame.minX > frame.minX { return .left }
+        if visibleFrame.maxX < frame.maxX { return .right }
+        return .bottom
+    }
+
+    /// Arrangement origin (CG top-left space) for the virtual display:
+    /// opposite the Dock, so the Dock never migrates onto the shared
+    /// screen (macOS moves a left/right Dock to the outermost display edge
+    /// on that side). Top-aligned with the primary display.
+    static func virtualDisplayCGOrigin(primaryWidth: CGFloat, monitorWidth: CGFloat,
+                                       dockSide: DockSide) -> CGPoint {
+        dockSide == .right ? CGPoint(x: -monitorWidth, y: 0)
+                           : CGPoint(x: primaryWidth, y: 0)
+    }
+
     /// Which display edge the cursor is crossing (nearest wins).
     static func nearestEdge(of p: CGPoint, in rect: CGRect) -> RegionEdge {
         let dl = p.x - rect.minX

@@ -325,7 +325,36 @@ final class ShareSession {
                                         name: "Outcut Share Monitor",
                                         forceHiDPI: settings.crispOutput)
             virtualDisplay = vd
-            let virtualScreen = try await vd.waitForScreen()
+            var virtualScreen = try await vd.waitForScreen()
+            // Keep the Dock on the real screen: macOS moves a left/right
+            // Dock onto the outermost display edge of that side, so the
+            // monitor is arranged on the OPPOSITE side of the primary.
+            if let primary = NSScreen.screens.first, primary != virtualScreen {
+                let side = Geometry.dockSide(frame: primary.frame,
+                                             visibleFrame: primary.visibleFrame)
+                let origin = Geometry.virtualDisplayCGOrigin(
+                    primaryWidth: primary.frame.width,
+                    monitorWidth: size.width, dockSide: side)
+                let displayID = virtualScreen.displayID
+                var config: CGDisplayConfigRef?
+                if CGBeginDisplayConfiguration(&config) == .success, let config {
+                    CGConfigureDisplayOrigin(config, displayID,
+                                             Int32(origin.x), Int32(origin.y))
+                    CGCompleteDisplayConfiguration(config, .forSession)
+                }
+                // The arrangement change propagates to NSScreen with a lag.
+                for _ in 0..<10 {
+                    if let placed = NSScreen.screen(for: displayID),
+                       abs(placed.frame.minX - origin.x) < 2 {
+                        virtualScreen = placed
+                        break
+                    }
+                    try await Task.sleep(nanoseconds: 100_000_000)
+                }
+                if let placed = NSScreen.screen(for: displayID) {
+                    virtualScreen = placed
+                }
+            }
             let region = SelectedRegion(rect: virtualScreen.frame, screen: virtualScreen)
 
             let capture = CaptureEngine()

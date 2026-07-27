@@ -505,6 +505,13 @@ final class PreviewWindowController: NSObject {
         let onMonitor = monitorDisplayFrame.insetBy(dx: -1, dy: -1).contains(mouse)
         showControlExitHint(onMonitor)
         guard onMonitor else {
+            // The edge bordering a real screen never pins the cursor — it
+            // slides across the seam between polls. Port that crossing the
+            // same way as a pinned edge.
+            if edgeExitArmed, let last = lastMonitorMouse,
+               NSEvent.pressedMouseButtons == 0 {
+                portCursorOut(mouse: mouse, previous: last)
+            }
             edgeExitArmed = false
             lastMonitorMouse = nil
             return
@@ -517,21 +524,24 @@ final class PreviewWindowController: NSObject {
             edgeExitArmed = true
             return
         }
-        guard edgeExitArmed, NSEvent.pressedMouseButtons == 0,
-              let frame = panelFrame else { return }
+        guard edgeExitArmed, NSEvent.pressedMouseButtons == 0 else { return }
         edgeExitArmed = false
         showControlExitHint(false)
-        // Seamless: emerge OUTSIDE the panel's matching edge, continuing
-        // the motion that pushed through.
+        portCursorOut(mouse: mouse, previous: lastMonitorMouse ?? mouse)
+        lastMonitorMouse = nil
+    }
+
+    /// Seamless: emerge OUTSIDE the panel's matching edge, continuing the
+    /// motion that pushed through.
+    private func portCursorOut(mouse: CGPoint, previous: CGPoint) {
+        guard let frame = panelFrame else { return }
         let screenBounds = NSScreen.screens
             .first { $0.frame.intersects(frame) }?.frame
             ?? NSScreen.screens.first?.frame ?? frame
-        let exit = Geometry.seamlessExitPoint(mouse: mouse,
-                                              previous: lastMonitorMouse ?? mouse,
+        let exit = Geometry.seamlessExitPoint(mouse: mouse, previous: previous,
                                               display: monitorDisplayFrame,
                                               panel: frame,
                                               screenBounds: screenBounds)
-        lastMonitorMouse = nil
         let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
         let target = Geometry.cgPoint(fromAppKit: exit, primaryHeight: primaryHeight)
         // Posted mouse-moved instead of CGWarpMouseCursorPosition: the warp
