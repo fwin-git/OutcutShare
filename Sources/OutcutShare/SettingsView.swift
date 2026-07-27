@@ -3,12 +3,13 @@ import ServiceManagement
 import SwiftUI
 
 enum SettingsTab: String, CaseIterable {
-    case general, appearance, presets, shortcuts
+    case general, appearance, privacy, presets, shortcuts
 
     var title: String {
         switch self {
         case .general: return "General"
         case .appearance: return "Appearance"
+        case .privacy: return "Privacy"
         case .presets: return "Presets"
         case .shortcuts: return "Shortcuts"
         }
@@ -18,9 +19,82 @@ enum SettingsTab: String, CaseIterable {
         switch self {
         case .general: return "gearshape"
         case .appearance: return "paintbrush"
+        case .privacy: return "hand.raised"
         case .presets: return "square.grid.2x2"
         case .shortcuts: return "keyboard"
         }
+    }
+}
+
+private struct PrivacyPage: View {
+    @ObservedObject var settings: SettingsStore
+
+    var body: some View {
+        Form {
+            Section("Notifications") {
+                Toggle("Hide notification banners from viewers", isOn: $settings.hideNotificationBanners)
+                Text("Banners still appear on your screen — they're removed only from the shared picture.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section("Hidden apps") {
+                if settings.hiddenApps.isEmpty {
+                    Text("No hidden apps. Windows of apps you add here never appear "
+                         + "in the shared picture — viewers see what's behind them.")
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(settings.hiddenApps) { app in
+                    HStack {
+                        Image(nsImage: Self.icon(forBundleID: app.bundleID))
+                            .resizable()
+                            .frame(width: 20, height: 20)
+                        Text(app.name)
+                        Spacer()
+                        Text(app.bundleID)
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        Button {
+                            settings.hiddenApps.removeAll { $0.bundleID == app.bundleID }
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                    }
+                }
+                Button("Add App…") { addApps() }
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    private func addApps() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = true
+        panel.allowedContentTypes = [.application]
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        guard panel.runModal() == .OK else { return }
+        for url in panel.urls {
+            guard let bundleID = Bundle(url: url)?.bundleIdentifier,
+                  !settings.hiddenApps.contains(where: { $0.bundleID == bundleID }) else {
+                continue
+            }
+            let name = FileManager.default.displayName(atPath: url.path)
+                .replacingOccurrences(of: ".app", with: "")
+            settings.hiddenApps.append(HiddenApp(bundleID: bundleID, name: name))
+        }
+    }
+
+    private static func icon(forBundleID bundleID: String) -> NSImage {
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+            return NSWorkspace.shared.icon(forFile: url.path)
+        }
+        return NSImage(systemSymbolName: "app.dashed", accessibilityDescription: nil)
+            ?? NSImage()
     }
 }
 
@@ -296,6 +370,9 @@ final class SettingsWindowController {
         case .general:
             controller = NSHostingController(
                 rootView: AnyView(GeneralPage(settings: settings).frame(width: 470, height: 800)))
+        case .privacy:
+            controller = NSHostingController(
+                rootView: AnyView(PrivacyPage(settings: settings).frame(width: 470, height: 460)))
         case .presets:
             controller = NSHostingController(
                 rootView: AnyView(PresetsPage(settings: settings).frame(width: 470, height: 360)))

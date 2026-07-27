@@ -20,6 +20,14 @@ enum FollowBehavior: String, CaseIterable {
     case glide
 }
 
+/// An app whose windows are hidden from viewers.
+struct HiddenApp: Codable, Equatable, Identifiable {
+    var bundleID: String
+    var name: String
+
+    var id: String { bundleID }
+}
+
 /// How the region is exposed to sharing apps.
 enum ShareMode: String {
     /// A virtual display sized to the region ("share screen" in Zoom/Teams).
@@ -152,6 +160,33 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    /// Hides notification banners from the shared picture (Notification
+    /// Center is excluded from capture; banners stay visible locally).
+    @Published var hideNotificationBanners: Bool {
+        didSet {
+            defaults.set(hideNotificationBanners, forKey: "hideNotificationBanners")
+            notifyChange()
+        }
+    }
+
+    /// Apps whose windows never appear in the shared picture.
+    @Published var hiddenApps: [HiddenApp] {
+        didSet {
+            guard hiddenApps != oldValue else { return }
+            defaults.set(try? JSONEncoder().encode(hiddenApps), forKey: "hiddenApps")
+            notifyChange()
+        }
+    }
+
+    /// Bundle ids the capture filter must exclude right now.
+    var excludedBundleIDs: [String] {
+        var ids = hiddenApps.map(\.bundleID)
+        if hideNotificationBanners {
+            ids.append("com.apple.notificationcenterui")
+        }
+        return ids
+    }
+
     /// Renders the virtual display with Retina (2×) backing.
     @Published var crispOutput: Bool {
         didSet {
@@ -274,6 +309,14 @@ final class SettingsStore: ObservableObject {
             .flatMap(FollowMode.init(rawValue:)) ?? .off
         self.hotbarEnabled = defaults.bool(forKey: "hotbarEnabled")
         self.crispOutput = defaults.bool(forKey: "crispOutput")
+        defaults.register(defaults: ["hideNotificationBanners": true])
+        self.hideNotificationBanners = defaults.bool(forKey: "hideNotificationBanners")
+        if let data = defaults.data(forKey: "hiddenApps"),
+           let decoded = try? JSONDecoder().decode([HiddenApp].self, from: data) {
+            hiddenApps = decoded
+        } else {
+            hiddenApps = []
+        }
         self.cursorHighlight = defaults.bool(forKey: "cursorHighlight")
         self.clickRipples = defaults.bool(forKey: "clickRipples")
         self.recordingFolder = defaults.string(forKey: "recordingFolder") ?? ""

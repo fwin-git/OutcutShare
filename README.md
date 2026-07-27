@@ -37,6 +37,9 @@ The first launch guides you through the one required permission
   (snap or glide).
 - **Privacy pause** (⌃⌥⌘P) — viewers see a frozen frame or a blurred
   privacy screen while you handle something private.
+- **Viewer privacy filters** — notification banners and windows of chosen
+  apps (Mail, Messages, …) are removed from the shared picture while staying
+  visible to you. → [settings](docs/settings.md)
 - **Cursor emphasis** — halo + click ripples, drawn for viewers only.
 - **Recording** (⌃⌥⌘R) — the region straight to .mp4, no meeting needed.
 - **Hotbar** — floating quick actions next to the region (stop, pause,

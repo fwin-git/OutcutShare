@@ -34,6 +34,13 @@ Follow mode itself is enabled per-session from the menu bar:
 
 Dimming and border are local-only: they're excluded from what viewers see.
 
+## Privacy
+
+| Setting | Effect | Default |
+| --- | --- | --- |
+| Hide notification banners from viewers | Notification Center is excluded from the capture — banners stay visible on your screen but never appear in the shared picture | on |
+| Hidden apps | Windows of the apps you add (Mail, Messages, …) never appear in the shared picture; viewers see what's behind them. Changes apply live | empty |
+
 ## Presets
 
 Rename or delete saved regions. Save new ones while sharing via menu bar →

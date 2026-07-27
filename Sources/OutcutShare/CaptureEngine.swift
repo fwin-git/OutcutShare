@@ -31,12 +31,14 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
 
     private var stream: SCStream?
     private var config: SCStreamConfiguration?
+    private var display: SCDisplay?
     private let sampleQueue = DispatchQueue(label: "com.outcutshare.capture")
 
     /// - Parameter sourceRectTopLeft: region in display-local, top-left-origin
     ///   points (see `Geometry.displayLocalTopLeftRect`).
     func start(displayID: CGDirectDisplayID, sourceRectTopLeft: CGRect,
-               pixelWidth: Int, pixelHeight: Int, fps: Int) async throws {
+               pixelWidth: Int, pixelHeight: Int, fps: Int,
+               excludedBundleIDs: [String]) async throws {
         let content: SCShareableContent
         do {
             content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
@@ -46,10 +48,9 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
         guard let display = content.displays.first(where: { $0.displayID == displayID }) else {
             throw CaptureError.displayNotFound
         }
-        let ownWindows = content.windows.filter {
-            $0.owningApplication?.processID == ProcessInfo.processInfo.processIdentifier
-        }
-        let filter = SCContentFilter(display: display, excludingWindows: ownWindows)
+        self.display = display
+        let filter = Self.makeFilter(content: content, display: display,
+                                     excludedBundleIDs: excludedBundleIDs)
 
         let config = SCStreamConfiguration()
         config.sourceRect = sourceRectTopLeft
@@ -65,6 +66,38 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
         try await stream.startCapture()
         self.stream = stream
         self.config = config
+        // A freshly launched process may not be listed in
+        // SCShareableContent.applications yet, so the own-app exclusion can
+        // miss on the first filter. Re-apply once registration caught up.
+        Task { [weak self] in
+            for delay: UInt64 in [800_000_000, 2_000_000_000] {
+                try? await Task.sleep(nanoseconds: delay)
+                try? await self?.updateExclusions(excludedBundleIDs)
+            }
+        }
+    }
+
+    /// Application-level exclusion: our own windows plus the configured
+    /// privacy exclusions. Excluding whole applications also covers windows
+    /// they create later (e.g. future notification banners).
+    private static func makeFilter(content: SCShareableContent, display: SCDisplay,
+                                   excludedBundleIDs: [String]) -> SCContentFilter {
+        let ownPID = ProcessInfo.processInfo.processIdentifier
+        let excluded = content.applications.filter {
+            $0.processID == ownPID || excludedBundleIDs.contains($0.bundleIdentifier)
+        }
+        return SCContentFilter(display: display, excludingApplications: excluded,
+                               exceptingWindows: [])
+    }
+
+    /// Applies a changed privacy-exclusion list to the running stream.
+    func updateExclusions(_ excludedBundleIDs: [String]) async throws {
+        guard let stream, let display else { return }
+        let content = try await SCShareableContent.excludingDesktopWindows(false,
+                                                                           onScreenWindowsOnly: true)
+        let current = content.displays.first { $0.displayID == display.displayID } ?? display
+        try await stream.updateContentFilter(Self.makeFilter(content: content, display: current,
+                                                             excludedBundleIDs: excludedBundleIDs))
     }
 
     /// Re-points (and optionally re-sizes) the running stream without

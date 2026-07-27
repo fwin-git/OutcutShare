@@ -39,6 +39,31 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(reloaded.frameRate, 60)
     }
 
+    func testPrivacyDefaultsAndPersistence() {
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertTrue(store.hideNotificationBanners)
+        XCTAssertTrue(store.hiddenApps.isEmpty)
+
+        store.hideNotificationBanners = false
+        store.hiddenApps = [HiddenApp(bundleID: "com.apple.mail", name: "Mail"),
+                            HiddenApp(bundleID: "com.apple.MobileSMS", name: "Messages")]
+
+        let reloaded = SettingsStore(defaults: defaults)
+        XCTAssertFalse(reloaded.hideNotificationBanners)
+        XCTAssertEqual(reloaded.hiddenApps.map(\.bundleID),
+                       ["com.apple.mail", "com.apple.MobileSMS"])
+        XCTAssertEqual(reloaded.hiddenApps.map(\.name), ["Mail", "Messages"])
+    }
+
+    func testExcludedBundleIDsComposition() {
+        let store = SettingsStore(defaults: defaults)
+        store.hiddenApps = [HiddenApp(bundleID: "com.apple.mail", name: "Mail")]
+        XCTAssertEqual(store.excludedBundleIDs,
+                       ["com.apple.mail", "com.apple.notificationcenterui"])
+        store.hideNotificationBanners = false
+        XCTAssertEqual(store.excludedBundleIDs, ["com.apple.mail"])
+    }
+
     func testCrispOutputDefaultsOffAndPersists() {
         let store = SettingsStore(defaults: defaults)
         XCTAssertFalse(store.crispOutput)

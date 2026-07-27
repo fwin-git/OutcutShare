@@ -32,6 +32,7 @@ final class ShareSession {
     private var activeFrameRate = 0
     private var activeShareMode: ShareMode = .virtualDisplay
     private var activeCrisp = false
+    private var activeExclusions: [String] = []
     private var settingsObserver: NSObjectProtocol?
     private var mover: RegionMover?
     private var moveBackupRect: CGRect?
@@ -311,8 +312,10 @@ final class ShareSession {
             let sourceRect = Geometry.displayLocalTopLeftRect(appKitGlobal: region.rect,
                                                              screenFrame: region.screen.frame)
             let (pw, ph) = Geometry.capturePixelSize(region: region.rect, scale: sourceScale)
+            activeExclusions = settings.excludedBundleIDs
             try await capture.start(displayID: region.displayID, sourceRectTopLeft: sourceRect,
-                                    pixelWidth: pw, pixelHeight: ph, fps: settings.frameRate)
+                                    pixelWidth: pw, pixelHeight: ph, fps: settings.frameRate,
+                                    excludedBundleIDs: activeExclusions)
 
             currentRegion = region
             activeFrameRate = settings.frameRate
@@ -354,6 +357,11 @@ final class ShareSession {
         } else {
             frameRateChangedIfNeeded()
             cursorEmphasis.settingsChanged()
+            if settings.excludedBundleIDs != activeExclusions, let capture {
+                activeExclusions = settings.excludedBundleIDs
+                let exclusions = activeExclusions
+                Task { try? await capture.updateExclusions(exclusions) }
+            }
             if follow.mode != settings.followMode {
                 follow.set(mode: settings.followMode)
             }
@@ -391,7 +399,8 @@ final class ShareSession {
                                                              screenFrame: region.screen.frame)
             do {
                 try await capture.start(displayID: region.displayID, sourceRectTopLeft: sourceRect,
-                                        pixelWidth: pw, pixelHeight: ph, fps: fps)
+                                        pixelWidth: pw, pixelHeight: ph, fps: fps,
+                                        excludedBundleIDs: activeExclusions)
             } catch {
                 handleStreamStopped(error)
             }
