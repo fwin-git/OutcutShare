@@ -13,6 +13,17 @@ While sharing, the selected region stays fully clear on your screen and
 everything outside it is dimmed, so you always see exactly what your audience
 sees.
 
+## Install
+
+Grab the latest `RegionShare-v*.zip` from
+[Releases](https://github.com/fwin-git/RegionShare/releases), unzip, and move
+`RegionShare.app` wherever you like. Release builds are not notarized —
+right-click → Open once, or `xattr -d com.apple.quarantine RegionShare.app`.
+
+Releases are cut by pushing a version tag (`git tag v1.2.0 && git push origin
+v1.2.0`); CI runs the tests, builds the app, and publishes it with a
+changelog generated from the `feat:`/`fix:` commit history.
+
 ## Build & run
 
 ```sh
