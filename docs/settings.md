@@ -7,6 +7,7 @@ Menu bar → **Settings…** — four pages.
 | Setting | Effect | Default |
 | --- | --- | --- |
 | Share as | Virtual Display (share a screen) or Hidden Window (share a window) | Virtual Display |
+| Crisp text (Retina output) | Gives the virtual display 2× pixel density — sharpest with Retina sources, reduces compression artifacts otherwise; more bandwidth. Virtual Display mode only | off |
 | Follow movement | Snap or smooth glide when follow mode moves the region | Glide |
 | Resize region to followed window | Follow mode adopts the window's size (aspect-fitted in Virtual Display mode) | on |
 | When paused, viewers see | Frozen last frame, or a blurred privacy screen with a slashed-eye note | Privacy screen |

@@ -152,6 +152,14 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    /// Renders the virtual display with Retina (2×) backing.
+    @Published var crispOutput: Bool {
+        didSet {
+            defaults.set(crispOutput, forKey: "crispOutput")
+            notifyChange()
+        }
+    }
+
     /// Persisted follow mode; menu, settings and hotbar all drive this.
     @Published var followMode: FollowMode {
         didSet {
@@ -265,6 +273,7 @@ final class SettingsStore: ObservableObject {
         self.followMode = defaults.string(forKey: "followMode")
             .flatMap(FollowMode.init(rawValue:)) ?? .off
         self.hotbarEnabled = defaults.bool(forKey: "hotbarEnabled")
+        self.crispOutput = defaults.bool(forKey: "crispOutput")
         self.cursorHighlight = defaults.bool(forKey: "cursorHighlight")
         self.clickRipples = defaults.bool(forKey: "clickRipples")
         self.recordingFolder = defaults.string(forKey: "recordingFolder") ?? ""
