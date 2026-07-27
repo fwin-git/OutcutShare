@@ -151,8 +151,10 @@ final class ShareSession {
         isPaused.toggle()
         if isPaused && settings.pauseStyle == .privacyScreen {
             output?.showPrivacyScreen()
+            preview.showPrivacyScreen()
         } else {
             output?.hidePrivacyScreen()
+            preview.hidePrivacyScreen()
         }
         notifyUI()
     }
@@ -178,6 +180,8 @@ final class ShareSession {
     private lazy var cursorEmphasis = CursorEmphasisController(session: self, settings: settings)
     private lazy var hotbar = HotbarController(session: self, settings: settings)
     private var lastHotbarEnabled = true
+    private lazy var preview = PreviewWindowController(settings: settings)
+    private var lastPreviewEnabled = false
     private var recorder: RecordingEngine?
     var isRecording: Bool { recorder?.isRecording ?? false }
     var followMode: FollowMode { follow.mode }
@@ -242,6 +246,9 @@ final class ShareSession {
         currentRegion = SelectedRegion(rect: rect, screen: region.screen)
         overlay?.update(region: rect)
         hotbar.regionChanged(rect)
+        if sizeChanged {
+            preview.aspectChanged(rect.width / rect.height)
+        }
         var pixelSize: (width: Int, height: Int)? = nil
         if sizeChanged && activeShareMode == .hiddenWindow {
             output?.resize(to: Geometry.hiddenWindowFrame(regionSize: rect.size,
@@ -300,12 +307,21 @@ final class ShareSession {
             if settings.hotbarEnabled {
                 hotbar.show(region: region.rect, screen: region.screen)
             }
+            lastPreviewEnabled = settings.previewWindowEnabled
+            if settings.previewWindowEnabled {
+                preview.show(aspect: region.rect.width / region.rect.height,
+                             screen: region.screen)
+            }
 
             let capture = CaptureEngine()
             self.capture = capture
-            capture.onFrame = { [weak self, weak output] surface in
+            // The preview always receives frames (even while hidden) so it
+            // shows a current picture the instant it's enabled mid-session.
+            let preview = self.preview
+            capture.onFrame = { [weak self, weak output, weak preview] surface in
                 guard self?.isPaused != true else { return }
                 output?.display(surface: surface)
+                preview?.display(surface: surface)
             }
             capture.onStopped = { [weak self] error in
                 Task { @MainActor in self?.handleStreamStopped(error) }
@@ -376,6 +392,17 @@ final class ShareSession {
                     hotbar.close()
                 }
             }
+            if settings.previewWindowEnabled != lastPreviewEnabled {
+                lastPreviewEnabled = settings.previewWindowEnabled
+                if settings.previewWindowEnabled {
+                    if let region = currentRegion {
+                        preview.show(aspect: region.rect.width / region.rect.height,
+                                     screen: region.screen)
+                    }
+                } else {
+                    preview.close()
+                }
+            }
             hotbar.refresh()
         }
     }
@@ -421,6 +448,7 @@ final class ShareSession {
         isPaused = false
         follow.set(mode: .off)
         hotbar.close()
+        preview.close()
         cursorEmphasis.stop()
         if let recorder {
             self.recorder = nil
