@@ -19,7 +19,7 @@ enum DemoState {
 @MainActor
 final class DemoDriver {
     /// Global pacing: every scripted pause is shortened for a snappy cut.
-    private static let pauseScale = 0.67
+    private static let pauseScale = 0.775
 
     private var primaryHeight: CGFloat { NSScreen.screens.first?.frame.height ?? 0 }
 
@@ -329,7 +329,9 @@ final class DemoDirector {
         let url = try startRecording(screen: screen)
         await driver.pause(0.7)
 
-        // Drag two fake app windows onto the monitor.
+        // Drag two fake app windows onto the monitor. Each drop is verified
+        // — if the interactive drop ever hiccups, the window is placed
+        // directly so the footage never shows a stray.
         guard let notes = try helperWindows(in: stage).first else {
             throw DemoError.missingDemoWindow
         }
@@ -337,7 +339,10 @@ final class DemoDirector {
                           to: CGPoint(x: panel.minX + panel.width * 0.30,
                                       y: panel.minY + panel.height * 0.62),
                           over: 1.2)
-        await driver.pause(0.7)
+        await driver.pause(0.9)
+        try ensureLanded(notes.id, panelPoint: CGPoint(x: panel.minX + panel.width * 0.30,
+                                                       y: panel.minY + panel.height * 0.62),
+                         panel: panel)
         guard let second = try helperWindows(in: stage).first else {
             throw DemoError.missingDemoWindow
         }
@@ -345,7 +350,10 @@ final class DemoDirector {
                           to: CGPoint(x: panel.minX + panel.width * 0.62,
                                       y: panel.minY + panel.height * 0.52),
                           over: 1.3)
-        await driver.pause(0.7)
+        await driver.pause(0.9)
+        try ensureLanded(second.id, panelPoint: CGPoint(x: panel.minX + panel.width * 0.62,
+                                                        y: panel.minY + panel.height * 0.52),
+                         panel: panel)
 
         // Grid layout: grab a window inside the preview, sweep a block.
         guard let displayFrame = session.currentRegionRect else { return url }
@@ -563,6 +571,27 @@ final class DemoDirector {
         CGPoint(x: frame.midX, y: frame.maxY - 12)
     }
 
+    /// If an interactive drop didn't reach the monitor, place the window
+    /// there directly at the intended spot.
+    private func ensureLanded(_ id: CGWindowID, panelPoint: CGPoint,
+                              panel: CGRect) throws {
+        guard let displayFrame = session.currentRegionRect,
+              !(try helperWindows(in: displayFrame).contains { $0.id == id }) else {
+            return
+        }
+        guard let stray = try helperWindows(in: stage).first(where: { $0.id == id })
+            ?? WindowLocator.frame(ofWindow: id).map({
+                WindowLocator.FoundWindow(id: id, pid: helper?.processIdentifier ?? 0,
+                                          frame: $0)
+            }) else { return }
+        let target = Geometry.previewPointToDisplayPoint(panelPoint, panel: panel,
+                                                         display: displayFrame)
+        let origin = Geometry.centeredClampedWindowOrigin(size: stray.frame.size,
+                                                          center: target,
+                                                          bounds: displayFrame)
+        WindowMover.move(window: stray, toAppKitOrigin: origin, raise: false)
+    }
+
     private func panelPoint(forDisplayPoint p: CGPoint, display: CGRect,
                             panel: CGRect) -> CGPoint {
         // The linear map runs both ways with the rects swapped.
@@ -645,8 +674,10 @@ final class DemoDirector {
         let scale = screen.backingScaleFactor
         let (pw, ph) = Geometry.capturePixelSize(region: stage, scale: scale)
         try recorder.start(pixelWidth: pw, pixelHeight: ph, to: url)
-        // 1.8× playback baked into the file — no post-processing step.
-        let retimer = SampleRetimer(speed: 1.8)
+        // Playback speed baked into the file — no post-processing step.
+        // The monitor tour reads fine faster; the modifier/follow demos
+        // need a touch more time on screen.
+        let retimer = SampleRetimer(speed: scenario == "monitor" ? 1.8 : 1.5)
         capture.onSampleBuffer = { [recorder] sample in
             recorder.append(retimer.retimed(sample))
         }

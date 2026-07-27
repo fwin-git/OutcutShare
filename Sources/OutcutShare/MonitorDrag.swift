@@ -556,6 +556,19 @@ final class MonitorDragController {
             CGPoint(x: dropPoint.x + (currentFrame.minX - end.x),
                     y: dropPoint.y + (currentFrame.minY - end.y)),
             regionSize: currentFrame.size, screenFrame: displayFrame)
-        WindowMover.move(window: candidate.window, toAppKitOrigin: origin)
+        // Deferred: the window server is still finalizing its own drag at
+        // mouse-up, and a synchronous AX move can be swallowed (the second
+        // demo drop failed every time). Retry once in case the first set
+        // lands mid-settle.
+        let window = candidate.window
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            WindowMover.move(window: window, toAppKitOrigin: origin)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                if let frame = WindowLocator.frame(ofWindow: window.id),
+                   abs(frame.minX - origin.x) + abs(frame.minY - origin.y) > 4 {
+                    WindowMover.move(window: window, toAppKitOrigin: origin)
+                }
+            }
+        }
     }
 }
