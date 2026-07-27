@@ -155,7 +155,8 @@ private final class SelectionView: NSView {
         switch event.keyCode {
         case 53:
             cancel()
-        case 49 where !event.isARepeat: // Space
+        case 49: // Space — swallow repeats too, or macOS beeps on each one
+            guard !event.isARepeat else { return }
             if dragStart != nil {
                 repositioning = true
                 lastRepositionPoint = nil

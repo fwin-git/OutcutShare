@@ -52,6 +52,7 @@ private final class MoverWindow: NSWindow {
         isOpaque = false
         backgroundColor = .clear
         hasShadow = false
+        acceptsMouseMovedEvents = true
         // See SelectionWindow: disables per-pixel alpha click-through.
         ignoresMouseEvents = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -99,6 +100,11 @@ private final class AdjustView: NSView {
     private var presetCandidates: [CGRect?] = []
     private var snappedPreset: CGRect?
     private var presetAnchor: CGPoint?
+
+    // Space (idle): window-pick mode, like the selection overlay
+    private var pickMode = false
+    private var windowFramesLocal: [CGRect] = []
+    private var hoveredWindow: CGRect?
 
     private var freeResize: Bool { sessionAspect == nil }
 
@@ -185,9 +191,55 @@ private final class AdjustView: NSView {
                                 size: region.size))
     }
 
+    // MARK: Window picking
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        trackingAreas.forEach(removeTrackingArea)
+        addTrackingArea(NSTrackingArea(rect: bounds,
+                                       options: [.mouseMoved, .activeAlways],
+                                       owner: self, userInfo: nil))
+    }
+
+    private func togglePickMode() {
+        pickMode.toggle()
+        if pickMode {
+            let origin = window?.frame.origin ?? .zero
+            windowFramesLocal = WindowCatalog.otherWindowFrames().map {
+                $0.offsetBy(dx: -origin.x, dy: -origin.y)
+            }
+            if let window {
+                updateHover(at: convert(window.mouseLocationOutsideOfEventStream, from: nil))
+            }
+        } else {
+            hoveredWindow = nil
+        }
+        window?.invalidateCursorRects(for: self)
+        needsDisplay = true
+    }
+
+    private func updateHover(at point: CGPoint) {
+        hoveredWindow = Geometry.frontmostWindowFrame(at: point, windows: windowFramesLocal)?
+            .intersection(bounds)
+        needsDisplay = true
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        if window?.isKeyWindow == false {
+            NSApp.activate(ignoringOtherApps: true)
+            window?.makeKey()
+        }
+        guard pickMode else { return }
+        updateHover(at: convert(event.locationInWindow, from: nil))
+    }
+
     // MARK: Cursor & keyboard
 
     override func resetCursorRects() {
+        if pickMode {
+            addCursorRect(bounds, cursor: .pointingHand)
+            return
+        }
         addCursorRect(region, cursor: .openHand)
         if freeResize {
             for (edge, midpoint) in edgeMidpoints {
@@ -213,10 +265,13 @@ private final class AdjustView: NSView {
         switch event.keyCode {
         case 53: finish(cancelled: true)          // Esc
         case 36, 76: finish(cancelled: false)     // Return / Enter
-        case 49 where !event.isARepeat:           // Space: freeze & move
+        case 49: // Space — swallow repeats too, or macOS beeps on each one
+            guard !event.isARepeat else { return }
             if drag != nil {
                 frozenMove = true
                 lastFreezePoint = nil
+            } else {
+                togglePickMode()
             }
         case 123: move(to: CGPoint(x: region.minX - step, y: region.minY)) // ←
         case 124: move(to: CGPoint(x: region.minX + step, y: region.minY)) // →
@@ -240,6 +295,19 @@ private final class AdjustView: NSView {
     override func mouseDown(with event: NSEvent) {
         window?.makeKey()
         let point = convert(event.locationInWindow, from: nil)
+        if pickMode {
+            updateHover(at: point)
+            if let hovered = hoveredWindow, Geometry.meetsMinimumSize(hovered) {
+                // Fit the window's bounds (honoring a session aspect lock),
+                // apply it live and commit the adjustment.
+                let fitted = Geometry.aspectFittedRect(around: toGlobalRect(hovered),
+                                                       aspect: sessionAspect,
+                                                       screenFrame: screenFrame)
+                apply(localRect: toLocal(fitted))
+                finish(cancelled: false)
+            }
+            return
+        }
         if let corner = corners.first(where: {
             hypot($0.x - point.x, $0.y - point.y) <= Self.cornerHitRadius
         }) {
@@ -351,6 +419,24 @@ private final class AdjustView: NSView {
         NSColor.black.withAlphaComponent(0.01).setFill()
         bounds.fill()
 
+        if pickMode {
+            let backdrop = NSBezierPath(rect: bounds)
+            if let hovered = hoveredWindow {
+                backdrop.append(NSBezierPath(rect: hovered))
+                backdrop.windingRule = .evenOdd
+            }
+            NSColor.black.withAlphaComponent(0.25).setFill()
+            backdrop.fill()
+            if let hovered = hoveredWindow {
+                NSColor.white.setStroke()
+                let outline = NSBezierPath(rect: hovered.insetBy(dx: -0.5, dy: -0.5))
+                outline.lineWidth = 1
+                outline.stroke()
+            }
+            drawHint("Click a window to snap the region to it — Space returns, Esc cancels")
+            return
+        }
+
         var handles = corners
         if freeResize {
             handles += edgeMidpoints.map(\.point)
@@ -374,7 +460,10 @@ private final class AdjustView: NSView {
         let resizeHint = freeResize
             ? "corners & edges resize · ⇧ locks aspect · ⌃ snaps to standard sizes"
             : "corners resize (aspect locked)"
-        let text = "Drag to move — \(resizeHint) · Space moves while resizing · ⏎ commits · ⎋ cancels"
+        drawHint("Drag to move — \(resizeHint) · Space picks a window (moves while resizing) · ⏎ commits · ⎋ cancels")
+    }
+
+    private func drawHint(_ text: String) {
         let attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: 15, weight: .medium),
             .foregroundColor: NSColor.white,
