@@ -231,12 +231,20 @@ final class SettingsStore: ObservableObject {
         }
     }
 
-    /// Keeps the preview panel above every other window when set.
-    @Published var previewWindowPinned: Bool {
+    static let defaultShareWindowTitle = "Outcut Share (Share Region)"
+
+    /// Title sharing apps show for the hidden share window in their window
+    /// pickers. Empty/whitespace falls back to the default.
+    @Published var shareWindowTitle: String {
         didSet {
-            defaults.set(previewWindowPinned, forKey: "previewWindowPinned")
+            defaults.set(shareWindowTitle, forKey: "shareWindowTitle")
             notifyChange()
         }
+    }
+
+    var effectiveShareWindowTitle: String {
+        let trimmed = shareWindowTitle.trimmingCharacters(in: .whitespaces)
+        return trimmed.isEmpty ? Self.defaultShareWindowTitle : trimmed
     }
 
     @Published var followBehavior: FollowBehavior {
@@ -338,7 +346,8 @@ final class SettingsStore: ObservableObject {
             .flatMap(FollowMode.init(rawValue:)) ?? .off
         self.hotbarEnabled = defaults.bool(forKey: "hotbarEnabled")
         self.previewWindowEnabled = defaults.bool(forKey: "previewWindowEnabled")
-        self.previewWindowPinned = defaults.bool(forKey: "previewWindowPinned")
+        self.shareWindowTitle = defaults.string(forKey: "shareWindowTitle")
+            ?? Self.defaultShareWindowTitle
         self.crispOutput = defaults.bool(forKey: "crispOutput")
         self.dockIconWhileActive = defaults.bool(forKey: "dockIconWhileActive")
         defaults.register(defaults: ["hideNotificationBanners": true])

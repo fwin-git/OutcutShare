@@ -2,51 +2,63 @@ import AppKit
 import IOSurface
 
 /// Floating "what viewers see" preview of the shared output, toggled from
-/// the hotbar. Chromeless: no title bar or traffic lights, dragging works
-/// anywhere on the picture, edge-resizing keeps the region's aspect ratio.
-/// The pin button in the top-left corner lifts the panel above every other
-/// window (including the dim overlay); unpinned it stacks like a normal
-/// window. Excluded from capture via the app-level filter exclusion.
+/// the hotbar or the Companions settings group. Chromeless: no title bar or
+/// traffic lights, dragging works anywhere on the picture (the ≡ grabber in
+/// the top-left corner is a visual affordance), edge-resizing keeps the
+/// region's aspect ratio. The pause button in the top-right corner drives
+/// the session's privacy pause — usable even with the hotbar hidden. Docks
+/// outside the shared region on show (it's capture-excluded either way, but
+/// never locally covers what's being shared) and always floats above the
+/// dim overlay.
 @MainActor
 final class PreviewWindowController: NSObject {
+    private weak var session: ShareSession?
     private let settings: SettingsStore
     private var panel: NSPanel?
     private nonisolated(unsafe) let contentLayer = CALayer()
     private nonisolated(unsafe) var lastSurface: IOSurfaceRef?
     private var privacyLayer: CALayer?
     private var privacyShowing = false
-    private var pinButton: NSButton?
+    private var grabber: NSImageView?
+    private var pauseButton: NSButton?
     private var aspect: CGFloat = 16.0 / 9.0
     private var screenFrame: CGRect = .zero
-    /// Remembers placement while the preview is toggled off mid-session.
+    /// Remembers the user-chosen size while the preview is toggled off.
     private var lastFrame: CGRect?
 
     private static let minWidth: CGFloat = 160
+    private static let cornerControlSize: CGFloat = 26
+    private static let cornerMargin: CGFloat = 8
 
-    init(settings: SettingsStore) {
+    init(session: ShareSession, settings: SettingsStore) {
+        self.session = session
         self.settings = settings
     }
 
-    func show(aspect: CGFloat, screen: NSScreen) {
-        self.aspect = aspect
+    func show(region: CGRect, screen: NSScreen) {
+        aspect = region.width / region.height
         screenFrame = screen.visibleFrame
         if panel == nil {
             build()
         }
         guard let panel else { return }
-        let frame = lastFrame.map {
-            Geometry.aspectRefittedPanelFrame(current: $0, aspect: aspect,
-                                              screenFrame: screenFrame,
-                                              minWidth: Self.minWidth)
-        } ?? Geometry.previewPanelFrame(aspect: aspect, screenFrame: screenFrame)
-        panel.setFrame(frame, display: true)
+        let width = min(max(lastFrame?.width ?? 320, Self.minWidth), screenFrame.width)
+        var size = CGSize(width: width, height: width / aspect)
+        if size.height > screenFrame.height {
+            size.height = screenFrame.height
+            size.width = size.height * aspect
+        }
+        panel.setFrame(Geometry.previewDockedFrame(size: size, region: region,
+                                                   screenFrame: screenFrame),
+                       display: true)
         applyAspectConstraints()
-        applyPinState()
         relayout()
+        refresh()
         panel.orderFrontRegardless()
     }
 
-    /// The shared region was resized: refit the panel to the new aspect.
+    /// The shared region was resized: refit the panel (in place) to the new
+    /// aspect.
     func aspectChanged(_ aspect: CGFloat) {
         guard self.aspect != aspect else { return }
         self.aspect = aspect
@@ -65,6 +77,18 @@ final class PreviewWindowController: NSObject {
         }
         panel?.orderOut(nil)
         hidePrivacyScreen()
+    }
+
+    /// Syncs the pause button with the session state (called via notifyUI).
+    func refresh() {
+        let paused = session?.isPaused ?? false
+        let config = NSImage.SymbolConfiguration(pointSize: 11, weight: .semibold)
+            .applying(.init(paletteColors: [paused ? .systemYellow : .white]))
+        pauseButton?.image = NSImage(systemSymbolName: paused ? "play.fill" : "pause.fill",
+                                     accessibilityDescription: paused ? "Resume sharing"
+                                                                      : "Pause sharing")?
+            .withSymbolConfiguration(config)
+        pauseButton?.toolTip = paused ? "Resume sharing" : "Pause sharing"
     }
 
     /// Called from the capture sample queue (same pattern as LiveFrameWindow).
@@ -93,9 +117,10 @@ final class PreviewWindowController: NSObject {
         guard privacyShowing, let view = panel?.contentView else { return }
         let layer = PrivacyScreenLayer.make(bounds: view.bounds, lastSurface: lastSurface,
                                             contentsScale: panel?.backingScaleFactor ?? 2)
-        // Below the pin button's backing layer, above the live picture.
+        // Below the corner controls' backing layers, above the live picture.
         layer.zPosition = 1
-        pinButton?.layer?.zPosition = 2
+        grabber?.layer?.zPosition = 2
+        pauseButton?.layer?.zPosition = 2
         view.layer?.addSublayer(layer)
         privacyLayer = layer
     }
@@ -111,19 +136,35 @@ final class PreviewWindowController: NSObject {
         contentView.layer?.addSublayer(contentLayer)
         contentView.onLayout = { [weak self] in self?.relayout() }
 
-        let pin = PinButton()
-        pin.bezelStyle = .regularSquare
-        pin.isBordered = false
-        pin.target = self
-        pin.action = #selector(togglePin)
-        pin.wantsLayer = true
-        pin.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.55).cgColor
-        pin.layer?.cornerRadius = 13
-        pin.frame = CGRect(x: 8, y: 0, width: 26, height: 26)
-        pin.autoresizingMask = [.minYMargin]
-        pin.toolTip = "Keep on top"
-        contentView.addSubview(pin)
-        pinButton = pin
+        let grabber = DraggableImageView()
+        let grabConfig = NSImage.SymbolConfiguration(pointSize: 11, weight: .semibold)
+            .applying(.init(paletteColors: [.white]))
+        grabber.image = NSImage(systemSymbolName: "line.3.horizontal",
+                                accessibilityDescription: "Move preview")?
+            .withSymbolConfiguration(grabConfig)
+        grabber.wantsLayer = true
+        grabber.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.55).cgColor
+        grabber.layer?.cornerRadius = Self.cornerControlSize / 2
+        grabber.frame = CGRect(x: Self.cornerMargin, y: 0,
+                               width: Self.cornerControlSize, height: Self.cornerControlSize)
+        grabber.autoresizingMask = [.minYMargin]
+        grabber.toolTip = "Move preview"
+        contentView.addSubview(grabber)
+        self.grabber = grabber
+
+        let pause = CornerButton()
+        pause.bezelStyle = .regularSquare
+        pause.isBordered = false
+        pause.target = self
+        pause.action = #selector(togglePause)
+        pause.wantsLayer = true
+        pause.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.55).cgColor
+        pause.layer?.cornerRadius = Self.cornerControlSize / 2
+        pause.frame = CGRect(x: 0, y: 0,
+                             width: Self.cornerControlSize, height: Self.cornerControlSize)
+        pause.autoresizingMask = [.minYMargin, .minXMargin]
+        contentView.addSubview(pause)
+        pauseButton = pause
 
         let panel = NSPanel(contentRect: CGRect(x: 0, y: 0, width: 320, height: 180),
                             styleMask: [.borderless, .nonactivatingPanel, .resizable],
@@ -136,6 +177,10 @@ final class PreviewWindowController: NSObject {
         panel.isReleasedWhenClosed = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         panel.contentView = contentView
+        // Always above the dim overlay (.screenSaver) — the preview must
+        // never be grayed out by our own veil. Level is set last: properties
+        // like isFloatingPanel silently reset it.
+        panel.level = NSWindow.Level(rawValue: NSWindow.Level.screenSaver.rawValue + 1)
         self.panel = panel
     }
 
@@ -152,31 +197,15 @@ final class PreviewWindowController: NSObject {
         CATransaction.setDisableActions(true)
         contentLayer.frame = view.bounds
         CATransaction.commit()
-        pinButton?.frame.origin.y = view.bounds.height - 26 - 8
+        let top = view.bounds.height - Self.cornerControlSize - Self.cornerMargin
+        grabber?.frame.origin.y = top
+        pauseButton?.frame.origin = CGPoint(
+            x: view.bounds.width - Self.cornerControlSize - Self.cornerMargin, y: top)
         rebuildPrivacyLayer()
-        applyPinState()
     }
 
-    @objc private func togglePin() {
-        settings.previewWindowPinned.toggle()
-        applyPinState()
-    }
-
-    private func applyPinState() {
-        guard let panel else { return }
-        let pinned = settings.previewWindowPinned
-        // Always above the dim overlay (.screenSaver) — the preview must
-        // never be grayed out by our own veil. Pinned raises it one step
-        // further, above the hotbar and any other overlay-level window.
-        // Level is set here, after all other panel setup: properties like
-        // isFloatingPanel silently reset it.
-        panel.level = NSWindow.Level(rawValue: NSWindow.Level.screenSaver.rawValue
-                                                + (pinned ? 2 : 1))
-        let config = NSImage.SymbolConfiguration(pointSize: 12, weight: .semibold)
-            .applying(.init(paletteColors: [pinned ? .systemYellow : .white]))
-        pinButton?.image = NSImage(systemSymbolName: pinned ? "pin.fill" : "pin",
-                                   accessibilityDescription: "Keep on top")?
-            .withSymbolConfiguration(config)
+    @objc private func togglePause() {
+        session?.togglePause()
     }
 }
 
@@ -191,9 +220,14 @@ private final class PreviewContentView: NSView {
     }
 }
 
+/// The ≡ affordance: purely visual, drags the window like everywhere else.
+private final class DraggableImageView: NSImageView {
+    override var mouseDownCanMoveWindow: Bool { true }
+}
+
 /// First click must act even while another app is active (the panel never
 /// activates the app).
-private final class PinButton: NSButton {
+private final class CornerButton: NSButton {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     override var mouseDownCanMoveWindow: Bool { false }
 }

@@ -219,6 +219,31 @@ enum Geometry {
                       y: screenFrame.minY + margin, width: w, height: h)
     }
 
+    /// Docking spot for the preview panel next to the shared region: the
+    /// first fully-on-screen position outside the region, so the panel never
+    /// covers what's being shared. Preference: right of the region (bottom-
+    /// aligned) → left → below (right-aligned, clear of the centered hotbar)
+    /// → above → bottom-right screen corner as the last resort.
+    static func previewDockedFrame(size: CGSize, region: CGRect, screenFrame: CGRect,
+                                   gap: CGFloat = 12, margin: CGFloat = 16) -> CGRect {
+        let candidates = [
+            CGRect(x: region.maxX + gap, y: region.minY,
+                   width: size.width, height: size.height),
+            CGRect(x: region.minX - gap - size.width, y: region.minY,
+                   width: size.width, height: size.height),
+            CGRect(x: region.maxX - size.width, y: region.minY - gap - size.height,
+                   width: size.width, height: size.height),
+            CGRect(x: region.maxX - size.width, y: region.maxY + gap,
+                   width: size.width, height: size.height),
+        ]
+        if let fit = candidates.first(where: { screenFrame.contains($0) }) {
+            return fit
+        }
+        return CGRect(x: screenFrame.maxX - margin - size.width,
+                      y: screenFrame.minY + margin,
+                      width: size.width, height: size.height)
+    }
+
     /// Refits an existing preview panel frame to a new aspect (the shared
     /// region was resized): the width and the top-left corner stay, the
     /// height follows, and the result is clamped inside the screen.
