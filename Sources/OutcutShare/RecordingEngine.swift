@@ -22,12 +22,12 @@ final class RecordingEngine: @unchecked Sendable {
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: settings)
         input.expectsMediaDataInRealTime = true
         guard writer.canAdd(input) else {
-            throw NSError(domain: "RegionShare", code: 1,
+            throw NSError(domain: "OutcutShare", code: 1,
                           userInfo: [NSLocalizedDescriptionKey: "Cannot configure video writer."])
         }
         writer.add(input)
         guard writer.startWriting() else {
-            throw writer.error ?? NSError(domain: "RegionShare", code: 2,
+            throw writer.error ?? NSError(domain: "OutcutShare", code: 2,
                                           userInfo: [NSLocalizedDescriptionKey: "Recording could not start."])
         }
         self.writer = writer

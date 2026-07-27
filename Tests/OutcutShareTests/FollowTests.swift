@@ -1,5 +1,5 @@
 import XCTest
-@testable import RegionShare
+@testable import OutcutShare
 
 final class FollowTests: XCTestCase {
     private let screen = CGRect(x: 0, y: 0, width: 2560, height: 1440)

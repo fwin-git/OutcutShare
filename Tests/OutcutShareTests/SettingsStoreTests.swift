@@ -1,6 +1,6 @@
 import XCTest
 import AppKit
-@testable import RegionShare
+@testable import OutcutShare
 
 final class SettingsStoreTests: XCTestCase {
     private var suiteName: String!

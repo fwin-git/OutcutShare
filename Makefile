@@ -1,5 +1,5 @@
-APP      := build/RegionShare.app
-BINARY   := .build/release/RegionShare
+APP      := build/OutcutShare.app
+BINARY   := .build/release/OutcutShare
 
 VERSION  ?= 1.1
 BUILD    := $(shell git rev-list --count HEAD 2>/dev/null || echo 0)
@@ -22,7 +22,7 @@ $(APP): Support/Info.plist $(shell find Sources -type f) Package.swift
 	swift build -c release
 	rm -rf $(APP)
 	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources
-	cp $(BINARY) $(APP)/Contents/MacOS/RegionShare
+	cp $(BINARY) $(APP)/Contents/MacOS/OutcutShare
 	cp Support/Info.plist $(APP)/Contents/Info.plist
 	/usr/libexec/PlistBuddy \
 		-c "Set :CFBundleShortVersionString $(VERSION)" \

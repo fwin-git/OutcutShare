@@ -1,7 +1,7 @@
 import XCTest
 import AppKit
 import Carbon.HIToolbox
-@testable import RegionShare
+@testable import OutcutShare
 
 final class HotkeyTests: XCTestCase {
     func testRawValueRoundTrip() {

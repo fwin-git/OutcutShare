@@ -5,13 +5,15 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleExecutable</key>
-	<string>RegionShare</string>
+	<string>OutcutShare</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.regionshare.app</string>
+	<string>com.outcutshare.app</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>RegionShare</string>
+	<string>Outcut Share</string>
+	<key>CFBundleDisplayName</key>
+	<string>Outcut Share</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

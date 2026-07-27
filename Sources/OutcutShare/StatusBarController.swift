@@ -67,11 +67,11 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         permissionsItem.target = self
         menu.addItem(permissionsItem)
         menu.addItem(.separator())
-        let versionItem = NSMenuItem(title: "RegionShare \(AppVersion.display)",
+        let versionItem = NSMenuItem(title: "OutcutShare \(AppVersion.display)",
                                      action: nil, keyEquivalent: "")
         versionItem.isEnabled = false
         menu.addItem(versionItem)
-        let quitItem = NSMenuItem(title: "Quit RegionShare",
+        let quitItem = NSMenuItem(title: "Quit OutcutShare",
                                   action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quitItem)
         statusItem.menu = menu
@@ -90,7 +90,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
             symbol = session.isActive ? "rectangle.inset.filled.badge.record" : "rectangle.dashed"
         }
         statusItem.button?.image = NSImage(systemSymbolName: symbol,
-                                           accessibilityDescription: "RegionShare")
+                                           accessibilityDescription: "OutcutShare")
         selectItem.isEnabled = session.state == .idle
         shareLastItem.isEnabled = session.state == .idle && SettingsStore.shared.lastRegion != nil
         moveItem.isEnabled = session.isActive

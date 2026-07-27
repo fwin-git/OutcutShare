@@ -12,7 +12,7 @@ final class VirtualDisplay {
         var errorDescription: String? {
             switch self {
             case .apiUnavailable:
-                return "This macOS version does not provide the virtual display API RegionShare relies on."
+                return "This macOS version does not provide the virtual display API OutcutShare relies on."
             case .creationFailed:
                 return "The virtual display could not be created."
             case .screenNeverAppeared:

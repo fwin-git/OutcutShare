@@ -37,7 +37,7 @@ private struct GeneralPage: View {
                 .pickerStyle(.menu)
                 Text(settings.shareMode == .virtualDisplay
                      ? "The region appears as an extra monitor — pick it under “share screen”."
-                     : "The region mirrors into an invisible window named “Region Share” — pick it under “share window”.")
+                     : "The region mirrors into an invisible window named “Outcut Share” — pick it under “share window”.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -71,7 +71,7 @@ private struct GeneralPage: View {
                     Text("Save recordings to")
                     Spacer()
                     Text(settings.recordingFolder.isEmpty
-                         ? "~/Movies/RegionShare" : settings.recordingFolder)
+                         ? "~/Movies/OutcutShare" : settings.recordingFolder)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
