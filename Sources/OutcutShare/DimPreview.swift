@@ -9,11 +9,8 @@ final class DimPreview {
 
     private var window: NSWindow?
     private var view: PreviewDimView?
-    private var hideWork: DispatchWorkItem?
 
     func begin() {
-        hideWork?.cancel()
-        hideWork = nil
         let fallback = NSApp.windows.first { $0.isVisible && $0.styleMask.contains(.titled) }
         guard let anchor = NSApp.keyWindow ?? NSApp.mainWindow ?? fallback,
               let screen = anchor.screen ?? NSScreen.main else { return }
@@ -25,15 +22,25 @@ final class DimPreview {
         view.cutout = CGRect(x: anchor.frame.minX - screen.frame.minX,
                              y: anchor.frame.minY - screen.frame.minY,
                              width: anchor.frame.width, height: anchor.frame.height)
+        // Cancel any in-flight fade-out from a previous release.
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0
+            window.animator().alphaValue = 1
+        }
         window.orderFrontRegardless()
     }
 
+    /// Fades out immediately on slider release.
     func end() {
-        let work = DispatchWorkItem { [weak self] in
-            self?.window?.orderOut(nil)
-        }
-        hideWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: work)
+        guard let window, window.isVisible else { return }
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.25
+            window.animator().alphaValue = 0
+        }, completionHandler: { [weak self] in
+            guard let self, let window = self.window, window.alphaValue == 0 else { return }
+            window.orderOut(nil)
+            window.alphaValue = 1
+        })
     }
 
     private func build(screen: NSScreen) {
