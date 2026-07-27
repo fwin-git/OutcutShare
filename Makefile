@@ -1,7 +1,7 @@
 APP      := build/OutcutShare.app
 BINARY   := .build/release/OutcutShare
 
-VERSION  ?= 1.2
+VERSION  ?= 1.3
 BUILD    := $(shell git rev-list --count HEAD 2>/dev/null || echo 0)
 HASH     := $(shell git rev-parse --short HEAD 2>/dev/null || echo dev)
 
