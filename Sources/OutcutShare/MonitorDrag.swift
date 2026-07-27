@@ -195,6 +195,34 @@ enum MonitorWindowRescue {
             WindowMover.move(window: entry.window, toAppKitOrigin: entry.origin,
                              raise: false)
         }
+        // The adoption lands them on the display's FIRST Space — pin them
+        // to the Space the user is actually on.
+        SpaceMover.moveToCurrentSpace(windowIDs: plan.map(\.window.id))
+    }
+}
+
+/// Private CGS bridge (resolved via dlsym; silently a no-op when the
+/// symbols are absent): programmatic cross-display moves attach windows to
+/// the target display's FIRST Space — this forces them onto the user's
+/// current Space instead. Same private-API posture as CGVirtualDisplay.
+enum SpaceMover {
+    private typealias MainConnectionFn = @convention(c) () -> Int32
+    private typealias ActiveSpaceFn = @convention(c) (Int32) -> UInt64
+    private typealias MoveWindowsFn = @convention(c) (Int32, CFArray, UInt64) -> Void
+
+    private static let rtldDefault = UnsafeMutableRawPointer(bitPattern: -2)
+
+    static func moveToCurrentSpace(windowIDs: [CGWindowID]) {
+        guard !windowIDs.isEmpty,
+              let mainSym = dlsym(rtldDefault, "CGSMainConnectionID"),
+              let activeSym = dlsym(rtldDefault, "CGSGetActiveSpace"),
+              let moveSym = dlsym(rtldDefault, "CGSMoveWindowsToManagedSpace")
+        else { return }
+        let connection = unsafeBitCast(mainSym, to: MainConnectionFn.self)()
+        let space = unsafeBitCast(activeSym, to: ActiveSpaceFn.self)(connection)
+        guard space != 0 else { return }
+        let numbers = windowIDs.map { NSNumber(value: $0) }
+        unsafeBitCast(moveSym, to: MoveWindowsFn.self)(connection, numbers as CFArray, space)
     }
 }
 
@@ -340,11 +368,17 @@ final class MonitorWindowManipulator {
         }
         // Off the panel: only the pull-out modifier pops the window back to
         // the real screen — a plain drag that strays outside does nothing.
+        // Grab-relative (the window keeps its size, so the display-space
+        // grab offset carries over unscaled), and pinned to the current
+        // Space (cross-display moves attach to the first Space otherwise).
         guard pullOutHeld, let screen = popOutScreen else { return }
-        let origin = Geometry.centeredClampedWindowOrigin(size: drag.window.frame.size,
-                                                          center: NSEvent.mouseLocation,
-                                                          bounds: screen.visibleFrame)
+        let mouse = NSEvent.mouseLocation
+        let origin = Geometry.clampedRegionOrigin(
+            CGPoint(x: mouse.x + drag.grabOffset.width,
+                    y: mouse.y + drag.grabOffset.height),
+            regionSize: drag.window.frame.size, screenFrame: screen.visibleFrame)
         WindowMover.setPosition(drag.ax, appKitOrigin: origin, size: drag.window.frame.size)
+        SpaceMover.moveToCurrentSpace(windowIDs: [drag.window.id])
     }
 }
 
@@ -516,11 +550,15 @@ final class MonitorDragController {
             session?.onPermissionsNeeded?()
             return
         }
-        let center = Geometry.previewPointToDisplayPoint(end, panel: panel,
-                                                         display: displayFrame)
-        let origin = Geometry.centeredClampedWindowOrigin(size: currentFrame.size,
-                                                          center: center,
-                                                          bounds: displayFrame)
+        // Grab-relative: the user holds the window at a fixed offset (the
+        // title bar, usually) — keep that point under the cursor on the
+        // monitor. Centering placed tall windows half a height too high.
+        let dropPoint = Geometry.previewPointToDisplayPoint(end, panel: panel,
+                                                            display: displayFrame)
+        let origin = Geometry.clampedRegionOrigin(
+            CGPoint(x: dropPoint.x + (currentFrame.minX - end.x),
+                    y: dropPoint.y + (currentFrame.minY - end.y)),
+            regionSize: currentFrame.size, screenFrame: displayFrame)
         WindowMover.move(window: candidate.window, toAppKitOrigin: origin)
     }
 }
