@@ -239,7 +239,7 @@ final class MonitorWindowManipulator {
     private let settings: SettingsStore
     private var drag: (window: WindowLocator.FoundWindow, ax: AXUIElement,
                        grabOffset: CGSize, startLocal: CGPoint, started: Bool)?
-    private var lastMoveTime: TimeInterval = 0
+    private var gridAnchor: (col: Int, row: Int)?
     private var promptedForPermission = false
 
     init(session: ShareSession, displayFrame: CGRect, preview: PreviewWindowController,
@@ -250,8 +250,9 @@ final class MonitorWindowManipulator {
         self.settings = settings
     }
 
-    /// The configurable "pull the window out" modifier is held right now.
-    private var pullOutHeld: Bool {
+    /// The configurable layout-grid modifier is held right now (the raw
+    /// setting keeps its historical "dragOutModifier" storage key).
+    private var gridHeld: Bool {
         NSEvent.modifierFlags.contains(settings.dragOutModifier.flag)
     }
 
@@ -293,6 +294,11 @@ final class MonitorWindowManipulator {
         return true
     }
 
+    /// Every drag carries the ghost; the real window only moves on the
+    /// drop. Plain drop inside = free placement, outside = pop out to the
+    /// real screen. Holding the modifier summons the 3×3 layout grid: the
+    /// cell where it was pressed anchors, sweeping to other cells spans a
+    /// block, and the drop sizes the window to the selection.
     func mouseDragged(to local: CGPoint, in bounds: CGRect) {
         guard var drag else { return }
         if !drag.started {
@@ -302,76 +308,65 @@ final class MonitorWindowManipulator {
             drag.started = true
         }
         self.drag = drag
-        preview?.showPullOutHint(pullOutHeld)
-        // Modifier drags never move the real window mid-drag — a ghost
-        // thumbnail rides the cursor instead (across the boundary too), and
-        // the drop decides. Snapping is off so edge drags can't collide
-        // with the pull-out gesture.
-        if pullOutHeld {
-            preview?.showSnapTile(nil)
-            preview?.updateDragProxy(windowFrame: drag.window.frame,
-                                     grabOffset: drag.grabOffset,
-                                     cursor: NSEvent.mouseLocation)
+        preview?.updateDragProxy(windowFrame: drag.window.frame,
+                                 grabOffset: drag.grabOffset,
+                                 cursor: NSEvent.mouseLocation)
+        let inside = bounds.contains(local)
+        preview?.showPullOutHint(!inside && !gridHeld)
+        guard gridHeld else {
+            gridAnchor = nil
+            preview?.showGrid(selection: nil)
             return
         }
-        preview?.endDragProxy()
-        guard bounds.contains(local) else {
-            // Outside the panel: window stays put until the drop decides.
-            preview?.showSnapTile(nil)
-            return
+        let unit = CGPoint(x: min(max(local.x / bounds.width, 0), 1),
+                           y: min(max(local.y / bounds.height, 0), 1))
+        let cell = Geometry.gridCell(for: unit)
+        if gridAnchor == nil {
+            gridAnchor = cell
         }
-        let unit = CGPoint(x: local.x / bounds.width, y: local.y / bounds.height)
-        preview?.showSnapTile(Geometry.snapTileUnit(for: unit))
-        // Live-follow, throttled to display rate.
-        let now = ProcessInfo.processInfo.systemUptime
-        guard now - lastMoveTime > 1.0 / 60.0 else { return }
-        lastMoveTime = now
-        let displayPoint = Geometry.previewPointToDisplayPoint(
-            local, panel: CGRect(origin: .zero, size: bounds.size), display: displayFrame)
-        let origin = Geometry.clampedRegionOrigin(
-            CGPoint(x: displayPoint.x + drag.grabOffset.width,
-                    y: displayPoint.y + drag.grabOffset.height),
-            regionSize: drag.window.frame.size, screenFrame: displayFrame)
-        WindowMover.setPosition(drag.ax, appKitOrigin: origin, size: drag.window.frame.size)
+        preview?.showGrid(selection: Geometry.gridSpanUnitRect(anchor: gridAnchor!,
+                                                               current: cell))
     }
 
     func mouseUp(at local: CGPoint, in bounds: CGRect) {
         defer {
-            preview?.showSnapTile(nil)
+            preview?.showGrid(selection: nil)
             preview?.showPullOutHint(false)
             preview?.endDragProxy()
+            gridAnchor = nil
             drag = nil
         }
         guard let drag, drag.started else { return }
-        if bounds.contains(local) {
-            if pullOutHeld {
-                // Modifier drop inside: place the window at the drop point
-                // (the ghost carried it — the real window hasn't moved yet).
-                let displayPoint = Geometry.previewPointToDisplayPoint(
-                    local, panel: CGRect(origin: .zero, size: bounds.size),
-                    display: displayFrame)
-                let origin = Geometry.clampedRegionOrigin(
-                    CGPoint(x: displayPoint.x + drag.grabOffset.width,
-                            y: displayPoint.y + drag.grabOffset.height),
-                    regionSize: drag.window.frame.size, screenFrame: displayFrame)
-                WindowMover.setPosition(drag.ax, appKitOrigin: origin,
-                                        size: drag.window.frame.size)
-                return
-            }
-            let unit = CGPoint(x: local.x / bounds.width, y: local.y / bounds.height)
-            if let tile = Geometry.snapTileUnit(for: unit) {
-                WindowMover.setFrame(drag.ax,
-                                     appKitFrame: Geometry.rectByScaling(unit: tile,
-                                                                         into: displayFrame))
-            }
+        // Grid drop: the spanned block becomes the window frame.
+        if gridHeld, let anchor = gridAnchor {
+            let unit = CGPoint(x: min(max(local.x / bounds.width, 0), 1),
+                               y: min(max(local.y / bounds.height, 0), 1))
+            let span = Geometry.gridSpanUnitRect(anchor: anchor,
+                                                 current: Geometry.gridCell(for: unit))
+            WindowMover.setFrame(drag.ax,
+                                 appKitFrame: Geometry.rectByScaling(unit: span,
+                                                                     into: displayFrame))
             return
         }
-        // Off the panel: only the pull-out modifier pops the window back to
-        // the real screen — a plain drag that strays outside does nothing.
-        // Grab-relative (the window keeps its size, so the display-space
-        // grab offset carries over unscaled), and pinned to the current
-        // Space (cross-display moves attach to the first Space otherwise).
-        guard pullOutHeld, let screen = popOutScreen else { return }
+        if bounds.contains(local) {
+            // Free placement at the drop point (the ghost carried it — the
+            // real window hasn't moved during the drag).
+            let displayPoint = Geometry.previewPointToDisplayPoint(
+                local, panel: CGRect(origin: .zero, size: bounds.size),
+                display: displayFrame)
+            let origin = Geometry.clampedRegionOrigin(
+                CGPoint(x: displayPoint.x + drag.grabOffset.width,
+                        y: displayPoint.y + drag.grabOffset.height),
+                regionSize: drag.window.frame.size, screenFrame: displayFrame)
+            WindowMover.setPosition(drag.ax, appKitOrigin: origin,
+                                    size: drag.window.frame.size)
+            return
+        }
+        // Off the panel: pop the window back to the real screen —
+        // grab-relative (the window keeps its size, so the display-space
+        // grab offset carries over unscaled), pinned to the current Space
+        // (cross-display moves attach to the first Space otherwise).
+        guard let screen = popOutScreen else { return }
         let mouse = NSEvent.mouseLocation
         let origin = Geometry.clampedRegionOrigin(
             CGPoint(x: mouse.x + drag.grabOffset.width,

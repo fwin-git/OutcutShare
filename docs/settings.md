@@ -8,7 +8,7 @@ Menu bar → **Settings…** — seven pages.
 | --- | --- | --- |
 | Share as | Virtual Display (share a screen), Hidden Window (share a window) or Virtual Monitor (separate screen, see below) | Virtual Display |
 | Monitor resolution | Size of the Virtual Monitor screen | 1920 × 1080 |
-| Pull windows out with | Modifier held to drag a window out of the monitor preview | ⇧ Shift |
+| Layout grid with | Modifier held during a preview drag to summon the 3 × 3 layout grid | ⇧ Shift |
 | Crisp text (Retina output) | Gives the virtual display 2× pixel density — sharpest with Retina sources, reduces compression artifacts otherwise; more bandwidth. Virtual Display mode only | off |
 | Follow movement | Snap or smooth glide when follow mode moves the region | Glide |
 | Resize region to followed window | Follow mode adopts the window's size (aspect-fitted in Virtual Display mode) | on |
@@ -44,12 +44,14 @@ the monitor. With the optional **Accessibility** permission:
 - **Drag any window onto the panel** and drop it — it moves to the virtual
   monitor, right where you dropped it (the panel highlights while you
   hover).
-- **Grab a window inside the picture** to rearrange it; edges and corners
-  show magnet-style snap zones (halves, quarters, full screen).
-- **Hold the pull-out modifier (⇧ by default, configurable) and drag a
-  window off the panel** — it pops back onto your real screen under the
-  cursor. The modifier also suppresses snapping, so edge snaps and
-  pulling out never collide.
+- **Grab a window inside the picture and drag** — a live ghost of the
+  window rides your cursor. Drop it anywhere on the monitor to move it,
+  or drag it off the panel and it pops back onto your real screen under
+  the cursor (on your current Space).
+- **Hold the layout modifier (⇧ by default, configurable) while
+  dragging** for the 3 × 3 grid: drop in a cell to fill it, or sweep from
+  one cell to another to span any block — a full bottom row, a two-thirds
+  column, whatever the sweep covers becomes the window's new frame.
 - **Control mode** — the cursor button in the panel's top-right corner:
   while on, clicking the picture hands your cursor to the corresponding
   spot on the monitor, where it works natively — browse folders, drive a

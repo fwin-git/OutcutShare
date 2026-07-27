@@ -296,29 +296,44 @@ final class MonitorInteractionTests: XCTestCase {
     }
 }
 
-final class SnapTileTests: XCTestCase {
-    func testEdgeZonesGiveHalves() {
-        XCTAssertEqual(Geometry.snapTileUnit(for: CGPoint(x: 0.05, y: 0.5)),
-                       CGRect(x: 0, y: 0, width: 0.5, height: 1))
-        XCTAssertEqual(Geometry.snapTileUnit(for: CGPoint(x: 0.95, y: 0.5)),
-                       CGRect(x: 0.5, y: 0, width: 0.5, height: 1))
+final class LayoutGridTests: XCTestCase {
+    func testCellMapping() {
+        XCTAssertEqual(Geometry.gridCell(for: CGPoint(x: 0.1, y: 0.1)).col, 0)
+        XCTAssertEqual(Geometry.gridCell(for: CGPoint(x: 0.1, y: 0.1)).row, 0)
+        XCTAssertEqual(Geometry.gridCell(for: CGPoint(x: 0.5, y: 0.5)).col, 1)
+        XCTAssertEqual(Geometry.gridCell(for: CGPoint(x: 0.9, y: 0.95)).col, 2)
+        XCTAssertEqual(Geometry.gridCell(for: CGPoint(x: 0.9, y: 0.95)).row, 2)
+        // Points outside 0…1 clamp to edge cells.
+        XCTAssertEqual(Geometry.gridCell(for: CGPoint(x: -0.2, y: 1.4)).col, 0)
+        XCTAssertEqual(Geometry.gridCell(for: CGPoint(x: -0.2, y: 1.4)).row, 2)
     }
 
-    func testTopCenterGivesFullScreen() {
-        XCTAssertEqual(Geometry.snapTileUnit(for: CGPoint(x: 0.5, y: 0.95)),
-                       CGRect(x: 0, y: 0, width: 1, height: 1))
+    func testSingleCellSpan() {
+        let rect = Geometry.gridSpanUnitRect(anchor: (col: 1, row: 1),
+                                             current: (col: 1, row: 1))
+        XCTAssertEqual(rect.origin.x, 1.0 / 3, accuracy: 0.001)
+        XCTAssertEqual(rect.origin.y, 1.0 / 3, accuracy: 0.001)
+        XCTAssertEqual(rect.width, 1.0 / 3, accuracy: 0.001)
+        XCTAssertEqual(rect.height, 1.0 / 3, accuracy: 0.001)
     }
 
-    func testCornersGiveQuarters() {
-        XCTAssertEqual(Geometry.snapTileUnit(for: CGPoint(x: 0.05, y: 0.95)),
-                       CGRect(x: 0, y: 0.5, width: 0.5, height: 0.5))
-        XCTAssertEqual(Geometry.snapTileUnit(for: CGPoint(x: 0.95, y: 0.05)),
-                       CGRect(x: 0.5, y: 0, width: 0.5, height: 0.5))
+    func testBottomRowSpan() {
+        let rect = Geometry.gridSpanUnitRect(anchor: (col: 0, row: 0),
+                                             current: (col: 2, row: 0))
+        XCTAssertEqual(rect, CGRect(x: 0, y: 0, width: 1, height: 1.0 / 3))
     }
 
-    func testCenterIsFreePlacement() {
-        XCTAssertNil(Geometry.snapTileUnit(for: CGPoint(x: 0.5, y: 0.5)))
-        XCTAssertNil(Geometry.snapTileUnit(for: CGPoint(x: 0.3, y: 0.7)))
+    func testTwoThirdsBlockSpanInAnyDirection() {
+        // Dragging from top-right back to the middle cell spans the same
+        // rect as the reverse direction.
+        let a = Geometry.gridSpanUnitRect(anchor: (col: 2, row: 2),
+                                          current: (col: 1, row: 1))
+        let b = Geometry.gridSpanUnitRect(anchor: (col: 1, row: 1),
+                                          current: (col: 2, row: 2))
+        XCTAssertEqual(a, b)
+        XCTAssertEqual(a.width, 2.0 / 3, accuracy: 0.001)
+        XCTAssertEqual(a.height, 2.0 / 3, accuracy: 0.001)
+        XCTAssertEqual(a.origin.x, 1.0 / 3, accuracy: 0.001)
     }
 
     func testUnitRectScalesIntoTarget() {

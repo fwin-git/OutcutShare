@@ -323,25 +323,21 @@ enum Geometry {
         return moved > 20
     }
 
-    /// Magnet-style snap zone for a drag position in unit space (y up):
-    /// corners → quarters, left/right edges → halves, top-center → full
-    /// screen, anywhere else → free placement (nil).
-    static func snapTileUnit(for p: CGPoint) -> CGRect? {
-        let nearLeft = p.x < 0.18, nearRight = p.x > 0.82
-        let nearBottom = p.y < 0.18, nearTop = p.y > 0.82
-        switch (nearLeft, nearRight, nearBottom, nearTop) {
-        case (true, _, true, _): return CGRect(x: 0, y: 0, width: 0.5, height: 0.5)
-        case (true, _, _, true): return CGRect(x: 0, y: 0.5, width: 0.5, height: 0.5)
-        case (_, true, true, _): return CGRect(x: 0.5, y: 0, width: 0.5, height: 0.5)
-        case (_, true, _, true): return CGRect(x: 0.5, y: 0.5, width: 0.5, height: 0.5)
-        default: break
-        }
-        if p.x < 0.12 { return CGRect(x: 0, y: 0, width: 0.5, height: 1) }
-        if p.x > 0.88 { return CGRect(x: 0.5, y: 0, width: 0.5, height: 1) }
-        if p.y > 0.88 && (0.35...0.65).contains(p.x) {
-            return CGRect(x: 0, y: 0, width: 1, height: 1)
-        }
-        return nil
+    /// 3×3 layout grid: cell containing a unit-space point, clamped to the
+    /// grid (col/row 0–2; row 0 at the bottom, y up).
+    static func gridCell(for unit: CGPoint) -> (col: Int, row: Int) {
+        (min(max(Int(unit.x * 3), 0), 2), min(max(Int(unit.y * 3), 0), 2))
+    }
+
+    /// Unit rect spanned by two grid cells (inclusive, any direction) — a
+    /// sweep from one cell to another sizes the window to the whole block.
+    static func gridSpanUnitRect(anchor: (col: Int, row: Int),
+                                 current: (col: Int, row: Int)) -> CGRect {
+        let c0 = min(anchor.col, current.col), c1 = max(anchor.col, current.col)
+        let r0 = min(anchor.row, current.row), r1 = max(anchor.row, current.row)
+        return CGRect(x: CGFloat(c0) / 3, y: CGFloat(r0) / 3,
+                      width: CGFloat(c1 - c0 + 1) / 3,
+                      height: CGFloat(r1 - r0 + 1) / 3)
     }
 
     /// Crop of a window inside its display's captured image, in CALayer

@@ -137,17 +137,18 @@ private struct GeneralPage: View {
                         }
                     }
                     .pickerStyle(.menu)
-                    Picker("Pull windows out with", selection: $settings.dragOutModifier) {
+                    Picker("Layout grid with", selection: $settings.dragOutModifier) {
                         ForEach(DragOutModifier.allCases, id: \.self) { modifier in
                             Text(modifier.displayName).tag(modifier)
                         }
                     }
                     .pickerStyle(.menu)
-                    Text("In the preview: plain drags arrange windows (edges and corners "
-                         + "snap); hold \(settings.dragOutModifier.displayName) and drag a "
-                         + "window off the panel to pull it back to your real screen. The "
-                         + "cursor button switches to control mode — clicks pass through "
-                         + "to the monitor.")
+                    Text("In the preview: drag a window to move it — drop anywhere on the "
+                         + "monitor, or off the panel to bring it back to your real screen. "
+                         + "Hold \(settings.dragOutModifier.displayName) for the 3 × 3 layout "
+                         + "grid: drop in a cell, or sweep across cells to span a block. The "
+                         + "cursor button switches to control mode — clicks pass through to "
+                         + "the monitor.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
