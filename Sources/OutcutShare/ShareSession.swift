@@ -358,12 +358,14 @@ final class ShareSession {
             observeSettingsChanges()
             state = .active
             // The preview is the only way to see the monitor — always shown,
-            // large and centered on the real screen.
+            // large and centered on the real (primary) screen. Never
+            // NSScreen.main here: that's the key window's screen and may be
+            // the virtual display itself.
             if !settings.previewWindowEnabled {
                 settings.previewWindowEnabled = true
             }
             lastPreviewEnabled = true
-            if let main = NSScreen.main {
+            if let main = NSScreen.screens.first {
                 preview.showProminent(aspect: size.width / size.height, screen: main)
                 lastHotbarEnabled = settings.hotbarEnabled
                 if settings.hotbarEnabled {
@@ -380,7 +382,8 @@ final class ShareSession {
                                                       displayFrame: region.rect,
                                                       preview: preview),
                 forwarder: MonitorPointerForwarder(session: self,
-                                                   displayFrame: region.rect))
+                                                   displayFrame: region.rect),
+                displayFrame: region.rect)
         } catch {
             teardown()
             state = .idle
@@ -526,7 +529,7 @@ final class ShareSession {
                 lastPreviewEnabled = settings.previewWindowEnabled
                 if settings.previewWindowEnabled {
                     if activeShareMode == .virtualMonitor {
-                        if let main = NSScreen.main, let aspect = activeAspect {
+                        if let main = NSScreen.screens.first, let aspect = activeAspect {
                             preview.showProminent(aspect: aspect, screen: main)
                         }
                     } else if let region = currentRegion {

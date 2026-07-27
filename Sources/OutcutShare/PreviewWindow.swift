@@ -21,6 +21,10 @@ final class PreviewWindowController: NSObject {
     private var privacyShowing = false
     private var dropHighlight: CALayer?
     private var snapTileLayer: CALayer?
+    private var resizeHighlight: CALayer?
+    private var pullOutHintLayer: CALayer?
+    private var passthroughWatchdog: Timer?
+    private var monitorDisplayFrame: CGRect = .zero
     private var grabber: NSImageView?
     private var pauseButton: NSButton?
     private var controlButton: NSButton?
@@ -131,11 +135,13 @@ final class PreviewWindowController: NSObject {
     /// Virtual-monitor mode: picture drags manage the monitor's windows,
     /// and the control-mode button (clicks pass through) appears.
     func configureMonitorInteraction(manipulator: MonitorWindowManipulator,
-                                     forwarder: MonitorPointerForwarder) {
+                                     forwarder: MonitorPointerForwarder,
+                                     displayFrame: CGRect) {
         if panel == nil {
             build()
         }
         guard let view = panel?.contentView as? PreviewContentView else { return }
+        monitorDisplayFrame = displayFrame
         view.interactionHandler = manipulator
         view.pointerForwarder = forwarder
         view.passthroughActive = false
@@ -150,6 +156,83 @@ final class PreviewWindowController: NSObject {
         view.passthroughActive = false
         controlButton?.isHidden = true
         showSnapTile(nil)
+        showPullOutHint(false)
+        setResizeHighlight(false)
+        stopWatchdog()
+    }
+
+    /// Manual edge resize (aspect-locked, clamped to the screen) — replaces
+    /// AppKit's narrow borderless resize band in monitor mode.
+    func performEdgeResize(edge: Geometry.RegionEdge, to globalPoint: CGPoint) {
+        guard let panel else { return }
+        panel.setFrame(Geometry.edgeResizedRegion(panel.frame, edge: edge,
+                                                  draggedTo: globalPoint,
+                                                  lockedAspect: aspect,
+                                                  screenFrame: screenFrame),
+                       display: true)
+    }
+
+    /// Subtle border glow while the cursor is in the resize band.
+    func setResizeHighlight(_ on: Bool) {
+        guard on != (resizeHighlight != nil) else { return }
+        if on, let view = panel?.contentView {
+            let layer = CALayer()
+            layer.frame = view.bounds.insetBy(dx: 1, dy: 1)
+            layer.borderColor = NSColor.white.withAlphaComponent(0.85).cgColor
+            layer.borderWidth = 2
+            layer.cornerRadius = 9
+            layer.zPosition = 3
+            view.layer?.addSublayer(layer)
+            resizeHighlight = layer
+        } else {
+            resizeHighlight?.removeFromSuperlayer()
+            resizeHighlight = nil
+        }
+    }
+
+    /// Glowing inset border + note while the pull-out modifier is held
+    /// during a window drag: "drag it off the panel".
+    func showPullOutHint(_ on: Bool) {
+        guard on != (pullOutHintLayer != nil) else { return }
+        if on, let view = panel?.contentView {
+            let container = CALayer()
+            container.frame = view.bounds
+            container.zPosition = 3
+
+            let fade = CALayer()
+            fade.frame = container.bounds
+            fade.backgroundColor = NSColor.black.withAlphaComponent(0.22).cgColor
+            container.addSublayer(fade)
+
+            let glow = CALayer()
+            glow.frame = container.bounds.insetBy(dx: 5, dy: 5)
+            glow.borderColor = NSColor.controlAccentColor.cgColor
+            glow.borderWidth = 3
+            glow.cornerRadius = 8
+            glow.shadowColor = NSColor.controlAccentColor.cgColor
+            glow.shadowOpacity = 0.9
+            glow.shadowRadius = 12
+            glow.shadowOffset = .zero
+            container.addSublayer(glow)
+
+            let fontSize = max(13, min(20, container.bounds.height * 0.045))
+            let text = CATextLayer()
+            text.string = "Drag the window out of the screen"
+            text.font = NSFont.systemFont(ofSize: fontSize, weight: .semibold)
+            text.fontSize = fontSize
+            text.foregroundColor = NSColor.white.cgColor
+            text.alignmentMode = .center
+            text.contentsScale = panel?.backingScaleFactor ?? 2
+            text.frame = CGRect(x: 0, y: container.bounds.midY - fontSize,
+                                width: container.bounds.width, height: fontSize * 1.5)
+            container.addSublayer(text)
+
+            view.layer?.addSublayer(container)
+            pullOutHintLayer = container
+        } else {
+            pullOutHintLayer?.removeFromSuperlayer()
+            pullOutHintLayer = nil
+        }
     }
 
     /// Highlights a magnet snap zone (unit rect, y up) during a window drag.
@@ -222,6 +305,7 @@ final class PreviewWindowController: NSObject {
         contentLayer.backgroundColor = NSColor.black.cgColor
         contentView.layer?.addSublayer(contentLayer)
         contentView.onLayout = { [weak self] in self?.relayout() }
+        contentView.previewController = self
 
         let grabber = DraggableImageView()
         let grabConfig = NSImage.SymbolConfiguration(pointSize: 11, weight: .semibold)
@@ -320,8 +404,41 @@ final class PreviewWindowController: NSObject {
         view.passthroughActive.toggle()
         if view.passthroughActive {
             showSnapTile(nil)
+            startWatchdog()
+        } else {
+            stopWatchdog()
         }
         updateControlButton()
+    }
+
+    /// While control mode is on, a stranded cursor on the virtual display
+    /// (event-queue races, physical overshoot) is warped back to the panel
+    /// — control mode means "drive it from here", and the control button
+    /// would otherwise be unreachable without a long physical mouse trip.
+    private func startWatchdog() {
+        stopWatchdog()
+        passthroughWatchdog = Timer.scheduledTimer(withTimeInterval: 0.4,
+                                                   repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.watchdogTick() }
+        }
+    }
+
+    private func stopWatchdog() {
+        passthroughWatchdog?.invalidate()
+        passthroughWatchdog = nil
+    }
+
+    private func watchdogTick() {
+        guard let view = panel?.contentView as? PreviewContentView,
+              view.passthroughActive,
+              view.pointerForwarder?.gestureActive != true,
+              monitorDisplayFrame.contains(NSEvent.mouseLocation),
+              let frame = panelFrame else { return }
+        let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
+        CGWarpMouseCursorPosition(Geometry.cgPoint(
+            fromAppKit: CGPoint(x: frame.midX, y: frame.midY),
+            primaryHeight: primaryHeight))
+        CGAssociateMouseAndMouseCursorPosition(1)
     }
 
     private func updateControlButton() {
@@ -349,9 +466,15 @@ final class PreviewContentView: NSView {
     var interactionHandler: MonitorWindowManipulator?
     var pointerForwarder: MonitorPointerForwarder?
     var passthroughActive = false
+    weak var previewController: PreviewWindowController?
 
     private var monitorMode: Bool { interactionHandler != nil }
-    private static let resizeBand: CGFloat = 8
+    /// Generous grab zone: AppKit's built-in borderless resize band is only
+    /// a few points and fought with the picture interactions — the whole
+    /// band is handled by us in monitor mode.
+    private static let resizeBand: CGFloat = 18
+    private var activeResizeEdge: Geometry.RegionEdge?
+    private var trackingArea: NSTrackingArea?
 
     override var mouseDownCanMoveWindow: Bool { !monitorMode }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
@@ -360,13 +483,57 @@ final class PreviewContentView: NSView {
         convert(event.locationInWindow, from: nil)
     }
 
-    private func leaveToAppKit(_ p: CGPoint) -> Bool {
-        !monitorMode || Geometry.isInResizeBand(p, bounds: bounds, band: Self.resizeBand)
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let trackingArea {
+            removeTrackingArea(trackingArea)
+        }
+        let area = NSTrackingArea(rect: bounds,
+                                  options: [.mouseMoved, .mouseEnteredAndExited,
+                                            .activeAlways],
+                                  owner: self, userInfo: nil)
+        addTrackingArea(area)
+        trackingArea = area
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        guard monitorMode else { return super.mouseMoved(with: event) }
+        let edge = Geometry.resizeEdge(for: localPoint(event), bounds: bounds,
+                                       band: Self.resizeBand)
+        previewController?.setResizeHighlight(edge != nil)
+        switch edge {
+        case .left, .right:
+            if #available(macOS 15.0, *) {
+                NSCursor.frameResize(position: edge == .left ? .left : .right,
+                                     directions: .all).set()
+            } else {
+                NSCursor.resizeLeftRight.set()
+            }
+        case .top, .bottom:
+            if #available(macOS 15.0, *) {
+                NSCursor.frameResize(position: edge == .top ? .top : .bottom,
+                                     directions: .all).set()
+            } else {
+                NSCursor.resizeUpDown.set()
+            }
+        case nil:
+            NSCursor.arrow.set()
+        }
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        guard monitorMode else { return super.mouseExited(with: event) }
+        previewController?.setResizeHighlight(false)
+        NSCursor.arrow.set()
     }
 
     override func mouseDown(with event: NSEvent) {
+        guard monitorMode else { return super.mouseDown(with: event) }
         let p = localPoint(event)
-        guard !leaveToAppKit(p) else { return super.mouseDown(with: event) }
+        if let edge = Geometry.resizeEdge(for: p, bounds: bounds, band: Self.resizeBand) {
+            activeResizeEdge = edge
+            return
+        }
         if passthroughActive {
             pointerForwarder?.mouseDown(clickCount: event.clickCount, at: p,
                                         in: bounds, button: .left)
@@ -377,6 +544,10 @@ final class PreviewContentView: NSView {
 
     override func mouseDragged(with event: NSEvent) {
         guard monitorMode else { return super.mouseDragged(with: event) }
+        if let edge = activeResizeEdge {
+            previewController?.performEdgeResize(edge: edge, to: NSEvent.mouseLocation)
+            return
+        }
         let p = localPoint(event)
         if passthroughActive {
             pointerForwarder?.mouseDragged(at: p, in: bounds, button: .left)
@@ -387,6 +558,10 @@ final class PreviewContentView: NSView {
 
     override func mouseUp(with event: NSEvent) {
         guard monitorMode else { return super.mouseUp(with: event) }
+        if activeResizeEdge != nil {
+            activeResizeEdge = nil
+            return
+        }
         let p = localPoint(event)
         if passthroughActive {
             pointerForwarder?.mouseUp(clickCount: event.clickCount, at: p,

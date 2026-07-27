@@ -351,6 +351,16 @@ enum Geometry {
             || p.y < bounds.minY + band || p.y > bounds.maxY - band
     }
 
+    /// Which panel edge a point in the resize band grabs. Corners resolve
+    /// to the horizontal side — the aspect lock couples both axes anyway.
+    static func resizeEdge(for p: CGPoint, bounds: CGRect, band: CGFloat) -> RegionEdge? {
+        if p.x < bounds.minX + band { return .left }
+        if p.x > bounds.maxX - band { return .right }
+        if p.y > bounds.maxY - band { return .top }
+        if p.y < bounds.minY + band { return .bottom }
+        return nil
+    }
+
     /// AppKit point (bottom-left origin) → CG global point (top-left).
     static func cgPoint(fromAppKit p: CGPoint, primaryHeight: CGFloat) -> CGPoint {
         CGPoint(x: p.x, y: primaryHeight - p.y)
