@@ -344,6 +344,17 @@ enum Geometry {
         return nil
     }
 
+    /// Crop of a window inside its display's captured image, in CALayer
+    /// contentsRect unit space (top-left origin) — used by the pull-out
+    /// drag ghost.
+    static func unitCropRect(of window: CGRect, in display: CGRect) -> CGRect {
+        guard display.width > 0, display.height > 0 else { return CGRect(x: 0, y: 0, width: 1, height: 1) }
+        return CGRect(x: (window.minX - display.minX) / display.width,
+                      y: (display.maxY - window.maxY) / display.height,
+                      width: window.width / display.width,
+                      height: window.height / display.height)
+    }
+
     /// Where a monitor window lands when the session ends: its center maps
     /// proportionally from the virtual display onto the real screen, then
     /// the window is clamped fully on screen.
