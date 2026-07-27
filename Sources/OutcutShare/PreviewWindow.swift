@@ -23,6 +23,7 @@ final class PreviewWindowController: NSObject {
     private var snapTileLayer: CALayer?
     private var grabber: NSImageView?
     private var pauseButton: NSButton?
+    private var controlButton: NSButton?
     private var aspect: CGFloat = 16.0 / 9.0
     private var screenFrame: CGRect = .zero
     /// Remembers the user-chosen size while the preview is toggled off.
@@ -127,13 +128,28 @@ final class PreviewWindowController: NSObject {
         CATransaction.commit()
     }
 
-    /// Virtual-monitor mode: routes picture drags to the window manipulator
-    /// (pass nil to restore plain panel-dragging behavior).
-    func setWindowInteraction(_ handler: MonitorWindowManipulator?) {
-        (panel?.contentView as? PreviewContentView)?.interactionHandler = handler
-        if handler == nil {
-            showSnapTile(nil)
+    /// Virtual-monitor mode: picture drags manage the monitor's windows,
+    /// and the control-mode button (clicks pass through) appears.
+    func configureMonitorInteraction(manipulator: MonitorWindowManipulator,
+                                     forwarder: MonitorPointerForwarder) {
+        if panel == nil {
+            build()
         }
+        guard let view = panel?.contentView as? PreviewContentView else { return }
+        view.interactionHandler = manipulator
+        view.pointerForwarder = forwarder
+        view.passthroughActive = false
+        controlButton?.isHidden = false
+        updateControlButton()
+    }
+
+    func clearMonitorInteraction() {
+        guard let view = panel?.contentView as? PreviewContentView else { return }
+        view.interactionHandler = nil
+        view.pointerForwarder = nil
+        view.passthroughActive = false
+        controlButton?.isHidden = true
+        showSnapTile(nil)
     }
 
     /// Highlights a magnet snap zone (unit rect, y up) during a window drag.
@@ -223,6 +239,21 @@ final class PreviewWindowController: NSObject {
         contentView.addSubview(grabber)
         self.grabber = grabber
 
+        let control = CornerButton()
+        control.bezelStyle = .regularSquare
+        control.isBordered = false
+        control.target = self
+        control.action = #selector(togglePassthrough)
+        control.wantsLayer = true
+        control.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.55).cgColor
+        control.layer?.cornerRadius = Self.cornerControlSize / 2
+        control.frame = CGRect(x: 0, y: 0,
+                               width: Self.cornerControlSize, height: Self.cornerControlSize)
+        control.autoresizingMask = [.minYMargin, .minXMargin]
+        control.isHidden = true
+        contentView.addSubview(control)
+        controlButton = control
+
         let pause = CornerButton()
         pause.bezelStyle = .regularSquare
         pause.isBordered = false
@@ -272,41 +303,116 @@ final class PreviewWindowController: NSObject {
         grabber?.frame.origin.y = top
         pauseButton?.frame.origin = CGPoint(
             x: view.bounds.width - Self.cornerControlSize - Self.cornerMargin, y: top)
+        controlButton?.frame.origin = CGPoint(
+            x: view.bounds.width - 2 * Self.cornerControlSize - Self.cornerMargin - 6, y: top)
         rebuildPrivacyLayer()
     }
 
     @objc private func togglePause() {
         session?.togglePause()
     }
+
+    /// Control mode: picture clicks pass through to the virtual display
+    /// instead of managing its windows.
+    @objc private func togglePassthrough() {
+        guard let view = panel?.contentView as? PreviewContentView,
+              view.pointerForwarder != nil else { return }
+        view.passthroughActive.toggle()
+        if view.passthroughActive {
+            showSnapTile(nil)
+        }
+        updateControlButton()
+    }
+
+    private func updateControlButton() {
+        guard let view = panel?.contentView as? PreviewContentView else { return }
+        let on = view.passthroughActive
+        let config = NSImage.SymbolConfiguration(pointSize: 11, weight: .semibold)
+            .applying(.init(paletteColors: [on ? .systemYellow : .white]))
+        controlButton?.image = NSImage(systemSymbolName: "cursorarrow",
+                                       accessibilityDescription: "Control the monitor")?
+            .withSymbolConfiguration(config)
+        controlButton?.toolTip = on
+            ? "Control mode on — clicks pass through to the monitor"
+            : "Control the monitor (clicks pass through)"
+    }
 }
 
 /// Layout hook + background-drag opt-in for the preview picture. With an
 /// interaction handler set (virtual-monitor mode) the picture becomes a
-/// direct-manipulation surface for the monitor's windows instead — the ≡
-/// grabber is then the only way to move the panel.
+/// direct-manipulation surface for the monitor's windows — or, with
+/// passthrough active, a remote-control surface — and the ≡ grabber is
+/// then the only way to move the panel. A band along the edges is always
+/// left to AppKit so borderless-window resizing keeps working.
 final class PreviewContentView: NSView {
     var onLayout: (() -> Void)?
     var interactionHandler: MonitorWindowManipulator?
+    var pointerForwarder: MonitorPointerForwarder?
+    var passthroughActive = false
 
-    override var mouseDownCanMoveWindow: Bool { interactionHandler == nil }
+    private var monitorMode: Bool { interactionHandler != nil }
+    private static let resizeBand: CGFloat = 8
+
+    override var mouseDownCanMoveWindow: Bool { !monitorMode }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
+    private func localPoint(_ event: NSEvent) -> CGPoint {
+        convert(event.locationInWindow, from: nil)
+    }
+
+    private func leaveToAppKit(_ p: CGPoint) -> Bool {
+        !monitorMode || Geometry.isInResizeBand(p, bounds: bounds, band: Self.resizeBand)
+    }
+
     override func mouseDown(with event: NSEvent) {
-        guard let interactionHandler else { return super.mouseDown(with: event) }
-        interactionHandler.mouseDown(at: convert(event.locationInWindow, from: nil),
-                                     in: bounds)
+        let p = localPoint(event)
+        guard !leaveToAppKit(p) else { return super.mouseDown(with: event) }
+        if passthroughActive {
+            pointerForwarder?.mouseDown(clickCount: event.clickCount, at: p,
+                                        in: bounds, button: .left)
+        } else {
+            interactionHandler?.mouseDown(at: p, in: bounds)
+        }
     }
 
     override func mouseDragged(with event: NSEvent) {
-        guard let interactionHandler else { return super.mouseDragged(with: event) }
-        interactionHandler.mouseDragged(to: convert(event.locationInWindow, from: nil),
-                                        in: bounds)
+        guard monitorMode else { return super.mouseDragged(with: event) }
+        let p = localPoint(event)
+        if passthroughActive {
+            pointerForwarder?.mouseDragged(at: p, in: bounds, button: .left)
+        } else {
+            interactionHandler?.mouseDragged(to: p, in: bounds)
+        }
     }
 
     override func mouseUp(with event: NSEvent) {
-        guard let interactionHandler else { return super.mouseUp(with: event) }
-        interactionHandler.mouseUp(at: convert(event.locationInWindow, from: nil),
-                                   in: bounds)
+        guard monitorMode else { return super.mouseUp(with: event) }
+        let p = localPoint(event)
+        if passthroughActive {
+            pointerForwarder?.mouseUp(clickCount: event.clickCount, at: p,
+                                      in: bounds, button: .left)
+        } else {
+            interactionHandler?.mouseUp(at: p, in: bounds)
+        }
+    }
+
+    override func rightMouseDown(with event: NSEvent) {
+        guard monitorMode, passthroughActive else { return super.rightMouseDown(with: event) }
+        pointerForwarder?.mouseDown(clickCount: event.clickCount, at: localPoint(event),
+                                    in: bounds, button: .right)
+    }
+
+    override func rightMouseUp(with event: NSEvent) {
+        guard monitorMode, passthroughActive else { return super.rightMouseUp(with: event) }
+        pointerForwarder?.mouseUp(clickCount: event.clickCount, at: localPoint(event),
+                                  in: bounds, button: .right)
+    }
+
+    override func scrollWheel(with event: NSEvent) {
+        guard monitorMode, passthroughActive else { return super.scrollWheel(with: event) }
+        pointerForwarder?.scroll(deltaX: event.scrollingDeltaX,
+                                 deltaY: event.scrollingDeltaY,
+                                 at: localPoint(event), in: bounds)
     }
 
     override func layout() {
@@ -315,9 +421,32 @@ final class PreviewContentView: NSView {
     }
 }
 
-/// The ≡ affordance: purely visual, drags the window like everywhere else.
+/// The ≡ handle drags the panel itself — with its own event handling, so
+/// the drag never falls through to the picture's window-manipulation
+/// surface underneath (responder-chain fall-through moved captured windows
+/// when the grabber was dragged). Anchored to NSEvent.mouseLocation, like
+/// the hotbar grabber.
 private final class DraggableImageView: NSImageView {
-    override var mouseDownCanMoveWindow: Bool { true }
+    private var anchor: (origin: CGPoint, mouse: CGPoint)?
+
+    override var mouseDownCanMoveWindow: Bool { false }
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    override func mouseDown(with event: NSEvent) {
+        guard let window else { return }
+        anchor = (window.frame.origin, NSEvent.mouseLocation)
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        guard let window, let anchor else { return }
+        let mouse = NSEvent.mouseLocation
+        window.setFrameOrigin(CGPoint(x: anchor.origin.x + mouse.x - anchor.mouse.x,
+                                      y: anchor.origin.y + mouse.y - anchor.mouse.y))
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        anchor = nil
+    }
 }
 
 /// First click must act even while another app is active (the panel never

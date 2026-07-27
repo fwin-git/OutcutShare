@@ -154,15 +154,23 @@ final class MonitorWindowManipulator {
     private weak var session: ShareSession?
     private let displayFrame: CGRect
     private weak var preview: PreviewWindowController?
+    private let settings: SettingsStore
     private var drag: (window: WindowLocator.FoundWindow, ax: AXUIElement,
                        grabOffset: CGSize, startLocal: CGPoint, started: Bool)?
     private var lastMoveTime: TimeInterval = 0
     private var promptedForPermission = false
 
-    init(session: ShareSession, displayFrame: CGRect, preview: PreviewWindowController) {
+    init(session: ShareSession, displayFrame: CGRect, preview: PreviewWindowController,
+         settings: SettingsStore = .shared) {
         self.session = session
         self.displayFrame = displayFrame
         self.preview = preview
+        self.settings = settings
+    }
+
+    /// The configurable "pull the window out" modifier is held right now.
+    private var pullOutHeld: Bool {
+        NSEvent.modifierFlags.contains(settings.dragOutModifier.flag)
     }
 
     func mouseDown(at local: CGPoint, in bounds: CGRect) {
@@ -199,8 +207,14 @@ final class MonitorWindowManipulator {
             preview?.showSnapTile(nil)
             return
         }
-        let unit = CGPoint(x: local.x / bounds.width, y: local.y / bounds.height)
-        preview?.showSnapTile(Geometry.snapTileUnit(for: unit))
+        // Holding the pull-out modifier disables snapping so edge drags
+        // can't collide with the "drag it out" gesture.
+        if pullOutHeld {
+            preview?.showSnapTile(nil)
+        } else {
+            let unit = CGPoint(x: local.x / bounds.width, y: local.y / bounds.height)
+            preview?.showSnapTile(Geometry.snapTileUnit(for: unit))
+        }
         // Live-follow, throttled to display rate.
         let now = ProcessInfo.processInfo.systemUptime
         guard now - lastMoveTime > 1.0 / 60.0 else { return }
@@ -221,6 +235,7 @@ final class MonitorWindowManipulator {
         }
         guard let drag, drag.started else { return }
         if bounds.contains(local) {
+            guard !pullOutHeld else { return } // modifier: free placement, no snap
             let unit = CGPoint(x: local.x / bounds.width, y: local.y / bounds.height)
             if let tile = Geometry.snapTileUnit(for: unit) {
                 WindowMover.setFrame(drag.ax,
@@ -229,13 +244,107 @@ final class MonitorWindowManipulator {
             }
             return
         }
-        // Dropped off the panel: pop the window back onto the real screen,
-        // centered under the cursor.
-        guard let main = NSScreen.main else { return }
+        // Off the panel: only the pull-out modifier pops the window back to
+        // the real screen — a plain drag that strays outside does nothing.
+        guard pullOutHeld, let main = NSScreen.main else { return }
         let origin = Geometry.centeredClampedWindowOrigin(size: drag.window.frame.size,
                                                           center: NSEvent.mouseLocation,
                                                           bounds: main.visibleFrame)
         WindowMover.setPosition(drag.ax, appKitOrigin: origin, size: drag.window.frame.size)
+    }
+}
+
+/// "Control mode": forwards clicks, drags and scrolls from the preview
+/// picture onto the virtual display as synthetic events, so folders and
+/// browsers on the monitor can be driven without moving the mouse there.
+/// Posting events needs the same Accessibility permission as window
+/// moving. The system cursor briefly jumps to the virtual display during a
+/// gesture (that's where the event happens — visible in the preview) and
+/// returns when the gesture ends.
+@MainActor
+final class MonitorPointerForwarder {
+    private weak var session: ShareSession?
+    private let displayFrame: CGRect
+    private var savedCursor: CGPoint?
+    private var promptedForPermission = false
+
+    init(session: ShareSession, displayFrame: CGRect) {
+        self.session = session
+        self.displayFrame = displayFrame
+    }
+
+    func mouseDown(clickCount: Int, at local: CGPoint, in bounds: CGRect,
+                   button: CGMouseButton) {
+        guard ensurePermission() else { return }
+        savedCursor = currentCursor()
+        post(button == .left ? .leftMouseDown : .rightMouseDown,
+             at: target(local, bounds), button: button, clickCount: clickCount)
+    }
+
+    func mouseDragged(at local: CGPoint, in bounds: CGRect, button: CGMouseButton) {
+        guard WindowMover.hasPermission else { return }
+        post(button == .left ? .leftMouseDragged : .rightMouseDragged,
+             at: target(local, bounds), button: button, clickCount: 1)
+    }
+
+    func mouseUp(clickCount: Int, at local: CGPoint, in bounds: CGRect,
+                 button: CGMouseButton) {
+        guard WindowMover.hasPermission else { return }
+        post(button == .left ? .leftMouseUp : .rightMouseUp,
+             at: target(local, bounds), button: button, clickCount: clickCount)
+        if let savedCursor {
+            CGWarpMouseCursorPosition(savedCursor)
+            CGAssociateMouseAndMouseCursorPosition(1)
+        }
+        savedCursor = nil
+    }
+
+    func scroll(deltaX: CGFloat, deltaY: CGFloat, at local: CGPoint, in bounds: CGRect) {
+        guard ensurePermission() else { return }
+        let point = target(local, bounds)
+        let saved = currentCursor()
+        CGWarpMouseCursorPosition(point)
+        if let event = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2,
+                               wheel1: Int32(deltaY.rounded()),
+                               wheel2: Int32(deltaX.rounded()), wheel3: 0) {
+            event.location = point
+            event.post(tap: .cghidEventTap)
+        }
+        CGWarpMouseCursorPosition(saved)
+    }
+
+    private func target(_ local: CGPoint, _ bounds: CGRect) -> CGPoint {
+        let appKit = Geometry.previewPointToDisplayPoint(
+            local, panel: CGRect(origin: .zero, size: bounds.size),
+            display: displayFrame.insetBy(dx: 1, dy: 1))
+        let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
+        return Geometry.cgPoint(fromAppKit: appKit, primaryHeight: primaryHeight)
+    }
+
+    private func currentCursor() -> CGPoint {
+        CGEvent(source: nil)?.location ?? .zero
+    }
+
+    private func post(_ type: CGEventType, at point: CGPoint, button: CGMouseButton,
+                      clickCount: Int) {
+        guard let event = CGEvent(mouseEventSource: nil, mouseType: type,
+                                  mouseCursorPosition: point, mouseButton: button) else {
+            return
+        }
+        event.setIntegerValueField(.mouseEventClickState, value: Int64(clickCount))
+        event.post(tap: .cghidEventTap)
+    }
+
+    private func ensurePermission() -> Bool {
+        guard WindowMover.hasPermission else {
+            if !promptedForPermission {
+                promptedForPermission = true
+                WindowMover.requestPermission()
+                session?.onPermissionsNeeded?()
+            }
+            return false
+        }
+        return true
     }
 }
 

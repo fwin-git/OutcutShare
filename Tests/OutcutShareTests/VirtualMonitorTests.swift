@@ -95,6 +95,55 @@ final class MonitorDragGeometryTests: XCTestCase {
     }
 }
 
+final class MonitorInteractionTests: XCTestCase {
+    private var suiteName: String!
+    private var defaults: UserDefaults!
+
+    override func setUp() {
+        super.setUp()
+        suiteName = "test-\(UUID().uuidString)"
+        defaults = UserDefaults(suiteName: suiteName)
+    }
+
+    override func tearDown() {
+        defaults.removePersistentDomain(forName: suiteName)
+        super.tearDown()
+    }
+
+    func testDragOutModifierDefaultsToShift() {
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertEqual(store.dragOutModifier, .shift)
+    }
+
+    func testDragOutModifierPersists() {
+        let store = SettingsStore(defaults: defaults)
+        store.dragOutModifier = .option
+        let reloaded = SettingsStore(defaults: defaults)
+        XCTAssertEqual(reloaded.dragOutModifier, .option)
+    }
+
+    func testModifierFlagMapping() {
+        XCTAssertEqual(DragOutModifier.shift.flag, .shift)
+        XCTAssertEqual(DragOutModifier.option.flag, .option)
+        XCTAssertEqual(DragOutModifier.command.flag, .command)
+        XCTAssertEqual(DragOutModifier.control.flag, .control)
+    }
+
+    func testResizeBandDetection() {
+        let bounds = CGRect(x: 0, y: 0, width: 800, height: 500)
+        XCTAssertTrue(Geometry.isInResizeBand(CGPoint(x: 3, y: 250), bounds: bounds, band: 8))
+        XCTAssertTrue(Geometry.isInResizeBand(CGPoint(x: 400, y: 495), bounds: bounds, band: 8))
+        XCTAssertTrue(Geometry.isInResizeBand(CGPoint(x: 794, y: 4), bounds: bounds, band: 8))
+        XCTAssertFalse(Geometry.isInResizeBand(CGPoint(x: 400, y: 250), bounds: bounds, band: 8))
+        XCTAssertFalse(Geometry.isInResizeBand(CGPoint(x: 50, y: 50), bounds: bounds, band: 8))
+    }
+
+    func testCGPointConversion() {
+        let p = Geometry.cgPoint(fromAppKit: CGPoint(x: 100, y: 400), primaryHeight: 1440)
+        XCTAssertEqual(p, CGPoint(x: 100, y: 1040))
+    }
+}
+
 final class SnapTileTests: XCTestCase {
     func testEdgeZonesGiveHalves() {
         XCTAssertEqual(Geometry.snapTileUnit(for: CGPoint(x: 0.05, y: 0.5)),

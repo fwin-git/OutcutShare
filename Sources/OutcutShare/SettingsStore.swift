@@ -23,6 +23,30 @@ enum FollowBehavior: String, CaseIterable {
     case glide
 }
 
+/// Modifier that switches a preview-picture drag from window management to
+/// "pull the window out onto the real screen".
+enum DragOutModifier: String, CaseIterable {
+    case shift, option, command, control
+
+    var flag: NSEvent.ModifierFlags {
+        switch self {
+        case .shift: return .shift
+        case .option: return .option
+        case .command: return .command
+        case .control: return .control
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .shift: return "⇧ Shift"
+        case .option: return "⌥ Option"
+        case .command: return "⌘ Command"
+        case .control: return "⌃ Control"
+        }
+    }
+}
+
 /// An app whose windows are hidden from viewers.
 struct HiddenApp: Codable, Equatable, Identifiable {
     var bundleID: String
@@ -253,6 +277,15 @@ final class SettingsStore: ObservableObject {
         CGSize(width: virtualMonitorWidth, height: virtualMonitorHeight)
     }
 
+    /// Hold this while dragging in the monitor preview to pull the window
+    /// back out to the real screen.
+    @Published var dragOutModifier: DragOutModifier {
+        didSet {
+            defaults.set(dragOutModifier.rawValue, forKey: "dragOutModifier")
+            notifyChange()
+        }
+    }
+
     static let defaultShareWindowTitle = "Outcut Share (Share Region)"
 
     /// Title sharing apps show for the hidden share window in their window
@@ -374,6 +407,8 @@ final class SettingsStore: ObservableObject {
                                      "virtualMonitorHeight": 1080])
         self.virtualMonitorWidth = defaults.integer(forKey: "virtualMonitorWidth")
         self.virtualMonitorHeight = defaults.integer(forKey: "virtualMonitorHeight")
+        self.dragOutModifier = defaults.string(forKey: "dragOutModifier")
+            .flatMap(DragOutModifier.init(rawValue:)) ?? .shift
         self.crispOutput = defaults.bool(forKey: "crispOutput")
         self.dockIconWhileActive = defaults.bool(forKey: "dockIconWhileActive")
         defaults.register(defaults: ["hideNotificationBanners": true])

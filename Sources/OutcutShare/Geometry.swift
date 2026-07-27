@@ -344,6 +344,18 @@ enum Geometry {
         return nil
     }
 
+    /// True near the view edges where AppKit's borderless-window resize
+    /// zones live — picture interactions must leave those events alone.
+    static func isInResizeBand(_ p: CGPoint, bounds: CGRect, band: CGFloat) -> Bool {
+        p.x < bounds.minX + band || p.x > bounds.maxX - band
+            || p.y < bounds.minY + band || p.y > bounds.maxY - band
+    }
+
+    /// AppKit point (bottom-left origin) → CG global point (top-left).
+    static func cgPoint(fromAppKit p: CGPoint, primaryHeight: CGFloat) -> CGPoint {
+        CGPoint(x: p.x, y: primaryHeight - p.y)
+    }
+
     /// Scales a unit-space rect (0…1) into `target`.
     static func rectByScaling(unit: CGRect, into target: CGRect) -> CGRect {
         CGRect(x: target.minX + unit.minX * target.width,

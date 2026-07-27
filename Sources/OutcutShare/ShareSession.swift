@@ -375,8 +375,12 @@ final class ShareSession {
                 }
             }
             monitorDrag.start(displayFrame: region.rect, preview: preview)
-            preview.setWindowInteraction(MonitorWindowManipulator(
-                session: self, displayFrame: region.rect, preview: preview))
+            preview.configureMonitorInteraction(
+                manipulator: MonitorWindowManipulator(session: self,
+                                                      displayFrame: region.rect,
+                                                      preview: preview),
+                forwarder: MonitorPointerForwarder(session: self,
+                                                   displayFrame: region.rect))
         } catch {
             teardown()
             state = .idle
@@ -581,7 +585,7 @@ final class ShareSession {
         monitorPrivacyCover?.close()
         monitorPrivacyCover = nil
         monitorDrag.stop()
-        preview.setWindowInteraction(nil)
+        preview.clearMonitorInteraction()
         cursorEmphasis.stop()
         if let recorder {
             self.recorder = nil
