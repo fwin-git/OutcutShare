@@ -20,6 +20,7 @@ final class PreviewWindowController: NSObject {
     private var privacyLayer: CALayer?
     private var privacyShowing = false
     private var dropHighlight: CALayer?
+    private var snapTileLayer: CALayer?
     private var grabber: NSImageView?
     private var pauseButton: NSButton?
     private var aspect: CGFloat = 16.0 / 9.0
@@ -124,6 +125,31 @@ final class PreviewWindowController: NSObject {
         CATransaction.setDisableActions(true)
         contentLayer.contents = surface
         CATransaction.commit()
+    }
+
+    /// Virtual-monitor mode: routes picture drags to the window manipulator
+    /// (pass nil to restore plain panel-dragging behavior).
+    func setWindowInteraction(_ handler: MonitorWindowManipulator?) {
+        (panel?.contentView as? PreviewContentView)?.interactionHandler = handler
+        if handler == nil {
+            showSnapTile(nil)
+        }
+    }
+
+    /// Highlights a magnet snap zone (unit rect, y up) during a window drag.
+    func showSnapTile(_ unit: CGRect?) {
+        snapTileLayer?.removeFromSuperlayer()
+        snapTileLayer = nil
+        guard let unit, let view = panel?.contentView else { return }
+        let layer = CALayer()
+        layer.frame = Geometry.rectByScaling(unit: unit, into: view.bounds).insetBy(dx: 3, dy: 3)
+        layer.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.25).cgColor
+        layer.borderColor = NSColor.controlAccentColor.cgColor
+        layer.borderWidth = 2
+        layer.cornerRadius = 6
+        layer.zPosition = 3
+        view.layer?.addSublayer(layer)
+        snapTileLayer = layer
     }
 
     /// Accent border while a window drag hovers over the panel ("drop here
@@ -254,11 +280,35 @@ final class PreviewWindowController: NSObject {
     }
 }
 
-/// Layout hook + explicit background-drag opt-in for the preview picture.
-private final class PreviewContentView: NSView {
+/// Layout hook + background-drag opt-in for the preview picture. With an
+/// interaction handler set (virtual-monitor mode) the picture becomes a
+/// direct-manipulation surface for the monitor's windows instead — the ≡
+/// grabber is then the only way to move the panel.
+final class PreviewContentView: NSView {
     var onLayout: (() -> Void)?
+    var interactionHandler: MonitorWindowManipulator?
 
-    override var mouseDownCanMoveWindow: Bool { true }
+    override var mouseDownCanMoveWindow: Bool { interactionHandler == nil }
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    override func mouseDown(with event: NSEvent) {
+        guard let interactionHandler else { return super.mouseDown(with: event) }
+        interactionHandler.mouseDown(at: convert(event.locationInWindow, from: nil),
+                                     in: bounds)
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        guard let interactionHandler else { return super.mouseDragged(with: event) }
+        interactionHandler.mouseDragged(to: convert(event.locationInWindow, from: nil),
+                                        in: bounds)
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        guard let interactionHandler else { return super.mouseUp(with: event) }
+        interactionHandler.mouseUp(at: convert(event.locationInWindow, from: nil),
+                                   in: bounds)
+    }
+
     override func layout() {
         super.layout()
         onLayout?()

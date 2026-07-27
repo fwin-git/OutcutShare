@@ -323,6 +323,35 @@ enum Geometry {
         return moved > 20
     }
 
+    /// Magnet-style snap zone for a drag position in unit space (y up):
+    /// corners → quarters, left/right edges → halves, top-center → full
+    /// screen, anywhere else → free placement (nil).
+    static func snapTileUnit(for p: CGPoint) -> CGRect? {
+        let nearLeft = p.x < 0.18, nearRight = p.x > 0.82
+        let nearBottom = p.y < 0.18, nearTop = p.y > 0.82
+        switch (nearLeft, nearRight, nearBottom, nearTop) {
+        case (true, _, true, _): return CGRect(x: 0, y: 0, width: 0.5, height: 0.5)
+        case (true, _, _, true): return CGRect(x: 0, y: 0.5, width: 0.5, height: 0.5)
+        case (_, true, true, _): return CGRect(x: 0.5, y: 0, width: 0.5, height: 0.5)
+        case (_, true, _, true): return CGRect(x: 0.5, y: 0.5, width: 0.5, height: 0.5)
+        default: break
+        }
+        if p.x < 0.12 { return CGRect(x: 0, y: 0, width: 0.5, height: 1) }
+        if p.x > 0.88 { return CGRect(x: 0.5, y: 0, width: 0.5, height: 1) }
+        if p.y > 0.88 && (0.35...0.65).contains(p.x) {
+            return CGRect(x: 0, y: 0, width: 1, height: 1)
+        }
+        return nil
+    }
+
+    /// Scales a unit-space rect (0…1) into `target`.
+    static func rectByScaling(unit: CGRect, into target: CGRect) -> CGRect {
+        CGRect(x: target.minX + unit.minX * target.width,
+               y: target.minY + unit.minY * target.height,
+               width: unit.width * target.width,
+               height: unit.height * target.height)
+    }
+
     /// Capture size in pixels: region points × display scale, floored to even
     /// values so the video pipeline never sees odd dimensions.
     static func capturePixelSize(region: CGRect, scale: CGFloat) -> (width: Int, height: Int) {

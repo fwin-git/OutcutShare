@@ -95,6 +95,39 @@ final class MonitorDragGeometryTests: XCTestCase {
     }
 }
 
+final class SnapTileTests: XCTestCase {
+    func testEdgeZonesGiveHalves() {
+        XCTAssertEqual(Geometry.snapTileUnit(for: CGPoint(x: 0.05, y: 0.5)),
+                       CGRect(x: 0, y: 0, width: 0.5, height: 1))
+        XCTAssertEqual(Geometry.snapTileUnit(for: CGPoint(x: 0.95, y: 0.5)),
+                       CGRect(x: 0.5, y: 0, width: 0.5, height: 1))
+    }
+
+    func testTopCenterGivesFullScreen() {
+        XCTAssertEqual(Geometry.snapTileUnit(for: CGPoint(x: 0.5, y: 0.95)),
+                       CGRect(x: 0, y: 0, width: 1, height: 1))
+    }
+
+    func testCornersGiveQuarters() {
+        XCTAssertEqual(Geometry.snapTileUnit(for: CGPoint(x: 0.05, y: 0.95)),
+                       CGRect(x: 0, y: 0.5, width: 0.5, height: 0.5))
+        XCTAssertEqual(Geometry.snapTileUnit(for: CGPoint(x: 0.95, y: 0.05)),
+                       CGRect(x: 0.5, y: 0, width: 0.5, height: 0.5))
+    }
+
+    func testCenterIsFreePlacement() {
+        XCTAssertNil(Geometry.snapTileUnit(for: CGPoint(x: 0.5, y: 0.5)))
+        XCTAssertNil(Geometry.snapTileUnit(for: CGPoint(x: 0.3, y: 0.7)))
+    }
+
+    func testUnitRectScalesIntoTarget() {
+        let target = CGRect(x: 5120, y: 0, width: 1920, height: 1080)
+        let scaled = Geometry.rectByScaling(unit: CGRect(x: 0.5, y: 0, width: 0.5, height: 1),
+                                            into: target)
+        XCTAssertEqual(scaled, CGRect(x: 5120 + 960, y: 0, width: 960, height: 1080))
+    }
+}
+
 final class ProminentPreviewGeometryTests: XCTestCase {
     private let screen = CGRect(x: 0, y: 0, width: 2560, height: 1440)
 

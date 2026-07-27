@@ -375,6 +375,8 @@ final class ShareSession {
                 }
             }
             monitorDrag.start(displayFrame: region.rect, preview: preview)
+            preview.setWindowInteraction(MonitorWindowManipulator(
+                session: self, displayFrame: region.rect, preview: preview))
         } catch {
             teardown()
             state = .idle
@@ -579,6 +581,7 @@ final class ShareSession {
         monitorPrivacyCover?.close()
         monitorPrivacyCover = nil
         monitorDrag.stop()
+        preview.setWindowInteraction(nil)
         cursorEmphasis.stop()
         if let recorder {
             self.recorder = nil

@@ -6,7 +6,8 @@ Menu bar → **Settings…** — seven pages.
 
 | Setting | Effect | Default |
 | --- | --- | --- |
-| Share as | Virtual Display (share a screen) or Hidden Window (share a window) | Virtual Display |
+| Share as | Virtual Display (share a screen), Hidden Window (share a window) or Virtual Monitor (separate screen, see below) | Virtual Display |
+| Monitor resolution | Size of the Virtual Monitor screen | 1920 × 1080 |
 | Crisp text (Retina output) | Gives the virtual display 2× pixel density — sharpest with Retina sources, reduces compression artifacts otherwise; more bandwidth. Virtual Display mode only | off |
 | Follow movement | Snap or smooth glide when follow mode moves the region | Glide |
 | Resize region to followed window | Follow mode adopts the window's size (aspect-fitted in Virtual Display mode) | on |
@@ -28,6 +29,28 @@ hotbar hidden. It always floats above the dimming. The choice persists.
 
 Follow mode itself is enabled per-session from the menu bar:
 **Follow → Active Window / Cursor**.
+
+### Virtual Monitor mode
+
+The safest way to share: a **separate, empty screen**. Nothing from your
+real display is ever shared — only windows you deliberately place on the
+virtual monitor. Start it from the menu bar (*Start Virtual Monitor &
+Share*), then pick the new screen under “share screen” in Zoom/Teams.
+
+A **large preview panel** opens centered on your screen — your window into
+the monitor. With the optional **Accessibility** permission:
+
+- **Drag any window onto the panel** and drop it — it moves to the virtual
+  monitor, right where you dropped it (the panel highlights while you
+  hover).
+- **Grab a window inside the picture** to rearrange it; edges and corners
+  show magnet-style snap zones (halves, quarters, full screen).
+- **Drag a window out of the picture** and it pops back onto your real
+  screen under the cursor.
+
+The panel moves via its ≡ grabber in this mode; pausing covers the whole
+virtual screen with the privacy note. You can also simply move your mouse
+onto the virtual monitor and arrange windows there like on any screen.
 
 ## Appearance
 

@@ -69,15 +69,38 @@ enum WindowMover {
     static func move(window: WindowLocator.FoundWindow, toAppKitOrigin origin: CGPoint) -> Bool {
         guard let currentFrame = WindowLocator.frame(ofWindow: window.id),
               let axWindow = axWindow(for: window, frame: currentFrame) else { return false }
-        let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
-        var point = Geometry.cgTopLeftPoint(
-            forAppKit: CGRect(origin: origin, size: currentFrame.size),
-            primaryHeight: primaryHeight)
-        guard let value = AXValueCreate(.cgPoint, &point) else { return false }
-        let result = AXUIElementSetAttributeValue(axWindow, kAXPositionAttribute as CFString,
-                                                  value)
+        setPosition(axWindow, appKitOrigin: origin, size: currentFrame.size)
         AXUIElementPerformAction(axWindow, kAXRaiseAction as CFString)
-        return result == .success
+        return true
+    }
+
+    /// Resolves the AX element once so repeated per-drag-event moves stay
+    /// cheap (no window-list walks per event).
+    static func resolveAXWindow(for window: WindowLocator.FoundWindow) -> AXUIElement? {
+        guard let currentFrame = WindowLocator.frame(ofWindow: window.id) else { return nil }
+        return axWindow(for: window, frame: currentFrame)
+    }
+
+    static func setPosition(_ axWindow: AXUIElement, appKitOrigin origin: CGPoint,
+                            size: CGSize) {
+        let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
+        var point = Geometry.cgTopLeftPoint(forAppKit: CGRect(origin: origin, size: size),
+                                            primaryHeight: primaryHeight)
+        if let value = AXValueCreate(.cgPoint, &point) {
+            AXUIElementSetAttributeValue(axWindow, kAXPositionAttribute as CFString, value)
+        }
+    }
+
+    /// Position + size in one go (snap tiles).
+    static func setFrame(_ axWindow: AXUIElement, appKitFrame frame: CGRect) {
+        setPosition(axWindow, appKitOrigin: frame.origin, size: frame.size)
+        var size = frame.size
+        if let value = AXValueCreate(.cgSize, &size) {
+            AXUIElementSetAttributeValue(axWindow, kAXSizeAttribute as CFString, value)
+        }
+        // Resizing anchors the top-left; re-apply the position so the frame
+        // lands exactly where the tile is.
+        setPosition(axWindow, appKitOrigin: frame.origin, size: frame.size)
     }
 
     /// There is no public CGWindowID → AXUIElement bridge: match the app's
@@ -118,6 +141,101 @@ enum WindowMover {
         return Geometry.appKitRect(
             fromCGTopLeft: CGRect(origin: point, size: size),
             primaryHeight: primaryHeight)
+    }
+}
+
+/// Direct manipulation of the virtual monitor's windows through the preview
+/// picture: grab a rendered window to move it (magnet-style snap zones at
+/// the edges), or drag it off the panel to pop it back onto the real
+/// screen. Fed by the preview content view's mouse events (view-local
+/// points with the current bounds).
+@MainActor
+final class MonitorWindowManipulator {
+    private weak var session: ShareSession?
+    private let displayFrame: CGRect
+    private weak var preview: PreviewWindowController?
+    private var drag: (window: WindowLocator.FoundWindow, ax: AXUIElement,
+                       grabOffset: CGSize, startLocal: CGPoint, started: Bool)?
+    private var lastMoveTime: TimeInterval = 0
+    private var promptedForPermission = false
+
+    init(session: ShareSession, displayFrame: CGRect, preview: PreviewWindowController) {
+        self.session = session
+        self.displayFrame = displayFrame
+        self.preview = preview
+    }
+
+    func mouseDown(at local: CGPoint, in bounds: CGRect) {
+        drag = nil
+        let displayPoint = Geometry.previewPointToDisplayPoint(
+            local, panel: CGRect(origin: .zero, size: bounds.size), display: displayFrame)
+        guard let found = WindowLocator.frontmostWindow(at: displayPoint,
+                                                       excludingPID: getpid()) else { return }
+        guard WindowMover.hasPermission else {
+            if !promptedForPermission {
+                promptedForPermission = true
+                WindowMover.requestPermission()
+                session?.onPermissionsNeeded?()
+            }
+            return
+        }
+        guard let ax = WindowMover.resolveAXWindow(for: found) else { return }
+        let offset = CGSize(width: found.frame.minX - displayPoint.x,
+                            height: found.frame.minY - displayPoint.y)
+        drag = (found, ax, offset, local, false)
+    }
+
+    func mouseDragged(to local: CGPoint, in bounds: CGRect) {
+        guard var drag else { return }
+        if !drag.started {
+            guard hypot(local.x - drag.startLocal.x, local.y - drag.startLocal.y) > 6 else {
+                return
+            }
+            drag.started = true
+        }
+        self.drag = drag
+        guard bounds.contains(local) else {
+            // Outside the panel: window stays put until the drop decides.
+            preview?.showSnapTile(nil)
+            return
+        }
+        let unit = CGPoint(x: local.x / bounds.width, y: local.y / bounds.height)
+        preview?.showSnapTile(Geometry.snapTileUnit(for: unit))
+        // Live-follow, throttled to display rate.
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastMoveTime > 1.0 / 60.0 else { return }
+        lastMoveTime = now
+        let displayPoint = Geometry.previewPointToDisplayPoint(
+            local, panel: CGRect(origin: .zero, size: bounds.size), display: displayFrame)
+        let origin = Geometry.clampedRegionOrigin(
+            CGPoint(x: displayPoint.x + drag.grabOffset.width,
+                    y: displayPoint.y + drag.grabOffset.height),
+            regionSize: drag.window.frame.size, screenFrame: displayFrame)
+        WindowMover.setPosition(drag.ax, appKitOrigin: origin, size: drag.window.frame.size)
+    }
+
+    func mouseUp(at local: CGPoint, in bounds: CGRect) {
+        defer {
+            preview?.showSnapTile(nil)
+            drag = nil
+        }
+        guard let drag, drag.started else { return }
+        if bounds.contains(local) {
+            let unit = CGPoint(x: local.x / bounds.width, y: local.y / bounds.height)
+            if let tile = Geometry.snapTileUnit(for: unit) {
+                WindowMover.setFrame(drag.ax,
+                                     appKitFrame: Geometry.rectByScaling(unit: tile,
+                                                                         into: displayFrame))
+            }
+            return
+        }
+        // Dropped off the panel: pop the window back onto the real screen,
+        // centered under the cursor.
+        guard let main = NSScreen.main else { return }
+        let origin = Geometry.centeredClampedWindowOrigin(size: drag.window.frame.size,
+                                                          center: NSEvent.mouseLocation,
+                                                          bounds: main.visibleFrame)
+        WindowMover.setPosition(drag.ax, appKitOrigin: origin, size: drag.window.frame.size)
     }
 }
 
