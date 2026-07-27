@@ -10,6 +10,8 @@ Menu bar → **Settings…** — four pages.
 | Follow movement | Snap or smooth glide when follow mode moves the region | Glide |
 | Resize region to followed window | Follow mode adopts the window's size (aspect-fitted in Virtual Display mode) | on |
 | When paused, viewers see | Frozen last frame, or a blurred privacy screen with a slashed-eye note | Privacy screen |
+| Follow | Off / Active Window / Cursor (also in menu bar → Follow) | Off |
+| Show floating hotbar | Quick-action bar next to the region: stop, pause, record, highlights, resize, save preset, follow. Auto-positions below → side → top; drag the ≡ grabber to place it manually; ✕ hides it until re-enabled | on |
 | Frame rate | Capture rate (30/60 fps) | 30 fps |
 | Save recordings to | Folder for .mp4 recordings | ~/Movies/Outcut Share |
 | Launch at login | Start with macOS (app bundle only) | off |
