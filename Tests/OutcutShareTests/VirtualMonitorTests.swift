@@ -172,6 +172,37 @@ final class MonitorInteractionTests: XCTestCase {
         XCTAssertEqual(bottom.x, panel.minX + 0.1 * panel.width, accuracy: 0.5)
     }
 
+    func testDockSideDetection() {
+        let frame = CGRect(x: 0, y: 0, width: 5120, height: 1440)
+        XCTAssertEqual(Geometry.dockSide(
+            frame: frame, visibleFrame: CGRect(x: 80, y: 0, width: 5040, height: 1415)),
+            .left)
+        XCTAssertEqual(Geometry.dockSide(
+            frame: frame, visibleFrame: CGRect(x: 0, y: 0, width: 5040, height: 1415)),
+            .right)
+        XCTAssertEqual(Geometry.dockSide(
+            frame: frame, visibleFrame: CGRect(x: 0, y: 80, width: 5120, height: 1335)),
+            .bottom)
+    }
+
+    func testVirtualDisplayPlacedOppositeTheDock() {
+        // Dock left → monitor to the right of the primary display.
+        XCTAssertEqual(Geometry.virtualDisplayCGOrigin(primaryWidth: 5120,
+                                                       monitorWidth: 1920,
+                                                       dockSide: .left),
+                       CGPoint(x: 5120, y: 0))
+        // Dock right → monitor to the left.
+        XCTAssertEqual(Geometry.virtualDisplayCGOrigin(primaryWidth: 5120,
+                                                       monitorWidth: 1920,
+                                                       dockSide: .right),
+                       CGPoint(x: -1920, y: 0))
+        // Bottom dock is safe on any side — default to the right.
+        XCTAssertEqual(Geometry.virtualDisplayCGOrigin(primaryWidth: 5120,
+                                                       monitorWidth: 1920,
+                                                       dockSide: .bottom),
+                       CGPoint(x: 5120, y: 0))
+    }
+
     func testSeamlessExitContinuesTheMotionOutsideThePanel() {
         let display = CGRect(x: 5120, y: 0, width: 1920, height: 1080)
         let panel = CGRect(x: 1600, y: 180, width: 960, height: 540)

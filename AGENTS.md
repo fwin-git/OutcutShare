@@ -107,6 +107,17 @@ Key invariants:
   page and its timers alive forever. `SettingsWindowController` tears the
   tab items out on close; verify with `--close-settings-after` + `heap`
   (want 0 `NSHostingController`, 0 live `TimerPublisher`).
+- **macOS moves a left/right Dock onto the outermost display of that side**
+  — a virtual display arranged there steals the Dock (and shares it!).
+  `activateMonitor` places the monitor OPPOSITE the Dock via
+  `CGConfigureDisplayOrigin` and re-resolves the NSScreen afterwards (the
+  arrangement propagates with a lag). Also: `NSScreen.main` is the KEY
+  window's screen — poisoned once anything on the virtual display gains
+  focus; use `NSScreen.screens.first` or the panel's screen instead.
+- **Cursor teleports**: `CGWarpMouseCursorPosition` suppresses hardware
+  deltas ~0.25 s (motion freezes) — post a `.mouseMoved` CGEvent instead.
+  `CGRect.contains` excludes max edges: a cursor pinned at a display's
+  top/right sits exactly ON maxY/maxX.
 - **Parallel agent sessions have collided here twice** (file reverts, push
   races). If another agent is active, work in a separate git worktree.
 - Screenshots for verification: `screencapture -x out1.png out2.png`
