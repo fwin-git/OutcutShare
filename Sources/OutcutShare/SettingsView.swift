@@ -128,7 +128,12 @@ private struct GeneralPage: View {
                 .pickerStyle(.menu)
                 Text(settings.shareMode == .virtualDisplay
                      ? "The region appears as an extra monitor — pick it under “share screen”."
-                     : "The region mirrors into an invisible window named “Outcut Share” — pick it under “share window”.")
+                     : "The region mirrors into an invisible window named “\(settings.effectiveShareWindowTitle)” — pick it under “share window”.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                TextField("Share window title", text: $settings.shareWindowTitle,
+                          prompt: Text(SettingsStore.defaultShareWindowTitle))
+                Text("The name sharing apps list for the share window in their window pickers.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Toggle("Crisp text (Retina output)", isOn: $settings.crispOutput)
@@ -179,13 +184,19 @@ private struct GeneralPage: View {
                     .foregroundStyle(.tint)
                 }
             }
-            Section("Hotbar") {
+            Section("Companions") {
                 Toggle("Show floating hotbar while sharing", isOn: $settings.hotbarEnabled)
                 Text("Quick actions next to the region. Drag the ≡ grabber to reposition; ✕ hides it until re-enabled.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Toggle("Show shared-output preview while sharing", isOn: $settings.previewWindowEnabled)
+                Text("A small floating window with exactly what viewers see — no need to keep "
+                     + "Zoom or Teams open. Docks next to the region, drags anywhere, resizes "
+                     + "within its aspect ratio; its corner button pauses sharing.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            Section("Startup") {
+            Section("System") {
                 Toggle("Launch at login", isOn: launchAtLoginBinding)
                     .disabled(!LoginItem.available)
                 if !LoginItem.available {
@@ -193,8 +204,6 @@ private struct GeneralPage: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-            }
-            Section("Dock") {
                 Toggle("Show Dock icon while active", isOn: $settings.dockIconWhileActive)
                 Text("Adds the app to the Dock, ⌘-Tab switcher and Force Quit while "
                      + "you're sharing or this settings window is open. Otherwise "
@@ -500,7 +509,7 @@ final class SettingsWindowController {
         switch tab {
         case .general:
             controller = NSHostingController(
-                rootView: AnyView(GeneralPage(settings: settings).frame(width: 560, height: 990)))
+                rootView: AnyView(GeneralPage(settings: settings).frame(width: 560, height: 1105)))
         case .privacy:
             controller = NSHostingController(
                 rootView: AnyView(PrivacyPage(settings: settings).frame(width: 560, height: 800)))

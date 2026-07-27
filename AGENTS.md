@@ -42,7 +42,8 @@ RegionSelector (drag/pick overlay)             SettingsStore (UserDefaults)
         ├── DimOverlay (click-through, even-odd cutout, styled border)
         ├── HotbarController (NSPanel, quick actions)
         ├── PreviewWindowController (floating "what viewers see" panel;
-        │        aspect-locked resize, pin = above hotbar; always above dim)
+        │        docks outside region, aspect-locked resize, pause corner
+        │        button, ≡ grabber; always above dim)
         ├── FollowController (timer; window/cursor targets → setRegionRect)
         ├── CursorEmphasisController (halo/ripples drawn on OUTPUT only)
         └── RegionMover (adjust overlay: move/resize/pick)

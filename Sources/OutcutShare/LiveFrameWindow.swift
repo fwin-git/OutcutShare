@@ -42,6 +42,11 @@ final class LiveFrameWindow {
         window.orderFrontRegardless()
     }
 
+    /// Live-renames the hidden share window (sharing apps show this title).
+    func setTitle(_ title: String) {
+        window.title = title
+    }
+
     /// Live-resizes the window (hidden-window mode when the region resizes).
     func resize(to frame: CGRect) {
         window.setFrame(frame, display: true)

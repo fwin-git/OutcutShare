@@ -56,6 +56,48 @@ final class PreviewPanelGeometryTests: XCTestCase {
     }
 }
 
+final class PreviewDockingTests: XCTestCase {
+    private let screen = CGRect(x: 0, y: 0, width: 2560, height: 1440)
+    private let size = CGSize(width: 320, height: 200)
+    private let gap: CGFloat = 12
+
+    func testDocksRightOfRegionBottomAligned() {
+        let region = CGRect(x: 600, y: 400, width: 800, height: 500)
+        let f = Geometry.previewDockedFrame(size: size, region: region, screenFrame: screen)
+        XCTAssertEqual(f.minX, region.maxX + gap)
+        XCTAssertEqual(f.minY, region.minY)
+        XCTAssertFalse(f.intersects(region))
+    }
+
+    func testFallsBackToLeftWhenNoSpaceRight() {
+        let region = CGRect(x: 1500, y: 400, width: 1000, height: 500)
+        let f = Geometry.previewDockedFrame(size: size, region: region, screenFrame: screen)
+        XCTAssertEqual(f.maxX, region.minX - gap)
+        XCTAssertEqual(f.minY, region.minY)
+    }
+
+    func testFallsBackBelowRightAlignedWhenNoSideSpace() {
+        let region = CGRect(x: 100, y: 400, width: 2360, height: 500)
+        let f = Geometry.previewDockedFrame(size: size, region: region, screenFrame: screen)
+        XCTAssertEqual(f.maxX, region.maxX)
+        XCTAssertEqual(f.maxY, region.minY - gap)
+    }
+
+    func testFallsBackAboveWhenOnlySpaceOnTop() {
+        let region = CGRect(x: 100, y: 0, width: 2360, height: 500)
+        let f = Geometry.previewDockedFrame(size: size, region: region, screenFrame: screen)
+        XCTAssertEqual(f.maxX, region.maxX)
+        XCTAssertEqual(f.minY, region.maxY + gap)
+    }
+
+    func testNearFullscreenRegionFallsBackToScreenCorner() {
+        let region = screen.insetBy(dx: 10, dy: 10)
+        let f = Geometry.previewDockedFrame(size: size, region: region, screenFrame: screen)
+        XCTAssertEqual(f.maxX, screen.maxX - 16)
+        XCTAssertEqual(f.minY, screen.minY + 16)
+    }
+}
+
 final class PreviewSettingsTests: XCTestCase {
     private var suiteName: String!
     private var defaults: UserDefaults!
@@ -74,16 +116,34 @@ final class PreviewSettingsTests: XCTestCase {
     func testPreviewOffByDefault() {
         let store = SettingsStore(defaults: defaults)
         XCTAssertFalse(store.previewWindowEnabled)
-        XCTAssertFalse(store.previewWindowPinned)
     }
 
     func testPreviewPersistence() {
         let store = SettingsStore(defaults: defaults)
         store.previewWindowEnabled = true
-        store.previewWindowPinned = true
 
         let reloaded = SettingsStore(defaults: defaults)
         XCTAssertTrue(reloaded.previewWindowEnabled)
-        XCTAssertTrue(reloaded.previewWindowPinned)
+    }
+
+    func testShareWindowTitleDefault() {
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertEqual(store.shareWindowTitle, "Outcut Share (Share Region)")
+        XCTAssertEqual(store.effectiveShareWindowTitle, "Outcut Share (Share Region)")
+    }
+
+    func testShareWindowTitlePersistence() {
+        let store = SettingsStore(defaults: defaults)
+        store.shareWindowTitle = "Weekly Demo"
+
+        let reloaded = SettingsStore(defaults: defaults)
+        XCTAssertEqual(reloaded.shareWindowTitle, "Weekly Demo")
+        XCTAssertEqual(reloaded.effectiveShareWindowTitle, "Weekly Demo")
+    }
+
+    func testEmptyShareWindowTitleFallsBackToDefault() {
+        let store = SettingsStore(defaults: defaults)
+        store.shareWindowTitle = "   "
+        XCTAssertEqual(store.effectiveShareWindowTitle, "Outcut Share (Share Region)")
     }
 }

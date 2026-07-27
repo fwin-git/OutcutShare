@@ -13,6 +13,7 @@ final class ShareSession {
     private func notifyUI() {
         onStateChange?()
         hotbar.refresh()
+        preview.refresh()
         NotificationCenter.default.post(name: sessionStateChangedNotification, object: self)
     }
     var onStateChange: (() -> Void)?
@@ -180,7 +181,7 @@ final class ShareSession {
     private lazy var cursorEmphasis = CursorEmphasisController(session: self, settings: settings)
     private lazy var hotbar = HotbarController(session: self, settings: settings)
     private var lastHotbarEnabled = true
-    private lazy var preview = PreviewWindowController(settings: settings)
+    private lazy var preview = PreviewWindowController(session: self, settings: settings)
     private var lastPreviewEnabled = false
     private var recorder: RecordingEngine?
     var isRecording: Bool { recorder?.isRecording ?? false }
@@ -297,7 +298,8 @@ final class ShareSession {
             case .hiddenWindow:
                 let frame = Geometry.hiddenWindowFrame(regionSize: region.rect.size,
                                                        screenFrame: region.screen.frame)
-                output = LiveFrameWindow(contentRect: frame, level: .normal, title: "Outcut Share")
+                output = LiveFrameWindow(contentRect: frame, level: .normal,
+                                         title: settings.effectiveShareWindowTitle)
             }
             self.output = output
             // Created before the capture filter snapshots the window list so
@@ -309,8 +311,7 @@ final class ShareSession {
             }
             lastPreviewEnabled = settings.previewWindowEnabled
             if settings.previewWindowEnabled {
-                preview.show(aspect: region.rect.width / region.rect.height,
-                             screen: region.screen)
+                preview.show(region: region.rect, screen: region.screen)
             }
 
             let capture = CaptureEngine()
@@ -374,6 +375,9 @@ final class ShareSession {
         } else {
             frameRateChangedIfNeeded()
             cursorEmphasis.settingsChanged()
+            if activeShareMode == .hiddenWindow {
+                output?.setTitle(settings.effectiveShareWindowTitle)
+            }
             if settings.excludedBundleIDs != activeExclusions, let capture {
                 activeExclusions = settings.excludedBundleIDs
                 let exclusions = activeExclusions
@@ -396,8 +400,7 @@ final class ShareSession {
                 lastPreviewEnabled = settings.previewWindowEnabled
                 if settings.previewWindowEnabled {
                     if let region = currentRegion {
-                        preview.show(aspect: region.rect.width / region.rect.height,
-                                     screen: region.screen)
+                        preview.show(region: region.rect, screen: region.screen)
                     }
                 } else {
                     preview.close()

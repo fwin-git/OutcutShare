@@ -12,11 +12,19 @@ Menu bar → **Settings…** — seven pages.
 | Resize region to followed window | Follow mode adopts the window's size (aspect-fitted in Virtual Display mode) | on |
 | Follow | Off / Active Window / Cursor (also in menu bar → Follow) | Off |
 | Show floating hotbar | Quick-action bar next to the region: stop, pause, record, highlights, preview, resize, save preset, follow. Auto-positions below → side → top; drag the ≡ grabber to place it manually; ✕ hides it until re-enabled | on |
-
-The hotbar's eye button opens a small floating **preview of the shared output** — what viewers actually see, without keeping Zoom/Teams open. Drag it anywhere by its picture, resize it from the edges (the region's aspect ratio is kept), and use the pin in its top-left corner to keep it above every other window. Off by default; the choice persists.
+| Show shared-output preview | Small floating window with exactly what viewers see — no need to keep Zoom/Teams open. Also toggled by the hotbar's eye button | off |
+| Share window title | The name sharing apps list for the hidden share window in their window pickers (Hidden Window mode) | Outcut Share (Share Region) |
 | Capture frame rate | 30/60 fps — applies to both the shared picture and recordings | 30 fps |
 | Launch at login | Start with macOS (app bundle only) | off |
+| Show Dock icon while active | Dock, ⌘-Tab and Force Quit presence while sharing or settings open | off |
 | Version | Current version + build for support | — |
+
+The **preview window** docks outside the region (right → left → below →
+above, wherever there's free space) so it never covers what you're
+sharing. Drag it anywhere by its picture (the ≡ grabber marks the spot),
+resize it from the edges — the region's aspect ratio is kept — and use the
+pause button in its top-right corner to pause/resume sharing even with the
+hotbar hidden. It always floats above the dimming. The choice persists.
 
 Follow mode itself is enabled per-session from the menu bar:
 **Follow → Active Window / Cursor**.
