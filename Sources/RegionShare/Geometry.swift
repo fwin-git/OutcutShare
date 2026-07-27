@@ -95,6 +95,47 @@ enum Geometry {
         }?.offset
     }
 
+    /// Rect covering `target`, honoring an optional aspect (width/height),
+    /// centered on the target and kept inside the screen. Used by follow mode.
+    static func aspectFittedRect(around target: CGRect, aspect: CGFloat?,
+                                 screenFrame: CGRect) -> CGRect {
+        var w = max(target.width, minRegionSide)
+        var h = max(target.height, minRegionSide)
+        if let aspect {
+            w = max(w, h * aspect)
+            h = w / aspect
+            if w > screenFrame.width {
+                w = screenFrame.width
+                h = w / aspect
+            }
+            if h > screenFrame.height {
+                h = screenFrame.height
+                w = h * aspect
+            }
+        } else {
+            w = min(w, screenFrame.width)
+            h = min(h, screenFrame.height)
+        }
+        let proposed = CGPoint(x: target.midX - w / 2, y: target.midY - h / 2)
+        let origin = clampedRegionOrigin(proposed, regionSize: CGSize(width: w, height: h),
+                                         screenFrame: screenFrame)
+        return CGRect(origin: origin, size: CGSize(width: w, height: h))
+    }
+
+    /// How far the region must move so `point` re-enters its inner margin
+    /// (camera-follow dead zone). Zero while the point is comfortably inside.
+    static func deadZoneShift(region: CGRect, point: CGPoint, margin: CGFloat) -> CGSize {
+        let dx = min(margin, region.width / 3)
+        let dy = min(margin, region.height / 3)
+        let inner = region.insetBy(dx: dx, dy: dy)
+        var shift = CGSize.zero
+        if point.x < inner.minX { shift.width = point.x - inner.minX }
+        if point.x > inner.maxX { shift.width = point.x - inner.maxX }
+        if point.y < inner.minY { shift.height = point.y - inner.minY }
+        if point.y > inner.maxY { shift.height = point.y - inner.maxY }
+        return shift
+    }
+
     /// Windows are listed front-to-back; first hit wins.
     static func frontmostWindowFrame(at point: CGPoint, windows: [CGRect]) -> CGRect? {
         windows.first { $0.contains(point) }

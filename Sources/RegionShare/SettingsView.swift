@@ -41,6 +41,17 @@ private struct GeneralPage: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            Section("Follow mode") {
+                Picker("Movement", selection: $settings.followBehavior) {
+                    Text("Snap").tag(FollowBehavior.snap)
+                    Text("Smooth glide").tag(FollowBehavior.glide)
+                }
+                .pickerStyle(.segmented)
+                Toggle("Resize region to the followed window", isOn: $settings.followResizes)
+                Text("Enable following from the menu bar while sharing: Follow → Active Window or Cursor.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Section("Pausing") {
                 Picker("When paused, viewers see", selection: $settings.pauseStyle) {
                     Text("Frozen last frame").tag(PauseStyle.freeze)
@@ -238,7 +249,7 @@ final class SettingsWindowController {
         switch tab {
         case .general:
             controller = NSHostingController(
-                rootView: AnyView(GeneralPage(settings: settings).frame(width: 470, height: 400)))
+                rootView: AnyView(GeneralPage(settings: settings).frame(width: 470, height: 540)))
         case .presets:
             controller = NSHostingController(
                 rootView: AnyView(PresetsPage(settings: settings).frame(width: 470, height: 360)))
