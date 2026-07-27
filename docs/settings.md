@@ -1,6 +1,6 @@
 # Settings reference
 
-Menu bar → **Settings…** — seven pages.
+Menu bar → **Settings…** — eight pages.
 
 ## General
 
