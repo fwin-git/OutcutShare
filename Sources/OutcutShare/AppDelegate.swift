@@ -67,6 +67,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let controller = SettingsWindowController(settings: .shared)
             debugSettingsWindow = controller
             controller.show(tab: tab)
+            // --close-settings-after=secs closes the window (perf-leak E2E:
+            // verifies the tab hierarchy is torn down and timers stop).
+            if let closeArg = CommandLine.arguments.first(where: {
+                    $0.hasPrefix("--close-settings-after=") }),
+               let secs = Double(closeArg.dropFirst("--close-settings-after=".count)) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + secs) {
+                    NSApp.windows.first {
+                        $0.contentViewController is NSTabViewController
+                    }?.performClose(nil)
+                    NSLog("SETTINGS-CLOSED loaded=%d", controller.isLoaded ? 1 : 0)
+                }
+            }
             if CommandLine.arguments.contains("--dim-preview") {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                     DimPreview.shared.begin()

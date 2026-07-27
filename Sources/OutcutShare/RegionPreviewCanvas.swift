@@ -2,13 +2,26 @@ import AppKit
 import SwiftUI
 
 /// Shared playback state between the demo canvas and surrounding controls:
-/// autoplay by default, toggled by the play/pause controls; `progress`
-/// tracks the position in the demo cycle.
+/// autoplay by default, toggled by the play/pause controls.
+///
+/// The 20 Hz cycle progress lives on a SEPARATE observable (`progress`)
+/// that only the small ring view observes. On macOS 26 every re-render of a
+/// hosted settings page leaks a handful of AppKit/SwiftUI observation-
+/// tracking registrations; publishing 20 Hz progress through the model the
+/// whole page observes re-rendered the entire form, grew those tables
+/// unboundedly and eventually saturated the main thread (menu/hotbar click
+/// delays, janky ring). Do not merge `progress` back into this class.
 @MainActor
 final class FollowDemoModel: ObservableObject {
     /// Autoplay by default; the play/pause control toggles this.
     @Published var playing = true
-    @Published var progress: Double = 0
+    let progress = DemoProgress()
+}
+
+/// Fine-grained demo cycle position, observed only by DemoProgressRing.
+@MainActor
+final class DemoProgress: ObservableObject {
+    @Published var value: Double = 0
 }
 
 /// Reusable live preview of the sharing experience: fake desktop, styled
@@ -40,6 +53,10 @@ struct RegionPreviewCanvas: View {
     @State private var cursorU = Self.defaultCursorU
     @State private var step = 0
     @State private var rippleID = 0
+    // Timers only do work while the canvas is actually on screen — hidden
+    // tabs and closed windows must not render (see FollowDemoModel note on
+    // the macOS 26 observation-tracking leak).
+    @State private var visible = false
     // @State keeps the publishers stable across re-renders — the fine-grained
     // progress updates re-render this view constantly, and per-render timer
     // instances would reset before ever firing.
@@ -96,17 +113,21 @@ struct RegionPreviewCanvas: View {
             }
             .animation(.easeOut(duration: 0.3), value: settings.hideNotificationBanners)
             .onReceive(rippleTimer) { _ in
-                if settings.clickRipples && showsCursor && !paused {
+                if visible && settings.clickRipples && showsCursor && !paused {
                     rippleID += 1
                 }
             }
             .onReceive(demoTimer) { _ in
-                advanceDemo()
+                if visible {
+                    advanceDemo()
+                }
             }
             .onReceive(progressTimer) { _ in
                 // Fine-grained fill so pausing freezes the ring instantly.
-                guard demoActive, let model = demoModel else { return }
-                model.progress = min(model.progress + 0.05 / 4.8, 1)
+                // Writes go to the ring-only observable, never the model the
+                // page observes (20 Hz page re-renders leak, see above).
+                guard visible, demoActive, let model = demoModel else { return }
+                model.progress.value = min(model.progress.value + 0.05 / 4.8, 1)
             }
             .onChange(of: demoActive) { _, active in
                 // Pausing freezes in place; resuming steps immediately
@@ -116,9 +137,13 @@ struct RegionPreviewCanvas: View {
                 }
             }
             .onAppear {
+                visible = true
                 if demoActive {
                     advanceDemo()
                 }
+            }
+            .onDisappear {
+                visible = false
             }
         }
         .frame(height: 190)
@@ -171,7 +196,7 @@ struct RegionPreviewCanvas: View {
         // Snap to the exact phase baseline; the fine timer fills in between.
         guard let model = demoModel else { return }
         let phase = step % Self.windowsU.count
-        model.progress = Double(phase) / Double(Self.windowsU.count)
+        model.progress.value = Double(phase) / Double(Self.windowsU.count)
     }
 
     private func centered(_ size: CGSize, on center: CGPoint) -> CGRect {
