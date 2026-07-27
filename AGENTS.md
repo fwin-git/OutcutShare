@@ -158,7 +158,7 @@ Key invariants:
 --permissions-test                      permission status line
 --show-settings[=tab] [--dim-preview]   open a settings pane
    companion: --close-settings-after=secs (teardown/perf verification)
---demo=monitor|region                   record a feature showcase to
+--demo=monitor|region|follow            record a feature showcase to
    ~/Movies/OutcutShare/Demos (16:9 stage, helper-process fake windows,
    synthetic input — takes over the mouse ~30 s; needs AX; NEVER touch
    non-helper windows in choreography, see DemoHarness.swift)
