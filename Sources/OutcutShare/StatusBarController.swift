@@ -113,6 +113,9 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         pauseItem.title = session.isPaused ? "Resume Sharing" : "Pause Sharing"
         recordItem.isEnabled = session.isActive
         recordItem.title = session.isRecording ? "Stop Recording" : "Start Recording"
+        recordItem.image = NSImage(systemSymbolName: session.isRecording
+                                       ? "record.circle.fill" : "record.circle",
+                                   accessibilityDescription: nil)
         stopItem.isEnabled = session.isActive
     }
 
