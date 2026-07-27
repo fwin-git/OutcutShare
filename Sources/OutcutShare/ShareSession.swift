@@ -343,9 +343,14 @@ final class ShareSession {
                     CGCompleteDisplayConfiguration(config, .forSession)
                 }
                 // The arrangement change propagates to NSScreen with a lag.
+                // BOTH axes must match: with the default placement already
+                // on the target side, x matches instantly while y is still
+                // settling — a stale y skewed every panel↔display mapping.
+                let expectedMinY = primary.frame.maxY - origin.y - size.height
                 for _ in 0..<10 {
                     if let placed = NSScreen.screen(for: displayID),
-                       abs(placed.frame.minX - origin.x) < 2 {
+                       abs(placed.frame.minX - origin.x) < 2,
+                       abs(placed.frame.minY - expectedMinY) < 2 {
                         virtualScreen = placed
                         break
                     }
@@ -611,13 +616,13 @@ final class ShareSession {
 
     private func teardown() {
         isPaused = false
-        // Before the virtual display disappears: macOS does NOT migrate its
-        // windows back — they'd be stranded at coordinates outside every
-        // screen. Bring them home to the real screen (relative placement).
+        // Plan the window rescue while the display still exists; the moves
+        // themselves run after it's gone (see MonitorWindowRescue).
+        var windowRescue: MonitorWindowRescue.Plan = []
         if activeShareMode == .virtualMonitor, let region = currentRegion,
            let home = NSScreen.screens.first(where: { $0 != region.screen }) {
-            MonitorWindowRescue.returnWindows(from: region.rect,
-                                              to: home.visibleFrame)
+            windowRescue = MonitorWindowRescue.plan(from: region.rect,
+                                                    to: home.visibleFrame)
         }
         follow.set(mode: .off)
         hotbar.close()
@@ -657,6 +662,13 @@ final class ShareSession {
         virtualDisplay?.destroy()
         virtualDisplay = nil
         currentRegion = nil
+        if !windowRescue.isEmpty {
+            let rescue = windowRescue
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 700_000_000)
+                MonitorWindowRescue.execute(rescue)
+            }
+        }
     }
 
     private func presentError(_ error: Error, title: String = "OutcutShare couldn't start sharing") {

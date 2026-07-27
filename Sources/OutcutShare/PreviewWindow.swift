@@ -321,11 +321,13 @@ final class PreviewWindowController: NSObject {
             proxy.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             let view = NSView(frame: CGRect(origin: .zero, size: size))
             view.wantsLayer = true
-            view.layer?.cornerRadius = 6
-            view.layer?.masksToBounds = true
-            view.layer?.borderColor = NSColor.white.withAlphaComponent(0.5).cgColor
-            view.layer?.borderWidth = 1
             dragProxyLayer.contentsGravity = .resize
+            // Rounding on the content layer itself — the view's backing
+            // layer is AppKit-managed and doesn't reliably keep the mask.
+            dragProxyLayer.cornerRadius = 8
+            dragProxyLayer.masksToBounds = true
+            dragProxyLayer.borderColor = NSColor.white.withAlphaComponent(0.5).cgColor
+            dragProxyLayer.borderWidth = 1
             view.layer?.addSublayer(dragProxyLayer)
             proxy.contentView = view
             // Above the panel and the hotbar; set last (level resets).

@@ -174,19 +174,20 @@ final class MonitorInteractionTests: XCTestCase {
 
     func testUnitCropRectForDragGhost() {
         let display = CGRect(x: 5120, y: 360, width: 1920, height: 1080)
-        // Window in the display's top-left quarter area.
+        // Window filling the display's top half: bottom-left unit origin →
+        // its crop starts at y 0.5.
         let crop = Geometry.unitCropRect(
             of: CGRect(x: 5120 + 192, y: 360 + 540, width: 960, height: 540),
             in: display)
         XCTAssertEqual(crop.origin.x, 0.1, accuracy: 0.001)
-        XCTAssertEqual(crop.origin.y, 0.0, accuracy: 0.001) // image top-left origin
+        XCTAssertEqual(crop.origin.y, 0.5, accuracy: 0.001)
         XCTAssertEqual(crop.width, 0.5, accuracy: 0.001)
         XCTAssertEqual(crop.height, 0.5, accuracy: 0.001)
 
-        // Bottom-anchored window sits at the image's bottom.
+        // Bottom-anchored window starts at unit y 0.
         let bottom = Geometry.unitCropRect(
             of: CGRect(x: 5120, y: 360, width: 480, height: 270), in: display)
-        XCTAssertEqual(bottom.origin.y, 0.75, accuracy: 0.001)
+        XCTAssertEqual(bottom.origin.y, 0.0, accuracy: 0.001)
         XCTAssertEqual(bottom.origin.x, 0.0, accuracy: 0.001)
     }
 
