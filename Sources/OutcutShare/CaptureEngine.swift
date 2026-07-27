@@ -4,7 +4,7 @@ import CoreMedia
 import IOSurface
 
 /// Streams the selected region of the source display via ScreenCaptureKit.
-/// RegionShare's own windows are excluded from the capture so the dim overlay
+/// OutcutShare's own windows are excluded from the capture so the dim overlay
 /// never leaks into the shared picture.
 final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
     enum CaptureError: LocalizedError {
@@ -14,7 +14,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
         var errorDescription: String? {
             switch self {
             case .permissionDenied:
-                return "RegionShare needs Screen Recording permission. "
+                return "OutcutShare needs Screen Recording permission. "
                     + "Grant it under System Settings → Privacy & Security → Screen Recording, then try again."
             case .displayNotFound:
                 return "The display containing the region is no longer available."
@@ -31,7 +31,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
 
     private var stream: SCStream?
     private var config: SCStreamConfiguration?
-    private let sampleQueue = DispatchQueue(label: "com.regionshare.capture")
+    private let sampleQueue = DispatchQueue(label: "com.outcutshare.capture")
 
     /// - Parameter sourceRectTopLeft: region in display-local, top-left-origin
     ///   points (see `Geometry.displayLocalTopLeftRect`).

@@ -48,7 +48,7 @@ struct ShortcutsPage: View {
                 }
             }
             Section {
-                Text("Shortcuts work system-wide while RegionShare is running. "
+                Text("Shortcuts work system-wide while OutcutShare is running. "
                      + "Any key combination can be recorded — Esc cancels recording.")
                     .font(.caption)
                     .foregroundStyle(.secondary)

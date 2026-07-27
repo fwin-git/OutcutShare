@@ -1,5 +1,5 @@
 import XCTest
-@testable import RegionShare
+@testable import OutcutShare
 
 @MainActor
 final class PermissionsModelTests: XCTestCase {

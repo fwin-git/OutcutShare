@@ -1,9 +1,29 @@
 import AppKit
 
+/// One-time copy of settings from the app's previous identity
+/// (com.regionshare.app) so presets, hotkeys and preferences survive the
+/// rename. Runs before anything touches SettingsStore.
+enum SettingsMigration {
+    static func run() {
+        guard Bundle.main.bundleIdentifier == "com.outcutshare.app" else { return }
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: "didMigrateFromRegionShare") else { return }
+        defaults.set(true, forKey: "didMigrateFromRegionShare")
+        guard let oldValues = UserDefaults(suiteName: "com.regionshare.app")?
+            .persistentDomain(forName: "com.regionshare.app"), !oldValues.isEmpty else {
+            return
+        }
+        for (key, value) in oldValues where defaults.object(forKey: key) == nil {
+            defaults.set(value, forKey: key)
+        }
+    }
+}
+
 @main
-struct RegionShareApp {
+struct OutcutShareApp {
     @MainActor
     static func main() {
+        SettingsMigration.run()
         if CommandLine.arguments.contains("--vd-test") {
             virtualDisplayTest()
             return
@@ -21,7 +41,7 @@ struct RegionShareApp {
     private static func virtualDisplayTest() {
         do {
             let vd = try VirtualDisplay(sizeInPoints: CGSize(width: 1280, height: 720),
-                                        scale: 1, name: "Region Share Test")
+                                        scale: 1, name: "Outcut Share Test")
             print("VD-TEST created displayID=\(vd.displayID)")
             var screen: NSScreen?
             let deadline = Date().addingTimeInterval(5)

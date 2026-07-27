@@ -270,14 +270,14 @@ final class ShareSession {
             switch mode {
             case .virtualDisplay:
                 let vd = try VirtualDisplay(sizeInPoints: region.rect.size,
-                                            scale: sourceScale, name: "Region Share")
+                                            scale: sourceScale, name: "Outcut Share")
                 virtualDisplay = vd
                 let virtualScreen = try await vd.waitForScreen()
                 output = LiveFrameWindow(contentRect: virtualScreen.frame, level: .screenSaver)
             case .hiddenWindow:
                 let frame = Geometry.hiddenWindowFrame(regionSize: region.rect.size,
                                                        screenFrame: region.screen.frame)
-                output = LiveFrameWindow(contentRect: frame, level: .normal, title: "Region Share")
+                output = LiveFrameWindow(contentRect: frame, level: .normal, title: "Outcut Share")
             }
             self.output = output
             // Created before the capture filter snapshots the window list so
@@ -409,7 +409,7 @@ final class ShareSession {
         currentRegion = nil
     }
 
-    private func presentError(_ error: Error, title: String = "RegionShare couldn't start sharing") {
+    private func presentError(_ error: Error, title: String = "OutcutShare couldn't start sharing") {
         if case CaptureEngine.CaptureError.permissionDenied = error {
             onPermissionsNeeded?()
             return

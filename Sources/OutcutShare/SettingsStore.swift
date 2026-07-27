@@ -2,7 +2,7 @@ import AppKit
 import Combine
 
 /// Posted whenever any setting changes; overlays observe this for live redraw.
-let settingsChangedNotification = Notification.Name("RegionShareSettingsChanged")
+let settingsChangedNotification = Notification.Name("OutcutShareSettingsChanged")
 
 enum BorderStyle: String, CaseIterable {
     case solid, dashed, dotted
@@ -122,7 +122,7 @@ final class SettingsStore: ObservableObject {
         }
     }
 
-    /// Empty = ~/Movies/RegionShare.
+    /// Empty = ~/Movies/OutcutShare.
     @Published var recordingFolder: String {
         didSet {
             defaults.set(recordingFolder, forKey: "recordingFolder")
@@ -135,7 +135,7 @@ final class SettingsStore: ObservableObject {
             return URL(fileURLWithPath: (recordingFolder as NSString).expandingTildeInPath)
         }
         return FileManager.default.urls(for: .moviesDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("RegionShare")
+            .appendingPathComponent("OutcutShare")
     }
 
     @Published var cursorHighlight: Bool {

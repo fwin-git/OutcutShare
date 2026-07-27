@@ -22,7 +22,7 @@ jobs:
         run: make app VERSION="${GITHUB_REF_NAME#v}"
 
       - name: Package
-        run: ditto -c -k --keepParent build/RegionShare.app "RegionShare-${GITHUB_REF_NAME}.zip"
+        run: ditto -c -k --keepParent build/OutcutShare.app "OutcutShare-${GITHUB_REF_NAME}.zip"
 
       - name: Generate changelog
         run: |
@@ -35,13 +35,13 @@ jobs:
           ---
           Requires macOS 14 or newer. This build is not notarized: after
           unzipping, right-click the app and choose Open once, or run
-          `xattr -d com.apple.quarantine RegionShare.app`.
+          `xattr -d com.apple.quarantine OutcutShare.app`.
           FOOTER
 
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" "RegionShare-${GITHUB_REF_NAME}.zip" \
-            --title "RegionShare ${GITHUB_REF_NAME#v}" \
+          gh release create "$GITHUB_REF_NAME" "OutcutShare-${GITHUB_REF_NAME}.zip" \
+            --title "Outcut Share ${GITHUB_REF_NAME#v}" \
             --notes-file notes.md

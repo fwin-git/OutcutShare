@@ -1,5 +1,5 @@
 import XCTest
-@testable import RegionShare
+@testable import OutcutShare
 
 final class RegionResolverTests: XCTestCase {
     private let wide = (id: UInt32(3), frame: CGRect(x: 0, y: 0, width: 2560, height: 1440))

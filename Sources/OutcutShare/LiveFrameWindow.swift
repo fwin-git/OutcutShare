@@ -6,7 +6,7 @@ import IOSurface
 /// captured frames. Serves both share modes:
 ///  - virtual display: fills the virtual screen above the menu bar, so the
 ///    shared "monitor" shows nothing but the region, and
-///  - hidden window: normal level, titled "Region Share", pinned at the
+///  - hidden window: normal level, titled "Outcut Share", pinned at the
 ///    screen corner with 1×1 pt visible (see Geometry.hiddenWindowFrame) so
 ///    sharing apps list and capture it while the user never sees it.
 @MainActor

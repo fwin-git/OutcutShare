@@ -12,7 +12,7 @@ struct PermissionsView: View {
                     .font(.system(size: 28))
                     .foregroundStyle(.tint)
                 VStack(alignment: .leading) {
-                    Text("Welcome to RegionShare").font(.title3).bold()
+                    Text("Welcome to OutcutShare").font(.title3).bold()
                     Text("One system permission is needed before you can share a region.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
@@ -28,7 +28,7 @@ struct PermissionsView: View {
             if !model.status.screenRecordingGranted {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("1.  Click **Request Permission** and choose *Allow* in the macOS dialog.")
-                    Text("2.  No dialog? Enable **RegionShare** in *System Settings → Privacy & Security → Screen & System Audio Recording*.")
+                    Text("2.  No dialog? Enable **OutcutShare** in *System Settings → Privacy & Security → Screen & System Audio Recording*.")
                     Text("3.  Come back here — the checkmark updates by itself.")
                 }
                 .font(.callout)
@@ -41,7 +41,7 @@ struct PermissionsView: View {
                 }
                 .padding(.leading, 30)
             } else if model.status.needsRelaunch {
-                Button("Relaunch RegionShare") { model.relaunch() }
+                Button("Relaunch OutcutShare") { model.relaunch() }
                     .keyboardShortcut(.defaultAction)
                     .padding(.leading, 30)
             }
@@ -80,7 +80,7 @@ struct PermissionsView: View {
             return "Granted."
         }
         if model.status.needsRelaunch {
-            return "Granted — relaunch RegionShare so it takes effect."
+            return "Granted — relaunch OutcutShare so it takes effect."
         }
         return "Required to capture the selected screen region."
     }
@@ -118,7 +118,7 @@ final class PermissionsWindowController {
                 self?.window?.close()
             })
             let window = NSWindow(contentViewController: hosting)
-            window.title = "RegionShare Permissions"
+            window.title = "OutcutShare Permissions"
             window.styleMask = [.titled, .closable]
             window.isReleasedWhenClosed = false
             window.center()
