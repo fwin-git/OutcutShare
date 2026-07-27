@@ -31,6 +31,7 @@ final class ShareSession {
     private var currentRegion: SelectedRegion?
     private var activeFrameRate = 0
     private var activeShareMode: ShareMode = .virtualDisplay
+    private var activeCrisp = false
     private var settingsObserver: NSObjectProtocol?
     private var mover: RegionMover?
     private var moveBackupRect: CGRect?
@@ -279,7 +280,8 @@ final class ShareSession {
             switch mode {
             case .virtualDisplay:
                 let vd = try VirtualDisplay(sizeInPoints: region.rect.size,
-                                            scale: sourceScale, name: "Outcut Share")
+                                            scale: sourceScale, name: "Outcut Share",
+                                            forceHiDPI: settings.crispOutput)
                 virtualDisplay = vd
                 let virtualScreen = try await vd.waitForScreen()
                 output = LiveFrameWindow(contentRect: virtualScreen.frame, level: .screenSaver)
@@ -315,6 +317,7 @@ final class ShareSession {
             currentRegion = region
             activeFrameRate = settings.frameRate
             activeShareMode = mode
+            activeCrisp = settings.crispOutput
             activeAspect = mode == .virtualDisplay
                 ? region.rect.width / region.rect.height : nil
             activeOutputPixelSize = (pw, ph)
@@ -345,7 +348,8 @@ final class ShareSession {
 
     private func settingsDidChange() {
         guard state == .active else { return }
-        if settings.shareMode != activeShareMode {
+        if settings.shareMode != activeShareMode
+            || (activeShareMode == .virtualDisplay && settings.crispOutput != activeCrisp) {
             restartSession()
         } else {
             frameRateChangedIfNeeded()

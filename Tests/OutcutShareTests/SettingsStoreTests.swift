@@ -39,6 +39,13 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(reloaded.frameRate, 60)
     }
 
+    func testCrispOutputDefaultsOffAndPersists() {
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertFalse(store.crispOutput)
+        store.crispOutput = true
+        XCTAssertTrue(SettingsStore(defaults: defaults).crispOutput)
+    }
+
     func testPauseStyleDefaultsToPrivacyScreenAndPersists() {
         let store = SettingsStore(defaults: defaults)
         XCTAssertEqual(store.pauseStyle, .privacyScreen)
