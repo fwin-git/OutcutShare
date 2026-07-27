@@ -499,7 +499,10 @@ final class PreviewWindowController: NSObject {
         guard let view = panel?.contentView as? PreviewContentView,
               view.passthroughActive else { return }
         let mouse = NSEvent.mouseLocation
-        let onMonitor = monitorDisplayFrame.contains(mouse)
+        // Expanded by 1: CGRect.contains excludes the max edges, but a
+        // cursor pinned at the top/right reports exactly maxY/maxX — the
+        // top edge never counted as "on the monitor" without this.
+        let onMonitor = monitorDisplayFrame.insetBy(dx: -1, dy: -1).contains(mouse)
         showControlExitHint(onMonitor)
         guard onMonitor else {
             edgeExitArmed = false
@@ -530,8 +533,15 @@ final class PreviewWindowController: NSObject {
                                               screenBounds: screenBounds)
         lastMonitorMouse = nil
         let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
-        CGWarpMouseCursorPosition(Geometry.cgPoint(fromAppKit: exit,
-                                                   primaryHeight: primaryHeight))
+        let target = Geometry.cgPoint(fromAppKit: exit, primaryHeight: primaryHeight)
+        // Posted mouse-moved instead of CGWarpMouseCursorPosition: the warp
+        // suppresses hardware deltas for ~0.25 s, which froze the motion
+        // dead right after the jump. A posted move has no suppression — the
+        // stroke continues instantly.
+        if let move = CGEvent(mouseEventSource: nil, mouseType: .mouseMoved,
+                              mouseCursorPosition: target, mouseButton: .left) {
+            move.post(tap: .cghidEventTap)
+        }
         CGAssociateMouseAndMouseCursorPosition(1)
     }
 
