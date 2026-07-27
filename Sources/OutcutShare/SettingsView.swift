@@ -42,13 +42,22 @@ private struct GeneralPage: View {
                     .foregroundStyle(.secondary)
             }
             Section("Follow mode") {
+                Picker("Follow", selection: $settings.followMode) {
+                    ForEach(FollowMode.allCases, id: \.self) { mode in
+                        Text(mode.displayName).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
                 Picker("Movement", selection: $settings.followBehavior) {
                     Text("Snap").tag(FollowBehavior.snap)
                     Text("Smooth glide").tag(FollowBehavior.glide)
                 }
                 .pickerStyle(.segmented)
                 Toggle("Resize region to the followed window", isOn: $settings.followResizes)
-                Text("Enable following from the menu bar while sharing: Follow → Active Window or Cursor.")
+            }
+            Section("Hotbar") {
+                Toggle("Show floating hotbar while sharing", isOn: $settings.hotbarEnabled)
+                Text("Quick actions next to the region. Drag the ≡ grabber to reposition; ✕ hides it until re-enabled.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -279,7 +288,7 @@ final class SettingsWindowController {
         switch tab {
         case .general:
             controller = NSHostingController(
-                rootView: AnyView(GeneralPage(settings: settings).frame(width: 470, height: 680)))
+                rootView: AnyView(GeneralPage(settings: settings).frame(width: 470, height: 800)))
         case .presets:
             controller = NSHostingController(
                 rootView: AnyView(PresetsPage(settings: settings).frame(width: 470, height: 360)))

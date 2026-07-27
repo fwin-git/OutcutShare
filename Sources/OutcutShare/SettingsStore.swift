@@ -152,6 +152,21 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    /// Persisted follow mode; menu, settings and hotbar all drive this.
+    @Published var followMode: FollowMode {
+        didSet {
+            defaults.set(followMode.rawValue, forKey: "followMode")
+            notifyChange()
+        }
+    }
+
+    @Published var hotbarEnabled: Bool {
+        didSet {
+            defaults.set(hotbarEnabled, forKey: "hotbarEnabled")
+            notifyChange()
+        }
+    }
+
     @Published var followBehavior: FollowBehavior {
         didSet {
             defaults.set(followBehavior.rawValue, forKey: "followBehavior")
@@ -245,7 +260,11 @@ final class SettingsStore: ObservableObject {
             .flatMap(PauseStyle.init(rawValue:)) ?? .privacyScreen
         defaults.register(defaults: ["followResizes": true,
                                      "cursorHighlight": true,
-                                     "clickRipples": true])
+                                     "clickRipples": true,
+                                     "hotbarEnabled": true])
+        self.followMode = defaults.string(forKey: "followMode")
+            .flatMap(FollowMode.init(rawValue:)) ?? .off
+        self.hotbarEnabled = defaults.bool(forKey: "hotbarEnabled")
         self.cursorHighlight = defaults.bool(forKey: "cursorHighlight")
         self.clickRipples = defaults.bool(forKey: "clickRipples")
         self.recordingFolder = defaults.string(forKey: "recordingFolder") ?? ""
