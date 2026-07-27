@@ -8,6 +8,7 @@ Menu bar → **Settings…** — seven pages.
 | --- | --- | --- |
 | Share as | Virtual Display (share a screen), Hidden Window (share a window) or Virtual Monitor (separate screen, see below) | Virtual Display |
 | Monitor resolution | Size of the Virtual Monitor screen | 1920 × 1080 |
+| Pull windows out with | Modifier held to drag a window out of the monitor preview | ⇧ Shift |
 | Crisp text (Retina output) | Gives the virtual display 2× pixel density — sharpest with Retina sources, reduces compression artifacts otherwise; more bandwidth. Virtual Display mode only | off |
 | Follow movement | Snap or smooth glide when follow mode moves the region | Glide |
 | Resize region to followed window | Follow mode adopts the window's size (aspect-fitted in Virtual Display mode) | on |
@@ -45,12 +46,21 @@ the monitor. With the optional **Accessibility** permission:
   hover).
 - **Grab a window inside the picture** to rearrange it; edges and corners
   show magnet-style snap zones (halves, quarters, full screen).
-- **Drag a window out of the picture** and it pops back onto your real
-  screen under the cursor.
+- **Hold the pull-out modifier (⇧ by default, configurable) and drag a
+  window off the panel** — it pops back onto your real screen under the
+  cursor. The modifier also suppresses snapping, so edge snaps and
+  pulling out never collide.
+- **Control mode** — the cursor button in the panel's top-right corner:
+  while on, clicks, drags and scrolls on the picture pass through to the
+  monitor, so you can browse a folder or drive a browser there without
+  moving your mouse to the virtual screen. The pointer briefly jumps to
+  the monitor during a gesture (watch it in the preview) and returns
+  after.
 
-The panel moves via its ≡ grabber in this mode; pausing covers the whole
-virtual screen with the privacy note. You can also simply move your mouse
-onto the virtual monitor and arrange windows there like on any screen.
+The panel moves via its ≡ grabber in this mode and resizes from its
+edges; pausing covers the whole virtual screen with the privacy note. You
+can also simply move your mouse onto the virtual monitor and arrange
+windows there like on any screen.
 
 ## Appearance
 

@@ -137,6 +137,19 @@ private struct GeneralPage: View {
                         }
                     }
                     .pickerStyle(.menu)
+                    Picker("Pull windows out with", selection: $settings.dragOutModifier) {
+                        ForEach(DragOutModifier.allCases, id: \.self) { modifier in
+                            Text(modifier.displayName).tag(modifier)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    Text("In the preview: plain drags arrange windows (edges and corners "
+                         + "snap); hold \(settings.dragOutModifier.displayName) and drag a "
+                         + "window off the panel to pull it back to your real screen. The "
+                         + "cursor button switches to control mode — clicks pass through "
+                         + "to the monitor.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 if settings.shareMode == .hiddenWindow {
                     TextField("Share window title", text: $settings.shareWindowTitle,
