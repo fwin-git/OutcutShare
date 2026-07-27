@@ -13,6 +13,7 @@ final class ShareSession {
     private func notifyUI() {
         onStateChange?()
         hotbar.refresh()
+        NotificationCenter.default.post(name: sessionStateChangedNotification, object: self)
     }
     var onStateChange: (() -> Void)?
     /// Read from the capture sample queue to gate frame forwarding.

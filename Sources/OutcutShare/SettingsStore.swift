@@ -4,6 +4,9 @@ import Combine
 /// Posted whenever any setting changes; overlays observe this for live redraw.
 let settingsChangedNotification = Notification.Name("OutcutShareSettingsChanged")
 
+/// Posted by ShareSession on any state/activity change (dock policy observes).
+let sessionStateChangedNotification = Notification.Name("OutcutShareSessionStateChanged")
+
 enum BorderStyle: String, CaseIterable {
     case solid, dashed, dotted
 }
@@ -187,6 +190,15 @@ final class SettingsStore: ObservableObject {
         return ids
     }
 
+    /// Shows a Dock icon (and Cmd-Tab / Force Quit presence) while a session
+    /// is active or the settings window is open.
+    @Published var dockIconWhileActive: Bool {
+        didSet {
+            defaults.set(dockIconWhileActive, forKey: "dockIconWhileActive")
+            notifyChange()
+        }
+    }
+
     /// Renders the virtual display with Retina (2×) backing.
     @Published var crispOutput: Bool {
         didSet {
@@ -309,6 +321,7 @@ final class SettingsStore: ObservableObject {
             .flatMap(FollowMode.init(rawValue:)) ?? .off
         self.hotbarEnabled = defaults.bool(forKey: "hotbarEnabled")
         self.crispOutput = defaults.bool(forKey: "crispOutput")
+        self.dockIconWhileActive = defaults.bool(forKey: "dockIconWhileActive")
         defaults.register(defaults: ["hideNotificationBanners": true])
         self.hideNotificationBanners = defaults.bool(forKey: "hideNotificationBanners")
         if let data = defaults.data(forKey: "hiddenApps"),

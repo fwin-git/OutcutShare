@@ -194,6 +194,14 @@ private struct GeneralPage: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            Section("Dock") {
+                Toggle("Show Dock icon while active", isOn: $settings.dockIconWhileActive)
+                Text("Adds the app to the Dock, ⌘-Tab switcher and Force Quit while "
+                     + "you're sharing or this settings window is open. Otherwise "
+                     + "Outcut Share stays a menu-bar-only app.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
     }
@@ -492,7 +500,7 @@ final class SettingsWindowController {
         switch tab {
         case .general:
             controller = NSHostingController(
-                rootView: AnyView(GeneralPage(settings: settings).frame(width: 560, height: 900)))
+                rootView: AnyView(GeneralPage(settings: settings).frame(width: 560, height: 990)))
         case .privacy:
             controller = NSHostingController(
                 rootView: AnyView(PrivacyPage(settings: settings).frame(width: 560, height: 800)))

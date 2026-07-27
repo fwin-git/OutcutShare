@@ -17,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var permissions: PermissionsWindowController?
     private var hotkeys: HotkeyManager?
     private var debugSettingsWindow: SettingsWindowController?
+    private var policyObservers: [NSObjectProtocol] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let permissions = PermissionsWindowController()
@@ -77,6 +78,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             session.startSelection()
             return
         }
+        observeForDockPolicy()
         runShareTestIfRequested()
 
         // Guided onboarding: appears whenever the app can't capture yet.
@@ -87,6 +89,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     permissions.show()
                 }
             }
+        }
+    }
+
+    /// Dock icon (⌘-Tab / Force Quit presence) appears while a session is
+    /// active or the settings window is open — when the setting allows it.
+    private func applyActivationPolicy() {
+        let settingsVisible = NSApp.windows.contains {
+            $0.isVisible && $0.contentViewController is NSTabViewController
+        }
+        let wantsDock = SettingsStore.shared.dockIconWhileActive
+            && (session.state != .idle || settingsVisible)
+        let target: NSApplication.ActivationPolicy = wantsDock ? .regular : .accessory
+        if NSApp.activationPolicy() != target {
+            NSApp.setActivationPolicy(target)
+        }
+    }
+
+    private func observeForDockPolicy() {
+        for name in [settingsChangedNotification, sessionStateChangedNotification,
+                     NSWindow.willCloseNotification, NSWindow.didBecomeKeyNotification] {
+            policyObservers.append(NotificationCenter.default.addObserver(
+                forName: name, object: nil, queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    // Window notifications fire before visibility settles.
+                    DispatchQueue.main.async { self?.applyActivationPolicy() }
+                }
+            })
         }
     }
 
