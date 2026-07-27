@@ -115,6 +115,25 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    /// Saved region presets, recallable from the menu (and ⌃⌥⌘1–9).
+    @Published var presets: [RegionPreset] = [] {
+        didSet {
+            guard presets != oldValue else { return }
+            defaults.set(try? JSONEncoder().encode(presets), forKey: "presets")
+            notifyChange()
+        }
+    }
+
+    /// The most recently shared region, for one-keystroke re-sharing.
+    @Published var lastRegion: StoredRegion? {
+        didSet {
+            guard lastRegion != oldValue else { return }
+            defaults.set(lastRegion.flatMap { try? JSONEncoder().encode($0) },
+                         forKey: "lastRegion")
+            notifyChange()
+        }
+    }
+
     /// Effective hotkey bindings (defaults applied, explicit clears removed).
     @Published private(set) var hotkeys: [HotkeyAction: KeyCombo] = [:]
 
@@ -159,6 +178,14 @@ final class SettingsStore: ObservableObject {
         self.borderStyle = defaults.string(forKey: Key.borderStyle)
             .flatMap(BorderStyle.init(rawValue:)) ?? .dashed
         self.borderThickness = defaults.double(forKey: Key.borderThickness)
+        if let data = defaults.data(forKey: "presets"),
+           let decoded = try? JSONDecoder().decode([RegionPreset].self, from: data) {
+            presets = decoded
+        }
+        if let data = defaults.data(forKey: "lastRegion"),
+           let decoded = try? JSONDecoder().decode(StoredRegion.self, from: data) {
+            lastRegion = decoded
+        }
         // Hotkeys distinguish "never set" (use default) from "cleared" (empty
         // string), so they bypass register(defaults:).
         for action in HotkeyAction.allCases {

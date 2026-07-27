@@ -9,6 +9,9 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     private let selectItem = NSMenuItem(title: "Select Region & Share",
                                         action: #selector(selectRegion), keyEquivalent: "s")
+    private let shareLastItem = NSMenuItem(title: "Share Last Region",
+                                           action: #selector(shareLast), keyEquivalent: "l")
+    private let presetsItem = NSMenuItem(title: "Presets", action: nil, keyEquivalent: "")
     private let moveItem = NSMenuItem(title: "Move / Resize Region",
                                       action: #selector(moveRegion), keyEquivalent: "m")
     private let stopItem = NSMenuItem(title: "Stop Sharing",
@@ -23,10 +26,15 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
         let menu = NSMenu()
         menu.autoenablesItems = false
+        menu.delegate = self
         selectItem.target = self
+        shareLastItem.target = self
         moveItem.target = self
         stopItem.target = self
+        presetsItem.submenu = NSMenu(title: "Presets")
         menu.addItem(selectItem)
+        menu.addItem(shareLastItem)
+        menu.addItem(presetsItem)
         menu.addItem(moveItem)
         menu.addItem(stopItem)
         menu.addItem(.separator())
@@ -53,8 +61,66 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         statusItem.button?.image = NSImage(systemSymbolName: symbol,
                                            accessibilityDescription: "RegionShare")
         selectItem.isEnabled = session.state == .idle
+        shareLastItem.isEnabled = session.state == .idle && SettingsStore.shared.lastRegion != nil
         moveItem.isEnabled = session.isActive
         stopItem.isEnabled = session.isActive
+    }
+
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        refresh()
+        rebuildPresetsMenu()
+    }
+
+    private func rebuildPresetsMenu() {
+        guard let submenu = presetsItem.submenu else { return }
+        submenu.removeAllItems()
+        submenu.autoenablesItems = false
+        let presets = SettingsStore.shared.presets
+        for (index, preset) in presets.enumerated() {
+            let item = NSMenuItem(title: preset.name, action: #selector(sharePreset(_:)),
+                                  keyEquivalent: index < 9 ? "\(index + 1)" : "")
+            item.keyEquivalentModifierMask = [.control, .option, .command]
+            item.target = self
+            item.representedObject = preset.id
+            submenu.addItem(item)
+        }
+        if !presets.isEmpty {
+            submenu.addItem(.separator())
+        }
+        let save = NSMenuItem(title: "Save Current Region as Preset…",
+                              action: #selector(savePreset), keyEquivalent: "")
+        save.target = self
+        save.isEnabled = session.isActive
+        submenu.addItem(save)
+        presetsItem.isEnabled = !presets.isEmpty || session.isActive
+    }
+
+    @objc private func shareLast() {
+        session.shareLastRegion()
+    }
+
+    @objc private func sharePreset(_ sender: NSMenuItem) {
+        guard let id = sender.representedObject as? UUID,
+              let preset = SettingsStore.shared.presets.first(where: { $0.id == id }) else {
+            return
+        }
+        session.sharePreset(preset)
+    }
+
+    @objc private func savePreset() {
+        let alert = NSAlert()
+        alert.messageText = "Save Region as Preset"
+        alert.informativeText = "Name for the current region:"
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 240, height: 24))
+        field.stringValue = "Preset \(SettingsStore.shared.presets.count + 1)"
+        alert.accessoryView = field
+        alert.addButton(withTitle: "Save")
+        alert.addButton(withTitle: "Cancel")
+        alert.window.initialFirstResponder = field
+        NSApp.activate(ignoringOtherApps: true)
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        let name = field.stringValue.trimmingCharacters(in: .whitespaces)
+        session.saveCurrentRegionAsPreset(named: name.isEmpty ? "Preset" : name)
     }
 
     @objc private func selectRegion() {

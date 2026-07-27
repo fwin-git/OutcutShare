@@ -63,8 +63,48 @@ final class ShareSession {
         Task { await activate(region: SelectedRegion(rect: rect, screen: screen)) }
     }
 
+    /// One-keystroke re-share of the most recent region.
+    func shareLastRegion() {
+        guard state == .idle, let stored = settings.lastRegion else { return }
+        startStored(region: stored)
+    }
+
+    /// Shares a preset; if a session is active it is replaced.
+    func sharePreset(_ preset: RegionPreset) {
+        if state != .idle {
+            teardown()
+            state = .idle
+        }
+        if let mode = ShareMode(rawValue: preset.shareModeRaw), mode != settings.shareMode {
+            settings.shareMode = mode
+        }
+        startStored(region: preset.region)
+    }
+
+    func saveCurrentRegionAsPreset(named name: String) {
+        guard let region = currentRegion else { return }
+        settings.presets.append(RegionPreset(
+            name: name,
+            region: StoredRegion(rect: region.rect, displayID: region.displayID),
+            shareModeRaw: activeShareMode.rawValue))
+    }
+
+    private func startStored(region stored: StoredRegion) {
+        let screens = NSScreen.screens
+        guard let resolved = RegionResolver.resolve(
+            rect: stored.rect, displayID: stored.displayID,
+            screens: screens.map { ($0.displayID, $0.frame) }) else { return }
+        state = .selecting
+        let screen = screens[resolved.screenIndex]
+        Task { await activate(region: SelectedRegion(rect: resolved.rect, screen: screen)) }
+    }
+
     func stop() {
         guard state != .idle else { return }
+        if let region = currentRegion {
+            // Keep the final (possibly moved/resized) rect for re-sharing.
+            settings.lastRegion = StoredRegion(rect: region.rect, displayID: region.displayID)
+        }
         teardown()
         state = .idle
     }
@@ -202,6 +242,7 @@ final class ShareSession {
             activeOutputPixelSize = (pw, ph)
             observeSettingsChanges()
             state = .active
+            settings.lastRegion = StoredRegion(rect: region.rect, displayID: region.displayID)
         } catch {
             teardown()
             state = .idle

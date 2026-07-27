@@ -6,20 +6,29 @@ import Carbon.HIToolbox
 /// settings change. When two actions share a combo, only the first action in
 /// HotkeyAction.allCases order is registered; the settings UI surfaces the
 /// conflict.
+/// What a registered hotkey triggers: a fixed app action or preset N.
+enum HotkeyEvent {
+    case action(HotkeyAction)
+    case preset(Int)
+}
+
 @MainActor
 final class HotkeyManager {
     private let settings: SettingsStore
-    private let perform: (HotkeyAction) -> Void
+    private let perform: (HotkeyEvent) -> Void
     private var hotkeyRefs: [EventHotKeyRef] = []
-    private var idToAction: [UInt32: HotkeyAction] = [:]
+    private var idToEvent: [UInt32: HotkeyEvent] = [:]
     private var eventHandler: EventHandlerRef?
     private var observer: NSObjectProtocol?
     private var appliedBindings: [HotkeyAction: KeyCombo] = [:]
+    private var appliedPresetCount = -1
+
+    private static let presetKeyCodes: [UInt32] = [18, 19, 20, 21, 23, 22, 26, 28, 25] // 1…9
 
     /// What actually got registered (duplicates beyond the first are skipped).
-    private(set) var registered: [(action: HotkeyAction, combo: KeyCombo)] = []
+    private(set) var registered: [(label: String, combo: KeyCombo)] = []
 
-    init(settings: SettingsStore = .shared, perform: @escaping (HotkeyAction) -> Void) {
+    init(settings: SettingsStore = .shared, perform: @escaping (HotkeyEvent) -> Void) {
         self.settings = settings
         self.perform = perform
         installHandler()
@@ -32,23 +41,38 @@ final class HotkeyManager {
     }
 
     private func applyBindings() {
-        guard settings.hotkeys != appliedBindings else { return }
+        let presetCount = min(settings.presets.count, Self.presetKeyCodes.count)
+        guard settings.hotkeys != appliedBindings || presetCount != appliedPresetCount else {
+            return
+        }
         appliedBindings = settings.hotkeys
+        appliedPresetCount = presetCount
         unregisterAll()
         var used = Set<KeyCombo>()
         for (index, action) in HotkeyAction.allCases.enumerated() {
             guard let combo = settings.hotkey(for: action), used.insert(combo).inserted else {
                 continue
             }
-            var ref: EventHotKeyRef?
-            let hotKeyID = EventHotKeyID(signature: OSType(0x5253_4852), id: UInt32(index)) // 'RSHR'
-            let status = RegisterEventHotKey(combo.keyCode, combo.carbonModifiers, hotKeyID,
-                                             GetApplicationEventTarget(), 0, &ref)
-            if status == noErr, let ref {
-                hotkeyRefs.append(ref)
-                idToAction[UInt32(index)] = action
-                registered.append((action, combo))
-            }
+            register(combo, id: UInt32(index), event: .action(action), label: action.rawValue)
+        }
+        // First nine presets get fixed ⌃⌥⌘1–9 bindings.
+        for index in 0..<presetCount {
+            let combo = KeyCombo(keyCode: Self.presetKeyCodes[index],
+                                 modifiers: [.control, .option, .command])
+            guard used.insert(combo).inserted else { continue }
+            register(combo, id: UInt32(100 + index), event: .preset(index), label: "preset\(index + 1)")
+        }
+    }
+
+    private func register(_ combo: KeyCombo, id: UInt32, event: HotkeyEvent, label: String) {
+        var ref: EventHotKeyRef?
+        let hotKeyID = EventHotKeyID(signature: OSType(0x5253_4852), id: id) // 'RSHR'
+        let status = RegisterEventHotKey(combo.keyCode, combo.carbonModifiers, hotKeyID,
+                                         GetApplicationEventTarget(), 0, &ref)
+        if status == noErr, let ref {
+            hotkeyRefs.append(ref)
+            idToEvent[id] = event
+            registered.append((label, combo))
         }
     }
 
@@ -57,7 +81,7 @@ final class HotkeyManager {
             UnregisterEventHotKey(ref)
         }
         hotkeyRefs.removeAll()
-        idToAction.removeAll()
+        idToEvent.removeAll()
         registered.removeAll()
     }
 
@@ -81,7 +105,7 @@ final class HotkeyManager {
     }
 
     private func handle(id: UInt32) {
-        guard let action = idToAction[id] else { return }
-        perform(action)
+        guard let event = idToEvent[id] else { return }
+        perform(event)
     }
 }
