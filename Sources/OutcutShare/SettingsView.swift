@@ -3,7 +3,7 @@ import ServiceManagement
 import SwiftUI
 
 enum SettingsTab: String, CaseIterable {
-    case general, appearance, privacy, recording, presets, shortcuts, about
+    case general, appearance, privacy, recording, presets, shortcuts, permissions, about
 
     var title: String {
         switch self {
@@ -13,6 +13,7 @@ enum SettingsTab: String, CaseIterable {
         case .recording: return "Recording"
         case .presets: return "Presets"
         case .shortcuts: return "Shortcuts"
+        case .permissions: return "Permissions"
         case .about: return "About"
         }
     }
@@ -25,6 +26,7 @@ enum SettingsTab: String, CaseIterable {
         case .recording: return "record.circle"
         case .presets: return "square.grid.2x2"
         case .shortcuts: return "keyboard"
+        case .permissions: return "checkmark.shield"
         case .about: return "info.circle"
         }
     }
@@ -204,6 +206,28 @@ private struct GeneralPage: View {
                     LoginItem.setEnabled(on)
                     launchAtLogin = LoginItem.isEnabled
                 })
+    }
+}
+
+private struct PermissionsPage: View {
+    @StateObject private var model = PermissionsModel()
+
+    var body: some View {
+        Form {
+            Section("System permissions") {
+                PermissionsStatusView(model: model)
+                    .padding(.vertical, 4)
+            }
+            if model.status.allSatisfied {
+                Section {
+                    Label("All set — you're ready to share.", systemImage: "checkmark.seal.fill")
+                        .foregroundStyle(.green)
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .onAppear { model.startPolling() }
+        .onDisappear { model.stopPolling() }
     }
 }
 
@@ -468,25 +492,28 @@ final class SettingsWindowController {
         switch tab {
         case .general:
             controller = NSHostingController(
-                rootView: AnyView(GeneralPage(settings: settings).frame(width: 470, height: 900)))
+                rootView: AnyView(GeneralPage(settings: settings).frame(width: 560, height: 900)))
         case .privacy:
             controller = NSHostingController(
-                rootView: AnyView(PrivacyPage(settings: settings).frame(width: 470, height: 800)))
+                rootView: AnyView(PrivacyPage(settings: settings).frame(width: 560, height: 800)))
         case .recording:
             controller = NSHostingController(
-                rootView: AnyView(RecordingPage(settings: settings).frame(width: 470, height: 230)))
+                rootView: AnyView(RecordingPage(settings: settings).frame(width: 560, height: 230)))
         case .presets:
             controller = NSHostingController(
-                rootView: AnyView(PresetsPage(settings: settings).frame(width: 470, height: 360)))
+                rootView: AnyView(PresetsPage(settings: settings).frame(width: 560, height: 360)))
         case .appearance:
             controller = NSHostingController(
-                rootView: AnyView(AppearancePage(settings: settings).frame(width: 470, height: 780)))
+                rootView: AnyView(AppearancePage(settings: settings).frame(width: 560, height: 780)))
         case .shortcuts:
             controller = NSHostingController(
-                rootView: AnyView(ShortcutsPage(settings: settings).frame(width: 470, height: 400)))
+                rootView: AnyView(ShortcutsPage(settings: settings).frame(width: 560, height: 400)))
+        case .permissions:
+            controller = NSHostingController(
+                rootView: AnyView(PermissionsPage().frame(width: 560, height: 330)))
         case .about:
             controller = NSHostingController(
-                rootView: AnyView(AboutPage().frame(width: 470, height: 260)))
+                rootView: AnyView(AboutPage().frame(width: 560, height: 260)))
         }
         controller.sizingOptions = .preferredContentSize
         // NSTabViewController propagates the selected child's title to the
