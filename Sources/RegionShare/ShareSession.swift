@@ -132,6 +132,7 @@ final class ShareSession {
     var currentAspect: CGFloat? { activeAspect }
 
     private lazy var follow = FollowController(session: self, settings: settings)
+    private lazy var cursorEmphasis = CursorEmphasisController(session: self, settings: settings)
     var followMode: FollowMode { follow.mode }
 
     func setFollow(mode: FollowMode) {
@@ -269,6 +270,7 @@ final class ShareSession {
             activeOutputPixelSize = (pw, ph)
             observeSettingsChanges()
             state = .active
+            cursorEmphasis.start(output: output)
             settings.lastRegion = StoredRegion(rect: region.rect, displayID: region.displayID)
         } catch {
             teardown()
@@ -294,6 +296,7 @@ final class ShareSession {
             restartSession()
         } else {
             frameRateChangedIfNeeded()
+            cursorEmphasis.settingsChanged()
         }
     }
 
@@ -336,6 +339,7 @@ final class ShareSession {
     private func teardown() {
         isPaused = false
         follow.set(mode: .off)
+        cursorEmphasis.stop()
         mover?.close()
         mover = nil
         moveBackupRect = nil

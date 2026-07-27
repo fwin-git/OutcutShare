@@ -15,6 +15,9 @@ final class LiveFrameWindow {
     private nonisolated(unsafe) let contentLayer = CALayer()
     private nonisolated(unsafe) var lastSurface: IOSurfaceRef?
     private var privacyLayer: CALayer?
+    private var haloLayer: CALayer?
+
+    var contentSize: CGSize { window.contentView?.bounds.size ?? .zero }
 
     init(contentRect: CGRect, level: NSWindow.Level, title: String? = nil) {
         window = NSWindow(contentRect: contentRect, styleMask: .borderless,
@@ -116,6 +119,64 @@ final class LiveFrameWindow {
     func hidePrivacyScreen() {
         privacyLayer?.removeFromSuperlayer()
         privacyLayer = nil
+    }
+
+    /// Positions (or hides, with nil) the cursor halo in content coordinates.
+    func showCursorHalo(at point: CGPoint?) {
+        guard let point else {
+            haloLayer?.removeFromSuperlayer()
+            haloLayer = nil
+            return
+        }
+        let halo: CALayer
+        if let existing = haloLayer {
+            halo = existing
+        } else {
+            halo = CALayer()
+            let diameter: CGFloat = 38
+            halo.bounds = CGRect(x: 0, y: 0, width: diameter, height: diameter)
+            halo.cornerRadius = diameter / 2
+            halo.backgroundColor = NSColor.systemYellow.withAlphaComponent(0.28).cgColor
+            halo.borderColor = NSColor.systemYellow.withAlphaComponent(0.85).cgColor
+            halo.borderWidth = 2
+            window.contentView?.layer?.addSublayer(halo)
+            haloLayer = halo
+        }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        halo.position = point
+        CATransaction.commit()
+    }
+
+    /// Expanding, fading ring at the click position.
+    func spawnRipple(at point: CGPoint) {
+        guard let host = window.contentView?.layer else { return }
+        let ripple = CAShapeLayer()
+        let radius: CGFloat = 34
+        ripple.path = CGPath(ellipseIn: CGRect(x: -radius, y: -radius,
+                                               width: radius * 2, height: radius * 2), transform: nil)
+        ripple.fillColor = nil
+        ripple.strokeColor = NSColor.systemYellow.cgColor
+        ripple.lineWidth = 3
+        ripple.position = point
+        host.addSublayer(ripple)
+
+        let scale = CABasicAnimation(keyPath: "transform.scale")
+        scale.fromValue = 0.3
+        scale.toValue = 1.4
+        let fade = CABasicAnimation(keyPath: "opacity")
+        fade.fromValue = 1
+        fade.toValue = 0
+        let group = CAAnimationGroup()
+        group.animations = [scale, fade]
+        group.duration = 0.45
+        group.timingFunction = CAMediaTimingFunction(name: .easeOut)
+        group.isRemovedOnCompletion = false
+        group.fillMode = .forwards
+        ripple.add(group, forKey: "ripple")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            ripple.removeFromSuperlayer()
+        }
     }
 
     func close() {
