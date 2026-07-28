@@ -135,9 +135,12 @@ permission; a guided row appears when it's needed.
   visible to you. → [settings](docs/settings.md)
 - **Cursor emphasis** — halo + click ripples, drawn for viewers only.
 - **Recording** (⌃⌥⌘R) — the region straight to .mp4, no meeting needed.
+- **Screenshots** — the hotbar's camera button saves the shared picture;
+  folder, max size, quality and drop shadow are configurable.
+  → [settings](docs/settings.md)
 - **Hotbar** — floating quick actions next to the region or monitor preview
-  (stop, pause, record, highlights, preview, resize, preset, follow);
-  draggable, dismissible, toggleable from menu & Settings.
+  (stop, pause, record, screenshot, highlights, preview, resize, preset,
+  follow); draggable, dismissible, toggleable from menu & Settings.
 - **Global hotkeys** — all rebindable to any combo, with duplicate warnings.
   → [hotkeys](docs/hotkeys.md)
 - **Raycast extension** — trigger sharing, presets, pause, recording and

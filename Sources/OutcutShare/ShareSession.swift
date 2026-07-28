@@ -155,6 +155,32 @@ final class ShareSession {
         notifyUI()
     }
 
+    /// Saves a still of the current shared output to the screenshot folder,
+    /// styled by the screenshot settings (max size, quality, drop shadow).
+    func captureScreenshot() {
+        guard state == .active, let capture else { return }
+        Task {
+            do {
+                let image = try await capture.captureStill()
+                guard let data = ScreenshotComposer.render(
+                    image: image, maxEdge: settings.screenshotMaxSize,
+                    shadow: settings.screenshotShadow,
+                    quality: settings.screenshotQuality) else { return }
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
+                let ext = ScreenshotComposer.fileExtension(quality: settings.screenshotQuality)
+                let url = settings.screenshotFolderURL
+                    .appendingPathComponent("Screenshot \(formatter.string(from: Date())).\(ext)")
+                try FileManager.default.createDirectory(at: url.deletingLastPathComponent(),
+                                                        withIntermediateDirectories: true)
+                try data.write(to: url)
+                NSSound(named: "Pop")?.play()
+            } catch {
+                presentError(error, title: "Screenshot couldn't be saved")
+            }
+        }
+    }
+
     /// Pauses/resumes what viewers see without touching the stream: frames
     /// stop being forwarded; the privacy style optionally covers the output.
     /// The virtual monitor is captured directly by the sharing app, so pause

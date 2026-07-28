@@ -186,6 +186,45 @@ final class SettingsStore: ObservableObject {
             .appendingPathComponent("OutcutShare")
     }
 
+    /// Empty = ~/Pictures/OutcutShare.
+    @Published var screenshotFolder: String {
+        didSet {
+            defaults.set(screenshotFolder, forKey: "screenshotFolder")
+            notifyChange()
+        }
+    }
+
+    var screenshotFolderURL: URL {
+        if !screenshotFolder.isEmpty {
+            return URL(fileURLWithPath: (screenshotFolder as NSString).expandingTildeInPath)
+        }
+        return FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("OutcutShare")
+    }
+
+    /// Longest edge in pixels; 0 = keep the captured size.
+    @Published var screenshotMaxSize: Int {
+        didSet {
+            defaults.set(screenshotMaxSize, forKey: "screenshotMaxSize")
+            notifyChange()
+        }
+    }
+
+    /// 1.0 saves lossless PNG; below that a JPEG with this quality.
+    @Published var screenshotQuality: Double {
+        didSet {
+            defaults.set(screenshotQuality, forKey: "screenshotQuality")
+            notifyChange()
+        }
+    }
+
+    @Published var screenshotShadow: Bool {
+        didSet {
+            defaults.set(screenshotShadow, forKey: "screenshotShadow")
+            notifyChange()
+        }
+    }
+
     @Published var cursorHighlight: Bool {
         didSet {
             defaults.set(cursorHighlight, forKey: "cursorHighlight")
@@ -445,6 +484,11 @@ final class SettingsStore: ObservableObject {
         self.cursorHighlight = defaults.bool(forKey: "cursorHighlight")
         self.clickRipples = defaults.bool(forKey: "clickRipples")
         self.recordingFolder = defaults.string(forKey: "recordingFolder") ?? ""
+        self.screenshotFolder = defaults.string(forKey: "screenshotFolder") ?? ""
+        self.screenshotMaxSize = defaults.integer(forKey: "screenshotMaxSize")
+        self.screenshotQuality = defaults.object(forKey: "screenshotQuality") == nil
+            ? 1.0 : defaults.double(forKey: "screenshotQuality")
+        self.screenshotShadow = defaults.bool(forKey: "screenshotShadow")
         self.followBehavior = defaults.string(forKey: "followBehavior")
             .flatMap(FollowBehavior.init(rawValue:)) ?? .glide
         self.followResizes = defaults.bool(forKey: "followResizes")

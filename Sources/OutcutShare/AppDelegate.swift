@@ -275,6 +275,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
+        // --screenshot-at=t1,t2 saves region screenshots at the given offsets.
+        if let shotArg = CommandLine.arguments.first(where: { $0.hasPrefix("--screenshot-at=") }) {
+            let times = shotArg.dropFirst("--screenshot-at=".count).split(separator: ",").compactMap { Double($0) }
+            for time in times {
+                DispatchQueue.main.asyncAfter(deadline: .now() + time) { [session] in
+                    session.captureScreenshot()
+                    print("SHARE-TEST screenshot requested")
+                }
+            }
+        }
         // --pause-at=t1,t2 toggles pause at the given offsets (seconds).
         if let pauseArg = CommandLine.arguments.first(where: { $0.hasPrefix("--pause-at=") }) {
             let times = pauseArg.dropFirst("--pause-at=".count).split(separator: ",").compactMap { Double($0) }

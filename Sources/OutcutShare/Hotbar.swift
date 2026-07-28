@@ -19,6 +19,7 @@ struct HotbarActions {
     var stop: () -> Void
     var pause: () -> Void
     var record: () -> Void
+    var screenshot: () -> Void
     var highlights: () -> Void
     var preview: () -> Void
     var adjust: () -> Void
@@ -45,6 +46,8 @@ struct HotbarView: View {
             // popup level, which sits underneath this screenSaver+1 panel.
             if model.followMenuOpen && !model.regionless {
                 followMenu
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.trailing, 48)
             }
             // In-panel tooltip: system tooltips render at popup level, which
             // sits below this panel — they'd be invisible. The label stays in
@@ -97,6 +100,8 @@ struct HotbarView: View {
             barButton(model.isRecording ? "stop.circle.fill" : "record.circle",
                       help: model.isRecording ? "Stop recording" : "Start recording",
                       tint: model.isRecording ? .red : nil, action: actions.record)
+            barButton("camera", help: "Screenshot shared region",
+                      action: actions.screenshot)
             if !model.regionless {
                 barButton("cursorarrow.rays", help: "Presenter highlights",
                           active: model.highlightsOn, action: actions.highlights)
@@ -143,6 +148,8 @@ struct HotbarView: View {
                         .font(.system(size: 8, weight: .semibold))
                         .rotationEffect(model.followMenuOpen ? .degrees(180) : .zero)
                 }
+                .padding(.vertical, 4)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
@@ -167,12 +174,10 @@ struct HotbarView: View {
                     .opacity(model.followTarget == mode && model.followOn ? 1 : 0)
                 Text(mode.displayName)
                     .font(.caption)
-                Spacer(minLength: 0)
             }
             .foregroundStyle(.white)
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
-            .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -328,6 +333,7 @@ final class HotbarController {
             stop: { [weak self] in self?.session?.stop() },
             pause: { [weak self] in self?.session?.togglePause() },
             record: { [weak self] in self?.session?.toggleRecording() },
+            screenshot: { [weak self] in self?.session?.captureScreenshot() },
             highlights: { [weak self] in self?.toggleHighlights() },
             preview: { [weak self] in self?.togglePreview() },
             adjust: { [weak self] in self?.session?.startAdjust() },

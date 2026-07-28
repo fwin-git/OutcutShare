@@ -153,7 +153,8 @@ Key invariants:
 --share-test=x,y,w,h,secs[,vd|window|monitor]   full pipeline, frame count
    (monitor ignores the rect — regionless virtual-monitor session)
    companions: --move-by=dx,dy  --resize-by=dw,dh  --pause-at=t1,t2
-               --record-at=t1,t2  --follow=activeWindow|cursor  --preview
+               --record-at=t1,t2  --screenshot-at=t1,t2
+               --follow=activeWindow|cursor  --preview
 --hotkeys-test                          registered shortcuts
 --permissions-test                      permission status line
 --show-settings[=tab] [--dim-preview]   open a settings pane
