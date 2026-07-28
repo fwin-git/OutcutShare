@@ -4,31 +4,70 @@
   <img src="Resources/AppIcon.png" alt="Outcut Share app icon" width="160">
 </p>
 
-Share exactly what you mean to share in Zoom, Teams, Meet — nothing else.
-Two ways:
+Share a selected part of your screen in Zoom, Teams, Meet instead of a
+full screen or a single window. Two ways:
 
-- **Region sharing** — drag a rectangle over any part of your screen and it
-  becomes an invisible shareable window. Made for ultrawides: present one
-  clean slice instead of the whole desert, without being locked to a single
-  app window.
-- **Virtual Monitor** — a separate, empty screen only you can fill. Drag
-  windows onto its preview and *only they* are ever shared; the rest of
-  your desktop stays private by construction.
+- **Region sharing** — drag a rectangle over any part of your screen; that
+  area becomes a window (or display) your meeting app can share. For when
+  a full screen is too much and a single app window is too little.
+- **Virtual Monitor** — an additional, empty screen you see and control
+  through a preview panel. Only windows you drag onto it are shared; the
+  rest of your desktop is never captured.
 
 ## Feature showcase
 
-**Select a region — freeform, standard sizes (⌃), locked aspect (⇧), move
-with Space, or pick a whole window — while the call mirrors it live:**
+### Region selection
+
+Selecting works like the macOS screenshot overlay: draw a rectangle over
+the part of the screen you want to share. Modifiers refine the shape:
+
+- **Drag** draws a freeform region.
+- **⌃ Ctrl** while dragging snaps to standard sizes (1280×720, 1600×900,
+  1920×1080), previewed as labeled outlines.
+- **⇧ Shift** while dragging locks the current aspect ratio.
+- **Space** before dragging switches to window picking — click a window to
+  take its bounds.
+- **Space** while dragging freezes the size and moves the selection
+  instead.
+
+The clip cycles through each of these while a mock call window mirrors
+what viewers see:
 
 ![Region selection with all modifier modes, mirrored into a mock call](docs/media/demo-region.gif)
 
-**Follow mode — the region tracks your active window, then trails the
-cursor:**
+### Follow mode
+
+Follow mode moves the shared region automatically so it stays on what you
+are working on, instead of you re-selecting or dragging it around. It is
+enabled per session from the menu bar (*Follow*) and has two targets:
+
+- **Active Window** — the region jumps to the frontmost window whenever
+  focus changes, and by default adopts that window's size.
+- **Cursor** — the region shifts to keep the pointer inside it; it starts
+  moving once the cursor gets within 80 pt of an edge.
+- Movement is either **snap** (instant) or **glide** (eased) —
+  *Settings → Follow movement*.
+
+The clip shows Active Window first, then Cursor:
 
 ![Follow modes tracking the active window and the cursor](docs/media/demo-follow.gif)
 
-**Virtual Monitor — drag windows onto a private screen, lay them out on
-the 3 × 3 grid (⇧), pull them back out:**
+### Virtual Monitor
+
+The Virtual Monitor is an extra screen that starts empty; your meeting
+app shares that screen. You see it through a preview panel on your real
+display and arrange it by dragging windows in and out — nothing appears
+on it unless you put it there.
+
+- **Drag a window onto the preview** to move it to the monitor; a live
+  ghost shows where it will land.
+- **⇧ Shift** during a drag opens a 3 × 3 layout grid — drop into a cell,
+  or sweep across several cells to span rows, columns and blocks.
+- **Drag a window off the preview** to bring it back to your real screen.
+- **Control mode** (cursor button) lets you click through the preview to
+  operate apps on the monitor; pushing an edge of the virtual screen
+  brings the cursor back.
+- **Stopping** returns all windows to your real screen.
 
 ![Virtual Monitor with drag & drop, layout grid and pull-out](docs/media/demo-monitor.gif)
 
@@ -49,7 +88,7 @@ app anywhere. Not notarized: right-click → Open once (or
    **Space** and click a window.
 2. In your meeting app, share the window named **"Outcut Share (Share
    Region)"** (rename it in Settings).
-3. Done. **⌃⌥⌘L** re-shares the last region next time; **⌃⌥⌘X** stops.
+3. **⌃⌥⌘L** re-shares the last region next time; **⌃⌥⌘X** stops.
 
 Region sharing runs as a **hidden window** — the intended mode: it lists
 under "share window", resizes live without interrupting the share, and your
