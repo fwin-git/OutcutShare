@@ -26,6 +26,7 @@ final class ShareSession {
     /// instead of firing raw system prompts when the permission is missing.
     var onPermissionsNeeded: (() -> Void)?
     var isActive: Bool { state == .active }
+    var isIdle: Bool { state == .idle }
 
     private nonisolated(unsafe) let settings: SettingsStore
     private var selector: RegionSelector?
@@ -188,6 +189,9 @@ final class ShareSession {
 
     func stop() {
         guard state != .idle else { return }
+        // Stop while still selecting (hotkey/URL) must dismiss the overlay;
+        // its completion resets state before the teardown below runs.
+        selector?.finish(with: nil)
         if let region = currentRegion, activeShareMode != .virtualMonitor {
             // Keep the final (possibly moved/resized) rect for re-sharing.
             // The virtual monitor has no real-screen region to remember.
