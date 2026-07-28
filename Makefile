@@ -4,7 +4,7 @@ ASSETS   := Resources/Assets.xcassets
 ASSET_FILES := $(shell find $(ASSETS) -type f)
 ASSET_INFO := build/AppIconInfo.plist
 
-VERSION  ?= 1.9.2
+VERSION  ?= 1.10.0
 BUILD    := $(shell git rev-list --count HEAD 2>/dev/null || echo 0)
 HASH     := $(shell git rev-parse --short HEAD 2>/dev/null || echo dev)
 
