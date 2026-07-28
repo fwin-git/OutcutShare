@@ -18,8 +18,11 @@ full screen or a single window. Two ways:
 
 ### Region selection
 
+![Region selection with all modifier modes, mirrored into a mock call](docs/media/demo-region.gif)
+
 Selecting works like the macOS screenshot overlay: draw a rectangle over
-the part of the screen you want to share. Modifiers refine the shape:
+the part of the screen you want to share (the mock call window in the
+clip mirrors what viewers see). Modifiers refine the shape:
 
 - **Drag** draws a freeform region.
 - **⌃ Ctrl** while dragging snaps to standard sizes (1280×720, 1600×900,
@@ -30,16 +33,14 @@ the part of the screen you want to share. Modifiers refine the shape:
 - **Space** while dragging freezes the size and moves the selection
   instead.
 
-The clip cycles through each of these while a mock call window mirrors
-what viewers see:
-
-![Region selection with all modifier modes, mirrored into a mock call](docs/media/demo-region.gif)
-
 ### Follow mode
+
+![Follow modes tracking the active window and the cursor](docs/media/demo-follow.gif)
 
 Follow mode moves the shared region automatically so it stays on what you
 are working on, instead of you re-selecting or dragging it around. It is
-enabled per session from the menu bar (*Follow*) and has two targets:
+enabled per session from the menu bar (*Follow*) and has two targets —
+the clip shows Active Window first, then Cursor:
 
 - **Active Window** — the region jumps to the frontmost window whenever
   focus changes, and by default adopts that window's size.
@@ -48,11 +49,9 @@ enabled per session from the menu bar (*Follow*) and has two targets:
 - Movement is either **snap** (instant) or **glide** (eased) —
   *Settings → Follow movement*.
 
-The clip shows Active Window first, then Cursor:
-
-![Follow modes tracking the active window and the cursor](docs/media/demo-follow.gif)
-
 ### Virtual Monitor
+
+![Virtual Monitor with drag & drop, layout grid and pull-out](docs/media/demo-monitor.gif)
 
 The Virtual Monitor is an extra screen that starts empty; your meeting
 app shares that screen. You see it through a preview panel on your real
@@ -68,8 +67,6 @@ on it unless you put it there.
   operate apps on the monitor; pushing an edge of the virtual screen
   brings the cursor back.
 - **Stopping** returns all windows to your real screen.
-
-![Virtual Monitor with drag & drop, layout grid and pull-out](docs/media/demo-monitor.gif)
 
 *(All clips are recorded by the app itself — `--demo=region|follow|monitor`
 produces them on a synthetic stage with fake content, see
