@@ -6,6 +6,8 @@ final class HotbarModel: ObservableObject {
     @Published var isPaused = false
     @Published var isRecording = false
     @Published var followOn = false
+    @Published var followTarget: FollowMode = .activeWindow
+    @Published var followMenuOpen = false
     @Published var highlightsOn = false
     @Published var previewOn = false
     /// Virtual-monitor sessions have no on-screen region: adjust, presets,
@@ -22,6 +24,8 @@ struct HotbarActions {
     var adjust: () -> Void
     var savePreset: () -> Void
     var follow: () -> Void
+    var followMenu: () -> Void
+    var selectFollow: (FollowMode) -> Void
     var hide: () -> Void
     var beginDrag: () -> Void
     var drag: () -> Void
@@ -37,6 +41,11 @@ struct HotbarView: View {
     var body: some View {
         VStack(spacing: 5) {
             bar
+            // Drawn in-panel like the tooltip below: a real NSMenu opens at
+            // popup level, which sits underneath this screenSaver+1 panel.
+            if model.followMenuOpen && !model.regionless {
+                followMenu
+            }
             // In-panel tooltip: system tooltips render at popup level, which
             // sits below this panel — they'd be invisible. The label stays in
             // the view tree permanently (opacity swap, plain background):
@@ -99,8 +108,7 @@ struct HotbarView: View {
                           action: actions.adjust)
                 barButton("plus.square.on.square", help: "Save region as preset",
                           action: actions.savePreset)
-                barButton("scope", help: "Follow mode",
-                          active: model.followOn, action: actions.follow)
+                followControl
             }
 
             Divider().frame(height: 16)
@@ -117,6 +125,61 @@ struct HotbarView: View {
         .padding(.vertical, 10)
         .background(.ultraThinMaterial, in: Capsule())
         .overlay(Capsule().strokeBorder(.white.opacity(0.15)))
+    }
+
+    /// Split control: the icon toggles the selected follow target on/off,
+    /// the label + chevron open the target dropdown.
+    private var followControl: some View {
+        HStack(spacing: 3) {
+            barButton("scope",
+                      help: model.followOn ? "Stop following"
+                                           : "Follow \(shortLabel(model.followTarget))",
+                      active: model.followOn, action: actions.follow)
+            Button(action: actions.followMenu) {
+                HStack(spacing: 2) {
+                    Text(shortLabel(model.followTarget))
+                        .font(.caption)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 8, weight: .semibold))
+                        .rotationEffect(model.followMenuOpen ? .degrees(180) : .zero)
+                }
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .onHover { hover(hover: $0, label: "Choose follow mode") }
+        }
+    }
+
+    private var followMenu: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            followMenuItem(.activeWindow)
+            followMenuItem(.cursor)
+        }
+        .padding(6)
+        .background(Color.black.opacity(0.72), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func followMenuItem(_ mode: FollowMode) -> some View {
+        Button(action: { actions.selectFollow(mode) }) {
+            HStack(spacing: 5) {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 9, weight: .semibold))
+                    .opacity(model.followTarget == mode && model.followOn ? 1 : 0)
+                Text(mode.displayName)
+                    .font(.caption)
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func shortLabel(_ mode: FollowMode) -> String {
+        mode == .cursor ? "Cursor" : "Window"
     }
 
     private func hover(hover: Bool, label: String) {
@@ -155,7 +218,7 @@ final class HotbarController {
     private var lastRegion: CGRect = .zero
     private var panelGestureAttached: Bool?
     private var lastPanelMoveAt: TimeInterval = 0
-    private var lastFollowChoice: FollowMode = .activeWindow
+    private var lastFollowMode: FollowMode = .off
 
     init(session: ShareSession, settings: SettingsStore) {
         self.session = session
@@ -168,6 +231,7 @@ final class HotbarController {
         if panel == nil {
             build()
         }
+        model.followMenuOpen = false
         refresh()
         // The button set varies by mode (regionless hides region actions) —
         // refit the panel to the current content.
@@ -181,6 +245,10 @@ final class HotbarController {
     func regionChanged(_ region: CGRect) {
         lastRegion = region
         guard panel?.isVisible == true else { return }
+        // Cursor follow chases the pointer: a bar docked to the region would
+        // retreat from the approaching cursor forever and stay unreachable.
+        // Freeze it; refresh() re-attaches it when cursor follow ends.
+        guard settings.followMode != .cursor else { return }
         position()
     }
 
@@ -215,12 +283,25 @@ final class HotbarController {
     func close() {
         panel?.orderOut(nil)
         manualOrigin = nil
+        model.followMenuOpen = false
     }
 
     func refresh() {
         model.isPaused = session?.isPaused ?? false
         model.isRecording = session?.isRecording ?? false
-        model.followOn = settings.followMode != .off
+        let followMode = settings.followMode
+        model.followOn = followMode != .off
+        // The dropdown's target mirrors the last non-off mode, however it
+        // was enabled (hotbar, menu bar, URL scheme).
+        if followMode != .off, settings.followTarget != followMode {
+            settings.followTarget = followMode
+        }
+        model.followTarget = settings.followTarget
+        if lastFollowMode == .cursor, followMode != .cursor,
+           panel?.isVisible == true {
+            position()
+        }
+        lastFollowMode = followMode
         model.highlightsOn = settings.cursorHighlight || settings.clickRipples
         model.previewOn = settings.previewWindowEnabled
         model.regionless = session?.isVirtualMonitor ?? false
@@ -255,6 +336,8 @@ final class HotbarController {
                 PresetPrompt.run(session: session)
             },
             follow: { [weak self] in self?.toggleFollow() },
+            followMenu: { [weak self] in self?.toggleFollowMenu() },
+            selectFollow: { [weak self] in self?.selectFollow($0) },
             hide: { [weak self] in self?.hideForSession() },
             beginDrag: { [weak self] in
                 guard let self, let panel = self.panel else { return }
@@ -307,13 +390,46 @@ final class HotbarController {
     }
 
     private func toggleFollow() {
+        setFollowMenu(open: false)
         if settings.followMode == .off {
-            settings.followMode = lastFollowChoice
+            settings.followMode = settings.followTarget
         } else {
-            lastFollowChoice = settings.followMode
             settings.followMode = .off
         }
         refresh()
+    }
+
+    private func selectFollow(_ mode: FollowMode) {
+        settings.followTarget = mode
+        settings.followMode = mode
+        setFollowMenu(open: false)
+        refresh()
+    }
+
+    private func toggleFollowMenu() {
+        setFollowMenu(open: !model.followMenuOpen)
+    }
+
+    private func setFollowMenu(open: Bool) {
+        guard model.followMenuOpen != open else { return }
+        model.followMenuOpen = open
+        // The hosting view lays the dropdown out on the next runloop pass —
+        // only then does fittingSize include it.
+        DispatchQueue.main.async { [weak self] in self?.refitPanel() }
+    }
+
+    /// Resize to the current content, keeping the bar's top edge in place
+    /// so the dropdown appears to fold out underneath.
+    private func refitPanel() {
+        guard let panel,
+              let hosting = panel.contentView as? NSHostingView<HotbarView> else { return }
+        hosting.layoutSubtreeIfNeeded()
+        let size = hosting.fittingSize
+        guard size != panel.frame.size else { return }
+        let origin = CGPoint(x: panel.frame.origin.x,
+                             y: panel.frame.maxY - size.height)
+        panel.setFrame(CGRect(origin: clamped(origin, size: size), size: size),
+                       display: true)
     }
 
     /// ✕ turns the setting itself off, so the menu/settings checkboxes stay

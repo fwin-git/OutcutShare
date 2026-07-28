@@ -39,6 +39,23 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(reloaded.frameRate, 60)
     }
 
+    func testFollowTargetDefaultsToActiveWindow() {
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertEqual(store.followTarget, .activeWindow)
+    }
+
+    func testFollowTargetPersistsAcrossInstances() {
+        let store = SettingsStore(defaults: defaults)
+        store.followTarget = .cursor
+        XCTAssertEqual(SettingsStore(defaults: defaults).followTarget, .cursor)
+    }
+
+    func testFollowTargetIgnoresStoredOff() {
+        defaults.set("off", forKey: "followTarget")
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertEqual(store.followTarget, .activeWindow)
+    }
+
     func testPrivacyDefaultsAndPersistence() {
         let store = SettingsStore(defaults: defaults)
         XCTAssertTrue(store.hideNotificationBanners)

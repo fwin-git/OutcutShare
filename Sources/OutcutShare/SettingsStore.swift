@@ -252,6 +252,16 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    /// What the hotbar's follow button starts: the last non-off follow mode
+    /// used. Never .off — writers only store real targets.
+    @Published var followTarget: FollowMode {
+        didSet {
+            guard followTarget != oldValue, followTarget != .off else { return }
+            defaults.set(followTarget.rawValue, forKey: "followTarget")
+            notifyChange()
+        }
+    }
+
     @Published var hotbarEnabled: Bool {
         didSet {
             defaults.set(hotbarEnabled, forKey: "hotbarEnabled")
@@ -409,6 +419,9 @@ final class SettingsStore: ObservableObject {
                                      "hotbarEnabled": true])
         self.followMode = defaults.string(forKey: "followMode")
             .flatMap(FollowMode.init(rawValue:)) ?? .off
+        self.followTarget = defaults.string(forKey: "followTarget")
+            .flatMap(FollowMode.init(rawValue:))
+            .flatMap { $0 == .off ? nil : $0 } ?? .activeWindow
         self.hotbarEnabled = defaults.bool(forKey: "hotbarEnabled")
         self.previewWindowEnabled = defaults.bool(forKey: "previewWindowEnabled")
         self.shareWindowTitle = defaults.string(forKey: "shareWindowTitle")
