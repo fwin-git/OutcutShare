@@ -104,12 +104,16 @@ permission; a guided row appears when it's needed.
   draggable, dismissible, toggleable from menu & Settings.
 - **Global hotkeys** — all rebindable to any combo, with duplicate warnings.
   → [hotkeys](docs/hotkeys.md)
+- **Raycast extension** — trigger sharing, presets, pause, recording and
+  modes from Raycast (or any tool, via `outcutshare://` deep links).
+  → [raycast](docs/raycast.md)
 
 ## Docs
 
 | Page | Contents |
 | --- | --- |
 | [Hotkeys](docs/hotkeys.md) | Defaults, recording combos, duplicate handling |
+| [Raycast & URL scheme](docs/raycast.md) | Extension setup, every outcutshare:// command |
 | [Selection & resize modifiers](docs/resize-modifiers.md) | Space/⇧/⌃ in both overlays, edge handles |
 | [How it works & caveats](docs/how-it-works.md) | Hidden window, virtual displays, capture pipeline, limitations |
 | [Settings reference](docs/settings.md) | Every option on all pages, incl. the Virtual Monitor |
