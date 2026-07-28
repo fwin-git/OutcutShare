@@ -23,6 +23,69 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var demoContent: DemoContentWindows?
     private var demoDirector: DemoDirector?
 
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        // Registered before didFinishLaunching so deep links that *launch*
+        // the app (open outcutshare://…) are delivered too.
+        NSAppleEventManager.shared().setEventHandler(
+            self, andSelector: #selector(handleGetURL(_:withReplyEvent:)),
+            forEventClass: AEEventClass(kInternetEventClass),
+            andEventID: AEEventID(kAEGetURL))
+    }
+
+    @objc private func handleGetURL(_ event: NSAppleEventDescriptor,
+                                    withReplyEvent reply: NSAppleEventDescriptor) {
+        guard let urlString = event
+                .paramDescriptor(forKeyword: AEKeyword(keyDirectObject))?.stringValue,
+              let url = URL(string: urlString),
+              let command = URLCommand.parse(url) else { return }
+        handle(command)
+    }
+
+    private func handle(_ command: URLCommand) {
+        let settings = SettingsStore.shared
+        switch command {
+        case .select: session.startSelection()
+        case .shareLast: session.shareLastRegion()
+        case .preset(let id, let name):
+            if let preset = URLCommand.matchPreset(id: id, name: name,
+                                                   in: settings.presets) {
+                session.sharePreset(preset)
+            } else {
+                presentURLError("No preset matches \"\(name ?? id ?? "")\".")
+            }
+        case .stop: session.stop()
+        case .togglePause: session.togglePause()
+        case .toggleRecording: session.toggleRecording()
+        case .follow(let mode): session.setFollow(mode: mode)
+        case .shareMode(let mode):
+            guard session.isIdle else {
+                presentURLError("Stop sharing first to switch the share mode.")
+                return
+            }
+            settings.shareMode = mode
+        case .toggle(let option):
+            switch option {
+            case .preview: settings.previewWindowEnabled.toggle()
+            case .hotbar: settings.hotbarEnabled.toggle()
+            case .cursorHighlights:
+                // Halo and ripples act as one presenter switch externally.
+                let enabled = !settings.cursorHighlight
+                settings.cursorHighlight = enabled
+                settings.clickRipples = enabled
+            case .dimming: settings.dimmingEnabled.toggle()
+            }
+        }
+    }
+
+    private func presentURLError(_ message: String) {
+        let alert = NSAlert()
+        alert.messageText = "Outcut Share"
+        alert.informativeText = message
+        alert.addButton(withTitle: "OK")
+        NSApp.activate(ignoringOtherApps: true)
+        alert.runModal()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Demo helper process: only shows the fake stage windows, nothing
         // else (no status item, no onboarding).

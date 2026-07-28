@@ -197,7 +197,13 @@ Scripts/changelog.sh        feat/fix → consumer changelog
 Scripts/release.sh          conventional-commit version bump + tag + push
 .github/workflows/          ci.yml (tests) + release.yml (tag → release)
 docs/                       user-facing docs, linked from README
+raycast/                    Raycast extension (TypeScript; URL-scheme client)
 ```
+
+The app is remote-controllable via the `outcutshare://` URL scheme
+(`URLCommands.swift` parses, `AppDelegate` dispatches). Grammar changes
+must update `URLCommands.swift`, the `raycast/` commands, and
+`docs/raycast.md` together.
 
 The user's machine: Dell U4919DW ultrawide (5120×1440 @1×, resolution has
 changed mid-project before), macOS 26, German locale. They actively use the

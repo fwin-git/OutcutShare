@@ -1,0 +1,39 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "outcut-share",
+  "title": "Outcut Share",
+  "description": "Control Outcut Share: share regions and presets, pause, record, switch follow and share modes.",
+  "icon": "icon.png",
+  "author": "fwin",
+  "license": "MIT",
+  "commands": [
+    { "name": "share-last", "title": "Share Last Region", "description": "Re-share the most recent region.", "mode": "no-view" },
+    { "name": "select-region", "title": "Select Region & Share", "description": "Start the drag-selection overlay (or the Virtual Monitor when that share mode is active).", "mode": "no-view" },
+    { "name": "share-preset", "title": "Share Preset", "description": "Pick a saved region preset and share it.", "mode": "view" },
+    { "name": "stop-sharing", "title": "Stop Sharing", "description": "End the current share session.", "mode": "no-view" },
+    { "name": "toggle-pause", "title": "Pause / Resume Sharing", "description": "Freeze or blur what viewers see.", "mode": "no-view" },
+    { "name": "toggle-recording", "title": "Start / Stop Recording", "description": "Record the shared region to an .mp4.", "mode": "no-view" },
+    { "name": "set-follow-mode", "title": "Set Follow Mode", "description": "Region follows the active window, the cursor, or nothing.", "mode": "view" },
+    { "name": "set-share-mode", "title": "Set Share Mode", "description": "Hidden Window, Virtual Display or Virtual Monitor (applies while not sharing).", "mode": "view" },
+    { "name": "toggle-preview", "title": "Toggle Preview Window", "description": "Show or hide the floating viewers-see-this panel.", "mode": "no-view" },
+    { "name": "toggle-hotbar", "title": "Toggle Hotbar", "description": "Show or hide the floating quick-action bar.", "mode": "no-view" },
+    { "name": "toggle-cursor-highlights", "title": "Toggle Cursor Highlights", "description": "Cursor halo and click ripples for viewers.", "mode": "no-view" },
+    { "name": "toggle-dimming", "title": "Toggle Dimming", "description": "Dim everything outside the region locally.", "mode": "no-view" }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.88.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  },
+  "scripts": {
+    "dev": "ray develop",
+    "build": "ray build -e dist",
+    "test": "tsx --test tests/plist.test.ts",
+    "typecheck": "tsc --noEmit"
+  }
+}
