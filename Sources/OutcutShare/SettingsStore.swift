@@ -66,7 +66,7 @@ struct HiddenApp: Codable, Equatable, Identifiable {
 }
 
 /// How the region is exposed to sharing apps.
-enum ShareMode: String {
+enum ShareMode: String, CaseIterable {
     /// A virtual display sized to the region ("share screen" in Zoom/Teams).
     case virtualDisplay
     /// A hidden normal-level window mirroring the region ("share window").
