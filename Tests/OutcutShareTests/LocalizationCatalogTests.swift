@@ -96,6 +96,46 @@ final class LocalizationCatalogTests: XCTestCase {
         )
     }
 
+    func testCatalogCompilerProducesEveryRuntimeTable() throws {
+        let output = FileManager.default.temporaryDirectory
+            .appendingPathComponent("OutcutShareLocalization-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(
+            at: output,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: output) }
+
+        for catalogName in ["Localizable", "InfoPlist"] {
+            let catalog = repositoryRoot
+                .appendingPathComponent("Resources/Localization")
+                .appendingPathComponent("\(catalogName).xcstrings")
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
+            process.arguments = [
+                "xcstringstool",
+                "compile",
+                catalog.path,
+                "--output-directory",
+                output.path,
+            ]
+            try process.run()
+            process.waitUntilExit()
+            XCTAssertEqual(process.terminationStatus, 0, catalogName)
+        }
+
+        for locale in supportedLocales {
+            for table in ["Localizable", "InfoPlist"] {
+                let path = output
+                    .appendingPathComponent("\(locale).lproj")
+                    .appendingPathComponent("\(table).strings")
+                XCTAssertTrue(
+                    FileManager.default.fileExists(atPath: path.path),
+                    path.path
+                )
+            }
+        }
+    }
+
     private var repositoryRoot: URL {
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
