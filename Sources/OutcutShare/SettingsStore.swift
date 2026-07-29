@@ -186,6 +186,45 @@ final class SettingsStore: ObservableObject {
             .appendingPathComponent("OutcutShare")
     }
 
+    /// Empty = ~/Pictures/OutcutShare.
+    @Published var screenshotFolder: String {
+        didSet {
+            defaults.set(screenshotFolder, forKey: "screenshotFolder")
+            notifyChange()
+        }
+    }
+
+    var screenshotFolderURL: URL {
+        if !screenshotFolder.isEmpty {
+            return URL(fileURLWithPath: (screenshotFolder as NSString).expandingTildeInPath)
+        }
+        return FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("OutcutShare")
+    }
+
+    /// Longest edge in pixels; 0 = keep the captured size.
+    @Published var screenshotMaxSize: Int {
+        didSet {
+            defaults.set(screenshotMaxSize, forKey: "screenshotMaxSize")
+            notifyChange()
+        }
+    }
+
+    /// 1.0 saves lossless PNG; below that a JPEG with this quality.
+    @Published var screenshotQuality: Double {
+        didSet {
+            defaults.set(screenshotQuality, forKey: "screenshotQuality")
+            notifyChange()
+        }
+    }
+
+    @Published var screenshotShadow: Bool {
+        didSet {
+            defaults.set(screenshotShadow, forKey: "screenshotShadow")
+            notifyChange()
+        }
+    }
+
     @Published var cursorHighlight: Bool {
         didSet {
             defaults.set(cursorHighlight, forKey: "cursorHighlight")
@@ -248,6 +287,16 @@ final class SettingsStore: ObservableObject {
     @Published var followMode: FollowMode {
         didSet {
             defaults.set(followMode.rawValue, forKey: "followMode")
+            notifyChange()
+        }
+    }
+
+    /// What the hotbar's follow button starts: the last non-off follow mode
+    /// used. Never .off — writers only store real targets.
+    @Published var followTarget: FollowMode {
+        didSet {
+            guard followTarget != oldValue, followTarget != .off else { return }
+            defaults.set(followTarget.rawValue, forKey: "followTarget")
             notifyChange()
         }
     }
@@ -409,6 +458,9 @@ final class SettingsStore: ObservableObject {
                                      "hotbarEnabled": true])
         self.followMode = defaults.string(forKey: "followMode")
             .flatMap(FollowMode.init(rawValue:)) ?? .off
+        self.followTarget = defaults.string(forKey: "followTarget")
+            .flatMap(FollowMode.init(rawValue:))
+            .flatMap { $0 == .off ? nil : $0 } ?? .activeWindow
         self.hotbarEnabled = defaults.bool(forKey: "hotbarEnabled")
         self.previewWindowEnabled = defaults.bool(forKey: "previewWindowEnabled")
         self.shareWindowTitle = defaults.string(forKey: "shareWindowTitle")
@@ -432,6 +484,11 @@ final class SettingsStore: ObservableObject {
         self.cursorHighlight = defaults.bool(forKey: "cursorHighlight")
         self.clickRipples = defaults.bool(forKey: "clickRipples")
         self.recordingFolder = defaults.string(forKey: "recordingFolder") ?? ""
+        self.screenshotFolder = defaults.string(forKey: "screenshotFolder") ?? ""
+        self.screenshotMaxSize = defaults.integer(forKey: "screenshotMaxSize")
+        self.screenshotQuality = defaults.object(forKey: "screenshotQuality") == nil
+            ? 1.0 : defaults.double(forKey: "screenshotQuality")
+        self.screenshotShadow = defaults.bool(forKey: "screenshotShadow")
         self.followBehavior = defaults.string(forKey: "followBehavior")
             .flatMap(FollowBehavior.init(rawValue:)) ?? .glide
         self.followResizes = defaults.bool(forKey: "followResizes")

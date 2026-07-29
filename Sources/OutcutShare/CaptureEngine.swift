@@ -43,6 +43,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
     }
 
     private var ownAppExclusion: OwnAppExclusion = .pidAndBundle
+    private var excludedBundleIDs: [String] = []
 
     /// - Parameter sourceRectTopLeft: region in display-local, top-left-origin
     ///   points (see `Geometry.displayLocalTopLeftRect`).
@@ -51,6 +52,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
                excludedBundleIDs: [String],
                ownAppExclusion: OwnAppExclusion = .pidAndBundle) async throws {
         self.ownAppExclusion = ownAppExclusion
+        self.excludedBundleIDs = excludedBundleIDs
         let content: SCShareableContent
         do {
             content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
@@ -117,9 +119,24 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
                                exceptingWindows: [])
     }
 
+    /// One-shot still of exactly what the stream shows: same source rect,
+    /// output size and app exclusions as the live share.
+    func captureStill() async throws -> CGImage {
+        guard let display, let config else { throw CaptureError.displayNotFound }
+        let content = try await SCShareableContent.excludingDesktopWindows(false,
+                                                                           onScreenWindowsOnly: true)
+        let current = content.displays.first { $0.displayID == display.displayID } ?? display
+        let filter = Self.makeFilter(content: content, display: current,
+                                     excludedBundleIDs: excludedBundleIDs,
+                                     ownAppExclusion: ownAppExclusion)
+        return try await SCScreenshotManager.captureImage(contentFilter: filter,
+                                                          configuration: config)
+    }
+
     /// Applies a changed privacy-exclusion list to the running stream.
     func updateExclusions(_ excludedBundleIDs: [String]) async throws {
         guard let stream, let display else { return }
+        self.excludedBundleIDs = excludedBundleIDs
         let content = try await SCShareableContent.excludingDesktopWindows(false,
                                                                            onScreenWindowsOnly: true)
         let current = content.displays.first { $0.displayID == display.displayID } ?? display

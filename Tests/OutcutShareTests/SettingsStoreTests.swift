@@ -39,6 +39,47 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(reloaded.frameRate, 60)
     }
 
+    func testFollowTargetDefaultsToActiveWindow() {
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertEqual(store.followTarget, .activeWindow)
+    }
+
+    func testFollowTargetPersistsAcrossInstances() {
+        let store = SettingsStore(defaults: defaults)
+        store.followTarget = .cursor
+        XCTAssertEqual(SettingsStore(defaults: defaults).followTarget, .cursor)
+    }
+
+    func testFollowTargetIgnoresStoredOff() {
+        defaults.set("off", forKey: "followTarget")
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertEqual(store.followTarget, .activeWindow)
+    }
+
+    func testScreenshotDefaults() {
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertEqual(store.screenshotFolder, "")
+        XCTAssertTrue(store.screenshotFolderURL.path.hasSuffix("Pictures/OutcutShare"))
+        XCTAssertEqual(store.screenshotMaxSize, 0)
+        XCTAssertEqual(store.screenshotQuality, 1.0, accuracy: 0.0001)
+        XCTAssertFalse(store.screenshotShadow)
+    }
+
+    func testScreenshotSettingsPersistAcrossInstances() {
+        let store = SettingsStore(defaults: defaults)
+        store.screenshotFolder = "/tmp/shots"
+        store.screenshotMaxSize = 2048
+        store.screenshotQuality = 0.8
+        store.screenshotShadow = true
+
+        let reloaded = SettingsStore(defaults: defaults)
+        XCTAssertEqual(reloaded.screenshotFolder, "/tmp/shots")
+        XCTAssertEqual(reloaded.screenshotFolderURL.path, "/tmp/shots")
+        XCTAssertEqual(reloaded.screenshotMaxSize, 2048)
+        XCTAssertEqual(reloaded.screenshotQuality, 0.8, accuracy: 0.0001)
+        XCTAssertTrue(reloaded.screenshotShadow)
+    }
+
     func testPrivacyDefaultsAndPersistence() {
         let store = SettingsStore(defaults: defaults)
         XCTAssertTrue(store.hideNotificationBanners)

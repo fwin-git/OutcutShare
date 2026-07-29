@@ -22,6 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var demoContent: DemoContentWindows?
     private var demoDirector: DemoDirector?
+    private var debugResultCard: CaptureResultController?
 
     func applicationWillFinishLaunching(_ notification: Notification) {
         // Registered before didFinishLaunching so deep links that *launch*
@@ -169,6 +170,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             session.startSelection()
             return
         }
+        // --result-card-test=/path/img.png shows the capture-result card
+        // standalone for 4 s (visual harness for its layout).
+        if let cardArg = CommandLine.arguments.first(where: {
+                $0.hasPrefix("--result-card-test=") }) {
+            let url = URL(fileURLWithPath: String(cardArg.dropFirst("--result-card-test=".count)))
+            let controller = CaptureResultController()
+            debugResultCard = controller
+            let anchor = CGRect(x: 800, y: 700, width: 454, height: 69)
+            controller.show(url: url, isVideo: false, near: anchor,
+                            on: NSScreen.screens.first)
+            print("RESULT-CARD shown")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4) { exit(0) }
+            return
+        }
         // --demo=monitor|region records a feature showcase on a clean 16:9
         // stage (see DemoHarness.swift).
         if let arg = CommandLine.arguments.first(where: { $0.hasPrefix("--demo=") }) {
@@ -272,6 +287,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 DispatchQueue.main.asyncAfter(deadline: .now() + time) { [session] in
                     session.toggleRecording()
                     print("SHARE-TEST recording toggled, recording=\(session.isRecording)")
+                }
+            }
+        }
+        // --screenshot-at=t1,t2 saves region screenshots at the given offsets.
+        if let shotArg = CommandLine.arguments.first(where: { $0.hasPrefix("--screenshot-at=") }) {
+            let times = shotArg.dropFirst("--screenshot-at=".count).split(separator: ",").compactMap { Double($0) }
+            for time in times {
+                DispatchQueue.main.asyncAfter(deadline: .now() + time) { [session] in
+                    session.captureScreenshot()
+                    print("SHARE-TEST screenshot requested")
                 }
             }
         }

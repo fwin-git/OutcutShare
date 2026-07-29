@@ -39,8 +39,9 @@ clip mirrors what viewers see). Modifiers refine the shape:
 
 Follow mode moves the shared region automatically so it stays on what you
 are working on, instead of you re-selecting or dragging it around. It is
-enabled per session from the menu bar (*Follow*) and has two targets —
-the clip shows Active Window first, then Cursor:
+enabled per session from the menu bar (*Follow*) or the hotbar's follow
+button (the icon toggles it, the label picks the target) and has two
+targets — the clip shows Active Window first, then Cursor:
 
 - **Active Window** — the region jumps to the frontmost window whenever
   focus changes, and by default adopts that window's size.
@@ -135,9 +136,13 @@ permission; a guided row appears when it's needed.
   visible to you. → [settings](docs/settings.md)
 - **Cursor emphasis** — halo + click ripples, drawn for viewers only.
 - **Recording** (⌃⌥⌘R) — the region straight to .mp4, no meeting needed.
+- **Screenshots** — the hotbar's camera button saves the shared picture;
+  folder, max size, quality and drop shadow are configurable. Every
+  capture (and finished recording) pops a short-lived preview card with
+  Finder, Quick Look and delete at hand. → [settings](docs/settings.md)
 - **Hotbar** — floating quick actions next to the region or monitor preview
-  (stop, pause, record, highlights, preview, resize, preset, follow);
-  draggable, dismissible, toggleable from menu & Settings.
+  (stop, pause, record, screenshot, highlights, preview, resize, preset,
+  follow); draggable, dismissible, toggleable from menu & Settings.
 - **Global hotkeys** — all rebindable to any combo, with duplicate warnings.
   → [hotkeys](docs/hotkeys.md)
 - **Raycast extension** — trigger sharing, presets, pause, recording and

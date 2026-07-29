@@ -13,7 +13,7 @@ Menu bar → **Settings…** — eight pages.
 | Follow movement | Snap or smooth glide when follow mode moves the region | Glide |
 | Resize region to followed window | Follow mode adopts the window's size (aspect-fitted in Virtual Display mode) | on |
 | Follow | Off / Active Window / Cursor (also in menu bar → Follow) | Off |
-| Show floating hotbar | Quick-action bar next to the region: stop, pause, record, highlights, preview, resize, save preset, follow. Auto-positions below → side → top; drag the ≡ grabber to place it manually; ✕ hides it until re-enabled | on |
+| Show floating hotbar | Quick-action bar next to the region: stop, pause, record, screenshot, highlights, preview, resize, save preset, follow (split button — icon toggles, label picks the mode). Auto-positions below → side → top; drag the ≡ grabber to place it manually; ✕ hides it until re-enabled. Stays parked while cursor follow runs, so the moving region can't push it out of reach | on |
 | Show shared-output preview | Small floating window with exactly what viewers see — no need to keep Zoom/Teams open. Also toggled by the hotbar's eye button | off |
 | Share window title | The name sharing apps list for the hidden share window in their window pickers (Hidden Window mode) | Outcut Share (Share Region) |
 | Capture frame rate | 30/60 fps — applies to both the shared picture and recordings | 30 fps |
@@ -94,6 +94,26 @@ Dimming and border are local-only: they're excluded from what viewers see.
 | Setting | Effect | Default |
 | --- | --- | --- |
 | Save recordings to | Folder for .mp4 recordings | ~/Movies/OutcutShare |
+
+## Screenshots
+
+Taken with the hotbar's camera button while sharing — the picture is the
+shared output itself, including privacy exclusions. If the region outline
+has a corner radius, the screenshot's corners are rounded to match.
+Files are named `screenshot_YYYY-MM-DD_HH-mm` (recordings:
+`recording_…`). After every capture — screenshots and finished
+recordings alike — a small preview card folds out under the hotbar for a
+few seconds: show in Finder, peek large with playback (Quick Look,
+tap the eye again to close) or delete, straight from its corner buttons.
+Recordings show a duration + file-size pill; hovering the card keeps it
+open.
+
+| Setting | Effect | Default |
+| --- | --- | --- |
+| Save screenshots to | Folder for region screenshots | ~/Pictures/OutcutShare |
+| Maximum size | Longest edge in pixels (Original / 1024 / 2048 / 4096); never upscales | Original |
+| Quality | 100 % saves a lossless PNG; anything below saves a JPEG at that quality | Lossless PNG |
+| Add a smooth drop shadow | Renders onto a soft-shadow canvas (PNG keeps it transparent, JPEG flattens to white) | off |
 
 ## Presets
 

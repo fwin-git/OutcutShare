@@ -353,6 +353,39 @@ private struct RecordingPage: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            Section("Screenshots") {
+                HStack {
+                    Text("Save screenshots to")
+                    Spacer()
+                    Text(settings.screenshotFolder.isEmpty
+                         ? "~/Pictures/OutcutShare" : settings.screenshotFolder)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Button("Choose…") { chooseScreenshotFolder() }
+                }
+                Picker("Maximum size", selection: $settings.screenshotMaxSize) {
+                    Text("Original").tag(0)
+                    Text("1024 px").tag(1024)
+                    Text("2048 px").tag(2048)
+                    Text("4096 px").tag(4096)
+                }
+                .pickerStyle(.menu)
+                HStack {
+                    Text("Quality")
+                    Slider(value: $settings.screenshotQuality, in: 0.5...1.0)
+                    Text(settings.screenshotQuality >= 0.999
+                         ? "Lossless PNG" : "JPEG \(Int(settings.screenshotQuality * 100)) %")
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                        .frame(width: 96, alignment: .trailing)
+                }
+                Toggle("Add a smooth drop shadow", isOn: $settings.screenshotShadow)
+                Text("Taken from the hotbar's camera button while sharing — the picture is "
+                     + "exactly the shared output, including privacy exclusions.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
     }
@@ -365,6 +398,17 @@ private struct RecordingPage: View {
         panel.directoryURL = settings.recordingFolderURL
         if panel.runModal() == .OK, let url = panel.url {
             settings.recordingFolder = url.path
+        }
+    }
+
+    private func chooseScreenshotFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.directoryURL = settings.screenshotFolderURL
+        if panel.runModal() == .OK, let url = panel.url {
+            settings.screenshotFolder = url.path
         }
     }
 }
@@ -607,7 +651,7 @@ final class SettingsWindowController {
                 rootView: AnyView(PrivacyPage(settings: settings).frame(width: 560, height: 800)))
         case .recording:
             controller = NSHostingController(
-                rootView: AnyView(RecordingPage(settings: settings).frame(width: 560, height: 230)))
+                rootView: AnyView(RecordingPage(settings: settings).frame(width: 560, height: 520)))
         case .presets:
             controller = NSHostingController(
                 rootView: AnyView(PresetsPage(settings: settings).frame(width: 560, height: 360)))
