@@ -166,6 +166,7 @@ Key invariants:
 --show-selector / --show-permissions    open those UIs
 --result-card-test=/path/img-or-mp4     capture-result preview card, standalone
    companions: --open-trim (show the trim UI)  --trim-test=in,out (export range)
+               --ocr-test (copy-text chip, prints clipboard)
 ```
 
 Coordinates are AppKit (bottom-left origin) on the main screen. The shell

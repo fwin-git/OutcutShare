@@ -117,7 +117,12 @@ open.
 
 The card's copy button puts the file on the clipboard (paste into Slack,
 mails, …) — and doubles as a drag source: drag the button, or the
-picture itself, straight into any app or Finder. The scissors button
+picture itself, straight into any app or Finder. The text button runs
+on-device OCR over the picture (a recording's poster frame) and copies
+the recognized text — error messages, IDs, terminal output — reading
+order preserved. Menu bar → **Recent Captures** lists the last few files
+and brings the full card back for any of them, even after it auto-hid
+or the app restarted. The scissors button
 opens **drag-to-trim**: a filmstrip with two handles — drag anywhere on
 the strip and the nearer handle follows, while the big preview scrubs to
 the frame under it. ✓ saves the selection as `…_trim.mp4` next to the

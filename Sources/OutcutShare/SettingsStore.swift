@@ -241,6 +241,16 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    /// Newest-first paths of recent captures (screenshots, recordings,
+    /// trims) feeding the menu bar's Recent Captures submenu.
+    @Published var recentCaptures: [String] {
+        didSet {
+            guard recentCaptures != oldValue else { return }
+            defaults.set(recentCaptures, forKey: "recentCaptures")
+            notifyChange()
+        }
+    }
+
     @Published var recordSystemAudio: Bool {
         didSet {
             defaults.set(recordSystemAudio, forKey: "recordSystemAudio")
@@ -530,6 +540,7 @@ final class SettingsStore: ObservableObject {
         self.screenshotQuality = defaults.object(forKey: "screenshotQuality") == nil
             ? 1.0 : defaults.double(forKey: "screenshotQuality")
         self.screenshotShadow = defaults.bool(forKey: "screenshotShadow")
+        self.recentCaptures = defaults.stringArray(forKey: "recentCaptures") ?? []
         self.pauseMessage = defaults.string(forKey: "pauseMessage") ?? ""
         self.pauseImagePath = defaults.string(forKey: "pauseImagePath") ?? ""
         defaults.register(defaults: ["recordSystemAudio": true])

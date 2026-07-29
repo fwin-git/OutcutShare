@@ -355,6 +355,15 @@ final class ShareSession {
     private var activeMonitorSize: CGSize = .zero
     private lazy var monitorDrag = MonitorDragController(session: self)
     private lazy var resultPreview = CaptureResultController()
+
+    /// Recent Captures menu: brings the capture card back for a past file
+    /// (works while idle too — the card then docks near the screen corner).
+    func showCaptureCard(url: URL) {
+        let isVideo = ["mp4", "mov"].contains(url.pathExtension.lowercased())
+        resultPreview.show(url: url, isVideo: isVideo,
+                           near: hotbar.currentFrame ?? currentRegionRect,
+                           on: currentScreen ?? NSScreen.screens.first)
+    }
     private lazy var zoom = ZoomController(session: self, settings: settings)
 
     /// Viewers-only zoom toward the cursor (⌃⌥⌘Z); region modes only.

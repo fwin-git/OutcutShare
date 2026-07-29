@@ -187,6 +187,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                             on: NSScreen.screens.first)
             print("RESULT-CARD shown")
             var lifetime: Double = 4
+            if CommandLine.arguments.contains("--ocr-test") {
+                lifetime = 8
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    controller.debugOCR()
+                }
+            }
             if CommandLine.arguments.contains("--open-trim") {
                 lifetime = 8
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
