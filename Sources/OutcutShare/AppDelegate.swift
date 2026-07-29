@@ -1,4 +1,5 @@
 import AppKit
+import AVFoundation
 
 extension ShareMode {
     fileprivate init?(testArgument: String) {
@@ -171,18 +172,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             session.startSelection()
             return
         }
-        // --result-card-test=/path/img.png shows the capture-result card
-        // standalone for 4 s (visual harness for its layout).
+        // --result-card-test=/path/img-or-video shows the capture-result
+        // card standalone (visual harness). Companions:
+        //   --open-trim         opens the trim UI after the poster loaded
+        //   --trim-test=in,out  sets the range and exports, prints the result
         if let cardArg = CommandLine.arguments.first(where: {
                 $0.hasPrefix("--result-card-test=") }) {
             let url = URL(fileURLWithPath: String(cardArg.dropFirst("--result-card-test=".count)))
             let controller = CaptureResultController()
             debugResultCard = controller
             let anchor = CGRect(x: 800, y: 700, width: 454, height: 69)
-            controller.show(url: url, isVideo: false, near: anchor,
+            let isVideo = ["mp4", "mov"].contains(url.pathExtension.lowercased())
+            controller.show(url: url, isVideo: isVideo, near: anchor,
                             on: NSScreen.screens.first)
             print("RESULT-CARD shown")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 4) { exit(0) }
+            var lifetime: Double = 4
+            if CommandLine.arguments.contains("--open-trim") {
+                lifetime = 8
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    controller.debugTrim(in: 0, out: 1, exportNow: false)
+                }
+            }
+            if let trimArg = CommandLine.arguments.first(where: {
+                    $0.hasPrefix("--trim-test=") }) {
+                let parts = trimArg.dropFirst("--trim-test=".count)
+                    .split(separator: ",").compactMap { Double($0) }
+                if parts.count == 2 {
+                    lifetime = 10
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        controller.debugTrim(in: parts[0], out: parts[1], exportNow: true)
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 8) {
+                        guard let result = controller.currentURL else { exit(1) }
+                        Task { @MainActor in
+                            let duration = (try? await AVURLAsset(url: result)
+                                .load(.duration)).map(CMTimeGetSeconds) ?? -1
+                            print("TRIM-TEST url=\(result.lastPathComponent) "
+                                  + "duration=\(String(format: "%.2f", duration))")
+                            exit(0)
+                        }
+                    }
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + lifetime) { exit(0) }
             return
         }
         // --demo=monitor|region records a feature showcase on a clean 16:9

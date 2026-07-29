@@ -142,7 +142,8 @@ permission; a guided row appears when it's needed.
 - **Screenshots** — the hotbar's camera button saves the shared picture;
   folder, max size, quality and drop shadow are configurable. Every
   capture (and finished recording) pops a short-lived preview card with
-  Finder, Quick Look and delete at hand. → [settings](docs/settings.md)
+  Finder, Quick Look, delete — and drag-to-trim for recordings, straight
+  on the card. → [settings](docs/settings.md)
 - **Hotbar** — floating quick actions next to the region or monitor preview
   (stop, pause, record, screenshot, highlights, preview, resize, preset,
   follow); draggable, dismissible, toggleable from menu & Settings.
