@@ -8,6 +8,12 @@ final class SettingsViewTests: XCTestCase {
         XCTAssertEqual(SettingsTab.allCases.last?.symbolName, "info.circle")
     }
 
+    @MainActor
+    func testSettingsWidthAccommodatesLocalizedToolbarTabs() {
+        let contentWidth = SettingsWindowController.contentWidth
+        XCTAssertGreaterThanOrEqual(contentWidth, 720)
+    }
+
     /// The window content must be released on close — a retained hierarchy
     /// keeps demo timers rendering forever, which leaks observation
     /// registrations on macOS 26 until the main thread crawls.

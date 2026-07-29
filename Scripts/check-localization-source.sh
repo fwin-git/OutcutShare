@@ -1,34 +1,21 @@
 #!/bin/zsh
 set -euo pipefail
 
+if ! command -v rg >/dev/null 2>&1; then
+    print -u2 -- "Localization source check requires ripgrep (rg)."
+    exit 1
+fi
+
 if (( $# > 0 )); then
     source_files=("$@")
 else
-    source_files=(
-        Sources/OutcutShare/FollowController.swift
-        Sources/OutcutShare/Hotkeys.swift
-        Sources/OutcutShare/SettingsStore.swift
-        Sources/OutcutShare/StatusBarController.swift
-        Sources/OutcutShare/PermissionsView.swift
-        Sources/OutcutShare/AppPicker.swift
-        Sources/OutcutShare/SettingsView.swift
-        Sources/OutcutShare/SettingsShortcutsPage.swift
-        Sources/OutcutShare/DimPreview.swift
-        Sources/OutcutShare/RegionPreviewCanvas.swift
-        Sources/OutcutShare/Hotbar.swift
-        Sources/OutcutShare/LiveFrameWindow.swift
-        Sources/OutcutShare/MonitorDrag.swift
-        Sources/OutcutShare/PreviewWindow.swift
-        Sources/OutcutShare/RegionMover.swift
-        Sources/OutcutShare/RegionSelector.swift
-        Sources/OutcutShare/CaptureResultPreview.swift
-        Sources/OutcutShare/AppDelegate.swift
-        Sources/OutcutShare/ShareSession.swift
-        Sources/OutcutShare/MicCapture.swift
-        Sources/OutcutShare/RecordingEngine.swift
-        Sources/OutcutShare/CaptureEngine.swift
-        Sources/OutcutShare/VirtualDisplay.swift
-    )
+    source_files=()
+    while IFS= read -r source_file; do
+        case "$source_file" in
+            */DemoContent.swift|*/DemoHarness.swift) continue ;;
+        esac
+        source_files+=("$source_file")
+    done < <(rg --files Sources/OutcutShare -g '*.swift' | sort)
 fi
 
 patterns=(
@@ -44,13 +31,33 @@ patterns=(
     'case\s+\.[A-Za-z][A-Za-z0-9_]*:\s*return\s*"[^"]*[A-Za-z][^"]*"'
 )
 
+is_allowlisted_technical_string() {
+    case "$1" in
+        'Sources/OutcutShare/CaptureNaming.swift|return "\(prefix)_\(formatter.string(from: date)).\(ext)"')
+            return 0
+            ;;
+        'Sources/OutcutShare/CaptureNaming.swift|return "\(stem)_\(counter).\(ext)"')
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
 found=0
 for pattern in "${patterns[@]}"; do
     matches="$(rg -n --no-heading --color never "$pattern" -- "${source_files[@]}" || true)"
-    if [[ -n "$matches" ]]; then
-        print -r -- "$matches"
+    for match in ${(f)matches}; do
+        source_file="${match%%:*}"
+        remainder="${match#*:}"
+        source_text="${remainder#*:}"
+        source_text="${source_text#"${source_text%%[![:space:]]*}"}"
+        signature="$source_file|$source_text"
+        is_allowlisted_technical_string "$signature" && continue
+        print -r -- "$match"
         found=1
-    fi
+    done
 done
 
 if (( found )); then

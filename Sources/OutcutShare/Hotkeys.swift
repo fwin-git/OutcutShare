@@ -48,7 +48,8 @@ struct KeyCombo: Equatable, Hashable {
     ]
 
     private static let specialKeyCodes: [UInt32: String] = [
-        49: "Space", 36: "↩", 76: "⌤", 53: "⎋", 51: "⌫", 117: "⌦", 48: "⇥",
+        49: L10n.string(.hotkeySpace),
+        36: "↩", 76: "⌤", 53: "⎋", 51: "⌫", 117: "⌦", 48: "⇥",
         123: "←", 124: "→", 125: "↓", 126: "↑", 115: "↖", 119: "↘", 116: "⇞", 121: "⇟",
     ]
 
@@ -70,7 +71,8 @@ struct KeyCombo: Equatable, Hashable {
         if let name = functionKeyCodes[keyCode] ?? specialKeyCodes[keyCode] {
             return name
         }
-        return layoutKeyName(for: keyCode) ?? "Key\(keyCode)"
+        return layoutKeyName(for: keyCode)
+            ?? L10n.string(.hotkeyKeyFallback, arguments: [Int(keyCode)])
     }
 
     /// Character produced by the key in the user's current keyboard layout.

@@ -502,7 +502,7 @@ private struct AboutPage: View {
                 .interpolation(.high)
                 .frame(width: 96, height: 96)
                 .accessibilityLabel(L10n.string(.settingsAboutAppIcon))
-            Text(verbatim: "Outcut Share")
+            Text(L10n.string(.alertAppTitle))
                 .font(.title2.weight(.semibold))
             Text(L10n.string(.settingsAboutVersion, arguments: [AppVersion.display]))
                 .foregroundStyle(.secondary)
@@ -600,7 +600,10 @@ private struct AppearancePage: View {
                                    }
                                })
                             .disabled(!settings.dimmingEnabled)
-                        Text(verbatim: "\(Int((settings.dimOpacity * 100).rounded())) %")
+                        Text(L10n.string(
+                            .settingsAppearancePercent,
+                            arguments: [Int((settings.dimOpacity * 100).rounded())]
+                        ))
                             .monospacedDigit()
                             .frame(width: 44, alignment: .trailing)
                     }
@@ -663,6 +666,8 @@ private struct AppearancePage: View {
 /// follows the selected pane, and the window animates to each pane's size.
 @MainActor
 final class SettingsWindowController {
+    static let contentWidth: CGFloat = 720
+
     private let settings: SettingsStore
     private var window: NSWindow?
     private var tabController: SettingsTabViewController?
@@ -747,28 +752,36 @@ final class SettingsWindowController {
         switch tab {
         case .general:
             controller = NSHostingController(
-                rootView: AnyView(GeneralPage(settings: settings).frame(width: 560, height: 1105)))
+                rootView: AnyView(GeneralPage(settings: settings)
+                    .frame(width: Self.contentWidth, height: 1105)))
         case .privacy:
             controller = NSHostingController(
-                rootView: AnyView(PrivacyPage(settings: settings).frame(width: 560, height: 800)))
+                rootView: AnyView(PrivacyPage(settings: settings)
+                    .frame(width: Self.contentWidth, height: 800)))
         case .recording:
             controller = NSHostingController(
-                rootView: AnyView(RecordingPage(settings: settings).frame(width: 560, height: 520)))
+                rootView: AnyView(RecordingPage(settings: settings)
+                    .frame(width: Self.contentWidth, height: 520)))
         case .presets:
             controller = NSHostingController(
-                rootView: AnyView(PresetsPage(settings: settings).frame(width: 560, height: 360)))
+                rootView: AnyView(PresetsPage(settings: settings)
+                    .frame(width: Self.contentWidth, height: 360)))
         case .appearance:
             controller = NSHostingController(
-                rootView: AnyView(AppearancePage(settings: settings).frame(width: 560, height: 780)))
+                rootView: AnyView(AppearancePage(settings: settings)
+                    .frame(width: Self.contentWidth, height: 780)))
         case .shortcuts:
             controller = NSHostingController(
-                rootView: AnyView(ShortcutsPage(settings: settings).frame(width: 560, height: 400)))
+                rootView: AnyView(ShortcutsPage(settings: settings)
+                    .frame(width: Self.contentWidth, height: 400)))
         case .permissions:
             controller = NSHostingController(
-                rootView: AnyView(PermissionsPage().frame(width: 560, height: 330)))
+                rootView: AnyView(PermissionsPage()
+                    .frame(width: Self.contentWidth, height: 330)))
         case .about:
             controller = NSHostingController(
-                rootView: AnyView(AboutPage().frame(width: 560, height: 260)))
+                rootView: AnyView(AboutPage()
+                    .frame(width: Self.contentWidth, height: 260)))
         }
         controller.sizingOptions = .preferredContentSize
         // NSTabViewController propagates the selected child's title to the

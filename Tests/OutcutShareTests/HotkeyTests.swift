@@ -22,7 +22,10 @@ final class HotkeyTests: XCTestCase {
 
     func testDisplayStringForSpecialKeys() {
         XCTAssertEqual(KeyCombo(keyCode: 96, modifiers: []).displayString, "F5")
-        XCTAssertEqual(KeyCombo(keyCode: 49, modifiers: [.command]).displayString, "⌘Space")
+        XCTAssertEqual(
+            KeyCombo(keyCode: 49, modifiers: [.command]).displayString,
+            "⌘\(L10n.string(.hotkeySpace))"
+        )
         XCTAssertEqual(KeyCombo(keyCode: 36, modifiers: [.control, .option, .shift, .command]).displayString,
                        "⌃⌥⇧⌘↩")
     }
