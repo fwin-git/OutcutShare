@@ -223,6 +223,12 @@ final class CaptureResultController: NSObject {
 
     private func quickLook() {
         guard let qlPanel = QLPreviewPanel.shared() else { return }
+        // Toggle: a second tap closes the peek (the willClose observer
+        // resets the flag, also when the user closes it via Esc).
+        if quickLookOpen, qlPanel.isVisible {
+            qlPanel.close()
+            return
+        }
         quickLookOpen = true
         qlPanel.dataSource = self
         NSApp.activate(ignoringOtherApps: true)
