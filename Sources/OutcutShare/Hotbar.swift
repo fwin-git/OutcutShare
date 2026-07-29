@@ -87,6 +87,9 @@ private struct BarItemBounds: PreferenceKey {
 }
 
 struct HotbarView: View {
+    /// Sentinel for hover exits that must clear whatever label is showing.
+    static let anyLabel = "__any__"
+
     @ObservedObject var model: HotbarModel
     let actions: HotbarActions
     @State private var dragging = false
@@ -206,6 +209,12 @@ struct HotbarView: View {
         }
         .background(.ultraThinMaterial, in: Capsule())
         .overlay(Capsule().strokeBorder(.white.opacity(0.15)))
+        // Leaving the BAR always clears the tooltip: a button whose help
+        // text flips while hovered (record ↔ stop) otherwise strands its
+        // old label — the per-button exit no longer matches it.
+        .onHover { inside in
+            if !inside { hover(hover: false, label: Self.anyLabel) }
+        }
         // transform (not set): the capsule's entry must MERGE with the
         // items' anchors bubbling up from inside it.
         .transformAnchorPreference(key: BarItemBounds.self, value: .bounds) {
@@ -551,7 +560,7 @@ final class HotbarController {
     private func hoverChanged(hovering: Bool, label: String) {
         if hovering {
             model.hoverLabel = label
-        } else if model.hoverLabel == label {
+        } else if label == HotbarView.anyLabel || model.hoverLabel == label {
             model.hoverLabel = nil
         }
         if model.vertical {
