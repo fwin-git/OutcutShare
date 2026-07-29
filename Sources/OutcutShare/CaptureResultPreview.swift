@@ -35,7 +35,9 @@ final class CaptureResultRing: ObservableObject {
 
 struct CaptureResultActions {
     var copyFile: () -> Void
-    var dragProvider: () -> NSItemProvider
+    var dragURL: () -> URL?
+    var dragThumbnail: () -> NSImage?
+    var dragActive: (Bool) -> Void
     var revealInFinder: () -> Void
     var quickLook: () -> Void
     var beginTrim: () -> Void
@@ -93,8 +95,12 @@ struct CaptureResultView: View {
             .overlay(RoundedRectangle(cornerRadius: 12)
                 .strokeBorder(.white.opacity(0.25)))
             // The picture itself is a drag source too — straight into
-            // Finder, Slack, mails …
-            .onDrag(actions.dragProvider) { dragThumb }
+            // Finder, Slack, mails … (hover is forwarded so the countdown
+            // still pauses while the cursor is on the card).
+            .overlay(FileDragArea(url: actions.dragURL,
+                                  thumbnail: actions.dragThumbnail,
+                                  onHover: actions.hoverChanged,
+                                  dragActive: actions.dragActive))
 
             HStack(spacing: 6) {
                 if model.trimming {
@@ -112,7 +118,10 @@ struct CaptureResultView: View {
                     chip(model.copied ? "checkmark" : "doc.on.doc",
                          help: "Copy file — or drag it out",
                          action: actions.copyFile)
-                        .onDrag(actions.dragProvider) { dragThumb }
+                        .overlay(FileDragArea(url: actions.dragURL,
+                                              thumbnail: actions.dragThumbnail,
+                                              onClick: actions.copyFile,
+                                              dragActive: actions.dragActive))
                     chip("folder", help: "Show in Finder", action: actions.revealInFinder)
                     chip("eye", help: model.isVideo ? "Preview with playback" : "Preview large",
                          action: actions.quickLook)
@@ -146,37 +155,6 @@ struct CaptureResultView: View {
         }
     }
 
-    /// The ghost under the cursor while dragging the file out: a small
-    /// thumbnail of the capture with a badge for videos.
-    private var dragThumb: some View {
-        ZStack(alignment: .bottomTrailing) {
-            Group {
-                if let image = model.image {
-                    Image(nsImage: image)
-                        .resizable()
-                        .scaledToFit()
-                } else {
-                    Image(systemName: model.isVideo ? "film" : "photo")
-                        .font(.system(size: 28))
-                        .foregroundStyle(.white)
-                        .frame(width: 120, height: 80)
-                        .background(Color.black.opacity(0.7))
-                }
-            }
-            .frame(maxWidth: 640, maxHeight: 440)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(.white.opacity(0.6)))
-            if model.isVideo {
-                Image(systemName: "play.circle.fill")
-                    .font(.system(size: 16))
-                    .foregroundStyle(.white)
-                    .shadow(radius: 2)
-                    .padding(5)
-            }
-        }
-    }
-
     private var ringView: some View {
         ZStack {
             Circle().stroke(.white.opacity(0.25), lineWidth: 2.5)
@@ -202,6 +180,95 @@ struct CaptureResultView: View {
         }
         .buttonStyle(.plain)
         .help(help)
+    }
+}
+
+/// AppKit-level file drag source: SwiftUI's onDrag preview is ignored on
+/// macOS, so the ghost is drawn via NSDraggingItem — full control over the
+/// proxy image and its size, plus real drag begin/end callbacks.
+struct FileDragArea: NSViewRepresentable {
+    var url: () -> URL?
+    var thumbnail: () -> NSImage?
+    var onClick: (() -> Void)?
+    var onHover: ((Bool) -> Void)?
+    var dragActive: (Bool) -> Void
+
+    func makeNSView(context: Context) -> FileDragNSView {
+        let view = FileDragNSView()
+        updateNSView(view, context: context)
+        return view
+    }
+
+    func updateNSView(_ view: FileDragNSView, context: Context) {
+        view.fileURL = url
+        view.thumbnailProvider = thumbnail
+        view.onClick = onClick
+        view.onHoverChanged = onHover
+        view.onDragStateChanged = dragActive
+    }
+}
+
+final class FileDragNSView: NSView, NSDraggingSource {
+    var fileURL: (() -> URL?)?
+    var thumbnailProvider: (() -> NSImage?)?
+    var onClick: (() -> Void)?
+    var onHoverChanged: ((Bool) -> Void)?
+    var onDragStateChanged: ((Bool) -> Void)?
+    private var mouseDownEvent: NSEvent?
+    private var didDrag = false
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        trackingAreas.forEach(removeTrackingArea)
+        addTrackingArea(NSTrackingArea(rect: bounds,
+                                       options: [.mouseEnteredAndExited, .activeAlways],
+                                       owner: self, userInfo: nil))
+    }
+
+    override func mouseEntered(with event: NSEvent) { onHoverChanged?(true) }
+    override func mouseExited(with event: NSEvent) { onHoverChanged?(false) }
+
+    override func mouseDown(with event: NSEvent) {
+        mouseDownEvent = event
+        didDrag = false
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        guard !didDrag, let down = mouseDownEvent, let url = fileURL?() else { return }
+        let dx = event.locationInWindow.x - down.locationInWindow.x
+        let dy = event.locationInWindow.y - down.locationInWindow.y
+        guard dx * dx + dy * dy > 16 else { return }
+        didDrag = true
+        let item = NSDraggingItem(pasteboardWriter: url as NSURL)
+        let thumb = thumbnailProvider?()
+        let size = thumb?.size ?? CGSize(width: 64, height: 64)
+        let origin = convert(down.locationInWindow, from: nil)
+        item.setDraggingFrame(CGRect(x: origin.x - size.width / 2,
+                                     y: origin.y - size.height / 2,
+                                     width: size.width, height: size.height),
+                              contents: thumb)
+        beginDraggingSession(with: [item], event: down, source: self)
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        if !didDrag { onClick?() }
+        mouseDownEvent = nil
+    }
+
+    func draggingSession(_ session: NSDraggingSession,
+                         sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {
+        .copy
+    }
+
+    func draggingSession(_ session: NSDraggingSession, willBeginAt screenPoint: NSPoint) {
+        onDragStateChanged?(true)
+    }
+
+    func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint,
+                         operation: NSDragOperation) {
+        onDragStateChanged?(false)
     }
 }
 
@@ -335,7 +402,6 @@ final class CaptureResultController: NSObject {
     private var scrubGenerator: AVAssetImageGenerator?
     private var scrubInFlight = false
     private var pendingScrub: Double?
-    private var dragLevelTimer: Timer?
 
     var currentURL: URL? { url }
 
@@ -447,36 +513,33 @@ final class CaptureResultController: NSObject {
         }
     }
 
-    private func dragProvider() -> NSItemProvider {
-        guard let url, let provider = NSItemProvider(contentsOf: url) else {
-            return NSItemProvider()
-        }
-        provider.suggestedName = url.lastPathComponent
-        beginDragLevelDrop()
-        return provider
+    /// The drag ghost: the capture aspect-fit into ~100 px, rounded — a
+    /// compact proxy under the cursor.
+    private func dragThumbnail() -> NSImage? {
+        let maxSize = CGSize(width: 100, height: 100)
+        guard let source = model.image, source.size.width > 0,
+              source.size.height > 0 else { return nil }
+        let scale = min(maxSize.width / source.size.width,
+                        maxSize.height / source.size.height)
+        let target = CGSize(width: max(1, source.size.width * scale),
+                            height: max(1, source.size.height * scale))
+        let thumb = NSImage(size: target)
+        thumb.lockFocus()
+        let rect = CGRect(origin: .zero, size: target)
+        NSBezierPath(roundedRect: rect, xRadius: 6, yRadius: 6).addClip()
+        source.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 0.95)
+        thumb.unlockFocus()
+        return thumb
     }
 
     /// The card floats above screenSaver level, but the system draws the
     /// drag ghost at the (far lower) dragging window level — in front of
     /// the card the ghost would be invisible. Sink the card below the ghost
-    /// while the mouse button is held, then restore.
-    private func beginDragLevelDrop() {
-        guard let panel else { return }
-        panel.level = .floating
-        dragLevelTimer?.invalidate()
-        let timer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated {
-                guard let self else { return }
-                if NSEvent.pressedMouseButtons & 1 == 0 {
-                    self.dragLevelTimer?.invalidate()
-                    self.dragLevelTimer = nil
-                    self.panel?.level = NSWindow.Level(
-                        rawValue: NSWindow.Level.screenSaver.rawValue + 1)
-                }
-            }
-        }
-        RunLoop.main.add(timer, forMode: .common)
-        dragLevelTimer = timer
+    /// for the duration of the drag session.
+    private func setDragActive(_ active: Bool) {
+        panel?.level = active
+            ? .floating
+            : NSWindow.Level(rawValue: NSWindow.Level.screenSaver.rawValue + 1)
     }
 
     private func revealInFinder() {
@@ -661,7 +724,9 @@ final class CaptureResultController: NSObject {
         if let panel { return panel }
         let actions = CaptureResultActions(
             copyFile: { [weak self] in self?.copyFile() },
-            dragProvider: { [weak self] in self?.dragProvider() ?? NSItemProvider() },
+            dragURL: { [weak self] in self?.url },
+            dragThumbnail: { [weak self] in self?.dragThumbnail() },
+            dragActive: { [weak self] in self?.setDragActive($0) },
             revealInFinder: { [weak self] in self?.revealInFinder() },
             quickLook: { [weak self] in self?.quickLook() },
             beginTrim: { [weak self] in self?.beginTrim() },
