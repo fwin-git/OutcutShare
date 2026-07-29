@@ -40,6 +40,8 @@ struct HotbarActions {
     var beginDrag: () -> Void
     var drag: () -> Void
     var endDrag: () -> Void
+    /// Demo runs only: resolved bar-item rects (hosting-view coordinates).
+    var reportItemBounds: ([String: CGRect]) -> Void = { _ in }
 }
 
 /// One row of the follow dropdown, with its own hover highlight.
@@ -121,6 +123,11 @@ struct HotbarView: View {
         .overlayPreferenceValue(BarItemBounds.self) { anchors in
             GeometryReader { geo in
                 flyouts(anchors: anchors, geo: geo)
+                    // Demo choreography clicks real buttons — it needs their
+                    // resolved rects (inert outside demo runs).
+                    .onChange(of: anchors.mapValues { geo[$0] }, initial: true) { _, rects in
+                        if DemoState.active { actions.reportItemBounds(rects) }
+                    }
             }
         }
     }
@@ -387,6 +394,9 @@ final class HotbarController {
     private var verticalOverride: Bool?
     /// Kept for the measuring hosting controller (see measuredBarSize).
     private var barActions: HotbarActions?
+    /// Bar-item rects in hosting-view coordinates, reported by the view
+    /// during demo runs — resolved to screen rects on demand.
+    private var demoLocalAnchors: [String: CGRect] = [:]
     /// Footprint of the horizontal bar — the auto-side decision always
     /// reasons about whether THAT would fit below/above.
     private var lastHorizontalSize: CGSize?
@@ -470,6 +480,14 @@ final class HotbarController {
     var currentFrame: CGRect? {
         guard let panel, panel.isVisible else { return nil }
         return panel.frame
+    }
+
+    /// Demo choreography: a bar button's current screen rect, by its help
+    /// string — resolved on demand so panel moves never go stale.
+    func demoItemRect(_ help: String) -> CGRect? {
+        guard let panel, panel.isVisible,
+              let local = demoLocalAnchors[help] else { return nil }
+        return Geometry.demoAnchorScreenRect(local: local, panelFrame: panel.frame)
     }
 
     func refresh() {
@@ -625,7 +643,8 @@ final class HotbarController {
             endDrag: { [weak self] in
                 self?.dragAnchor = nil
                 self?.manualOrigin = self?.panel?.frame.origin
-            })
+            },
+            reportItemBounds: { [weak self] in self?.demoLocalAnchors = $0 })
 
         let hosting = NSHostingView(rootView: HotbarView(model: model, actions: actions))
         // Keep this panel out of window auto-layout entirely: with the
