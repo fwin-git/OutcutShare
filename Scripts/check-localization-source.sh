@@ -22,6 +22,12 @@ else
         Sources/OutcutShare/RegionMover.swift
         Sources/OutcutShare/RegionSelector.swift
         Sources/OutcutShare/CaptureResultPreview.swift
+        Sources/OutcutShare/AppDelegate.swift
+        Sources/OutcutShare/ShareSession.swift
+        Sources/OutcutShare/MicCapture.swift
+        Sources/OutcutShare/RecordingEngine.swift
+        Sources/OutcutShare/CaptureEngine.swift
+        Sources/OutcutShare/VirtualDisplay.swift
     )
 fi
 
@@ -31,8 +37,10 @@ patterns=(
     '\.(title|messageText|informativeText|toolTip)\s*=\s*"[^"]*[A-Za-z][^"]*"'
     '\baddButton\(withTitle:\s*"[^"]*[A-Za-z][^"]*"'
     '\.(help|accessibilityLabel)\(\s*"[^"]*[A-Za-z][^"]*"'
-    '\b(help|caption|label|accessibilityDescription):\s*"[^"]*[A-Za-z][^"]*"'
+    '\b(help|caption|title|accessibilityDescription):\s*"[^"]*[A-Za-z][^"]*"'
     '\bdrawHint\(\s*"[^"]*[A-Za-z][^"]*"'
+    'NSLocalizedDescriptionKey:\s*"[^"]*[A-Za-z][^"]*"'
+    '^\s*return\s*"[^"]*[A-Za-z][^"]*"'
     'case\s+\.[A-Za-z][A-Za-z0-9_]*:\s*return\s*"[^"]*[A-Za-z][^"]*"'
 )
 

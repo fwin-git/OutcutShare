@@ -3,6 +3,15 @@ import Foundation
 enum L10n {
     enum Key: String {
         case appName = "app.name"
+        case alertAppTitle = "alert.appTitle"
+        case alertMicrophoneDenied = "alert.microphoneDenied"
+        case alertMicrophoneStartFailed = "alert.microphoneStartFailed"
+        case alertRecordingStartFailed = "alert.recordingStartFailed"
+        case alertScreenshotSaveFailed = "alert.screenshotSaveFailed"
+        case alertSharingStartFailed = "alert.sharingStartFailed"
+        case alertSharingStopped = "alert.sharingStopped"
+        case alertURLNoPreset = "alert.urlNoPreset"
+        case alertURLStopSharingFirst = "alert.urlStopSharingFirst"
         case commonCancel = "common.cancel"
         case commonChoose = "common.choose"
         case commonClear = "common.clear"
@@ -19,6 +28,12 @@ enum L10n {
         case capturePreviewPlayback = "capture.previewPlayback"
         case captureSaveTrimmed = "capture.saveTrimmed"
         case captureShowFinder = "capture.showFinder"
+        case errorCaptureDisplayUnavailable = "error.captureDisplayUnavailable"
+        case errorCapturePermission = "error.capturePermission"
+        case errorMicrophoneDeniedDescription = "error.microphoneDeniedDescription"
+        case errorVirtualDisplayAPIUnavailable = "error.virtualDisplayAPIUnavailable"
+        case errorVirtualDisplayCreationFailed = "error.virtualDisplayCreationFailed"
+        case errorVirtualDisplayOffline = "error.virtualDisplayOffline"
         case followActiveWindow = "follow.activeWindow"
         case followCursor = "follow.cursor"
         case followOff = "follow.off"
@@ -113,6 +128,10 @@ enum L10n {
         case presetPromptSave = "presetPrompt.save"
         case presetPromptTitle = "presetPrompt.title"
         case previewMove = "preview.move"
+        case recordingErrorConfigureMicrophone = "recording.error.configureMicrophone"
+        case recordingErrorConfigureVideoWriter = "recording.error.configureVideoWriter"
+        case recordingErrorNoMicrophone = "recording.error.noMicrophone"
+        case recordingErrorStart = "recording.error.start"
         case selectorDimensions = "selector.dimensions"
         case selectorDrag = "selector.drag"
         case selectorPickWindow = "selector.pickWindow"
@@ -233,6 +252,8 @@ enum L10n {
         case trimKeepsDuration = "trim.keepsDuration"
         case trimOpenFailed = "trim.openFailed"
         case trimRecording = "trim.recording"
+        case virtualDisplayName = "virtualDisplay.name"
+        case virtualMonitorName = "virtualMonitor.name"
     }
 
     static func string(

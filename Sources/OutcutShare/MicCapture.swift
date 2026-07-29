@@ -11,14 +11,20 @@ final class MicCapture: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate,
     func start() throws {
         guard let device = AVCaptureDevice.default(for: .audio) else {
             throw NSError(domain: "OutcutShare", code: 3,
-                          userInfo: [NSLocalizedDescriptionKey: "No microphone available."])
+                          userInfo: [
+                            NSLocalizedDescriptionKey:
+                                L10n.string(.recordingErrorNoMicrophone)
+                          ])
         }
         let input = try AVCaptureDeviceInput(device: device)
         let output = AVCaptureAudioDataOutput()
         output.setSampleBufferDelegate(self, queue: queue)
         guard session.canAddInput(input), session.canAddOutput(output) else {
             throw NSError(domain: "OutcutShare", code: 3,
-                          userInfo: [NSLocalizedDescriptionKey: "Microphone could not be configured."])
+                          userInfo: [
+                            NSLocalizedDescriptionKey:
+                                L10n.string(.recordingErrorConfigureMicrophone)
+                          ])
         }
         session.addInput(input)
         session.addOutput(output)

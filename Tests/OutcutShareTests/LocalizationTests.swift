@@ -111,6 +111,17 @@ final class LocalizationTests: XCTestCase {
         )
     }
 
+    func testAppOwnedLocalizedErrorsUseCatalogMessages() {
+        XCTAssertEqual(
+            CaptureEngine.CaptureError.displayNotFound.errorDescription,
+            L10n.string(.errorCaptureDisplayUnavailable)
+        )
+        XCTAssertEqual(
+            VirtualDisplay.VDError.creationFailed.errorDescription,
+            L10n.string(.errorVirtualDisplayCreationFailed)
+        )
+    }
+
     private func writeStrings(
         _ strings: [String: String],
         locale: String,

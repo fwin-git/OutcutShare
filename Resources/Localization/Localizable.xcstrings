@@ -1,6 +1,384 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "alert.appTitle": {
+      "comment": "User-facing text: Outcut Share",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outcut Share"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outcut Share"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outcut Share"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outcut Share"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outcut Share"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outcut Share"
+          }
+        }
+      }
+    },
+    "alert.microphoneDenied": {
+      "comment": "User-facing text: Microphone access is denied",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone access is denied"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mikrofonzugriff verweigert"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accès au microphone refusé"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acceso al micrófono denegado"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "麦克风访问被拒绝"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マイクへのアクセスが拒否されました"
+          }
+        }
+      }
+    },
+    "alert.microphoneStartFailed": {
+      "comment": "User-facing text: Microphone couldn't start",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone couldn't start"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mikrofon konnte nicht gestartet werden"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le microphone n’a pas pu démarrer"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo iniciar el micrófono"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法启动麦克风"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マイクを開始できませんでした"
+          }
+        }
+      }
+    },
+    "alert.recordingStartFailed": {
+      "comment": "User-facing text: Recording couldn't start",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording couldn't start"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufnahme konnte nicht gestartet werden"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’enregistrement n’a pas pu démarrer"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo iniciar la grabación"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法开始录制"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "録画を開始できませんでした"
+          }
+        }
+      }
+    },
+    "alert.screenshotSaveFailed": {
+      "comment": "User-facing text: Screenshot couldn't be saved",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screenshot couldn't be saved"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screenshot konnte nicht gesichert werden"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La capture d’écran n’a pas pu être enregistrée"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo guardar la captura de pantalla"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法存储截屏"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スクリーンショットを保存できませんでした"
+          }
+        }
+      }
+    },
+    "alert.sharingStartFailed": {
+      "comment": "User-facing text: OutcutShare couldn't start sharing",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OutcutShare couldn't start sharing"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OutcutShare konnte die Freigabe nicht starten"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OutcutShare n’a pas pu démarrer le partage"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OutcutShare no pudo iniciar el uso compartido"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OutcutShare 无法开始共享"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OutcutShareで共有を開始できませんでした"
+          }
+        }
+      }
+    },
+    "alert.sharingStopped": {
+      "comment": "User-facing text: Sharing stopped",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sharing stopped"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Freigabe beendet"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partage arrêté"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uso compartido detenido"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共享已停止"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有が停止しました"
+          }
+        }
+      }
+    },
+    "alert.urlNoPreset": {
+      "comment": "User-facing text: No preset matches “%@”.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No preset matches “%@”."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Voreinstellung entspricht „%@“."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun préréglage ne correspond à « %@ »."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ningún preajuste coincide con «%@»."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有与“%@”匹配的预设。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」に一致するプリセットがありません。"
+          }
+        }
+      }
+    },
+    "alert.urlStopSharingFirst": {
+      "comment": "User-facing text: Stop sharing first to switch the share mode.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop sharing first to switch the share mode."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beenden Sie zuerst die Freigabe, um den Freigabemodus zu wechseln."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêtez d’abord le partage pour changer de mode de partage."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detén primero el uso compartido para cambiar el modo."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先停止共享，再切换共享模式。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有モードを切り替える前に共有を停止してください。"
+          }
+        }
+      }
+    },
     "app.name": {
       "comment": "User-facing text: OutcutShare",
       "extractionState": "manual",
@@ -711,6 +1089,258 @@
           "stringUnit": {
             "state": "translated",
             "value": "プレビュー"
+          }
+        }
+      }
+    },
+    "error.captureDisplayUnavailable": {
+      "comment": "User-facing text: The display containing the region is no longer available.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The display containing the region is no longer available."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Bildschirm mit dem Bereich ist nicht mehr verfügbar."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’écran contenant la région n’est plus disponible."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La pantalla que contiene la región ya no está disponible."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "包含该区域的显示器已不可用。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "領域があるディスプレイは使用できなくなりました。"
+          }
+        }
+      }
+    },
+    "error.capturePermission": {
+      "comment": "User-facing text: OutcutShare needs Screen Recording permission. Grant it under System Settings → Privacy & Security → Screen Recording, then try again.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OutcutShare needs Screen Recording permission. Grant it under System Settings → Privacy & Security → Screen Recording, then try again."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OutcutShare benötigt die Berechtigung für Bildschirmaufnahmen. Erteilen Sie sie unter Systemeinstellungen → Datenschutz & Sicherheit → Bildschirmaufnahme und versuchen Sie es erneut."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OutcutShare a besoin de l’autorisation Enregistrement de l’écran. Accordez-la dans Réglages Système → Confidentialité et sécurité → Enregistrement de l’écran, puis réessayez."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OutcutShare necesita permiso de Grabación de pantalla. Concédelo en Ajustes del Sistema → Privacidad y seguridad → Grabación de pantalla y vuelve a intentarlo."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OutcutShare 需要“屏幕录制”权限。请前往“系统设置”→“隐私与安全性”→“屏幕录制”授予权限，然后重试。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OutcutShareには画面収録のアクセス権が必要です。「システム設定」→「プライバシーとセキュリティ」→「画面収録」で許可してから、もう一度お試しください。"
+          }
+        }
+      }
+    },
+    "error.microphoneDeniedDescription": {
+      "comment": "User-facing text: The recording continues without the microphone. Allow it under System Settings → Privacy & Security → Microphone, or disable the mic toggle in Settings → Recording.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The recording continues without the microphone. Allow it under System Settings → Privacy & Security → Microphone, or disable the mic toggle in Settings → Recording."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Aufnahme wird ohne Mikrofon fortgesetzt. Erlauben Sie den Zugriff unter Systemeinstellungen → Datenschutz & Sicherheit → Mikrofon oder deaktivieren Sie das Mikrofon unter Einstellungen → Aufnahme."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’enregistrement continue sans le microphone. Autorisez-le dans Réglages Système → Confidentialité et sécurité → Microphone, ou désactivez le microphone dans Réglages → Enregistrement."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La grabación continúa sin el micrófono. Permítelo en Ajustes del Sistema → Privacidad y seguridad → Micrófono, o desactiva el micrófono en Ajustes → Grabación."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "录制将在不使用麦克风的情况下继续。请前往“系统设置”→“隐私与安全性”→“麦克风”允许访问，或在“设置”→“录制”中关闭麦克风。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "録画はマイクなしで続行します。「システム設定」→「プライバシーとセキュリティ」→「マイク」で許可するか、「設定」→「録画」でマイクをオフにしてください。"
+          }
+        }
+      }
+    },
+    "error.virtualDisplayAPIUnavailable": {
+      "comment": "User-facing text: This macOS version does not provide the virtual display API OutcutShare relies on.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This macOS version does not provide the virtual display API OutcutShare relies on."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese macOS-Version stellt die von OutcutShare benötigte API für virtuelle Bildschirme nicht bereit."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette version de macOS ne fournit pas l’API d’écran virtuel requise par OutcutShare."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta versión de macOS no ofrece la API de pantalla virtual que necesita OutcutShare."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此 macOS 版本未提供 OutcutShare 所需的虚拟显示器 API。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このmacOSバージョンにはOutcutShareが必要とする仮想ディスプレイAPIがありません。"
+          }
+        }
+      }
+    },
+    "error.virtualDisplayCreationFailed": {
+      "comment": "User-facing text: The virtual display could not be created.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The virtual display could not be created."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der virtuelle Bildschirm konnte nicht erstellt werden."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’écran virtuel n’a pas pu être créé."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo crear la pantalla virtual."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法创建虚拟显示器。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仮想ディスプレイを作成できませんでした。"
+          }
+        }
+      }
+    },
+    "error.virtualDisplayOffline": {
+      "comment": "User-facing text: The virtual display was created but never came online.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The virtual display was created but never came online."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der virtuelle Bildschirm wurde erstellt, ist aber nicht online gegangen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’écran virtuel a été créé, mais n’est jamais apparu."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La pantalla virtual se creó, pero nunca llegó a estar disponible."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "虚拟显示器已创建，但始终未上线。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仮想ディスプレイは作成されましたが、オンラインになりませんでした。"
           }
         }
       }
@@ -4659,6 +5289,174 @@
           "stringUnit": {
             "state": "translated",
             "value": "プレビューを移動"
+          }
+        }
+      }
+    },
+    "recording.error.configureMicrophone": {
+      "comment": "User-facing text: Microphone could not be configured.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone could not be configured."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Mikrofon konnte nicht konfiguriert werden."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le microphone n’a pas pu être configuré."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo configurar el micrófono."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法配置麦克风。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マイクを構成できませんでした。"
+          }
+        }
+      }
+    },
+    "recording.error.configureVideoWriter": {
+      "comment": "User-facing text: Cannot configure video writer.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cannot configure video writer."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Video-Writer kann nicht konfiguriert werden."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de configurer l’encodeur vidéo."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se puede configurar el codificador de vídeo."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法配置视频写入器。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ビデオライターを構成できません。"
+          }
+        }
+      }
+    },
+    "recording.error.noMicrophone": {
+      "comment": "User-facing text: No microphone available.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No microphone available."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Mikrofon verfügbar."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun microphone disponible."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay ningún micrófono disponible."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有可用的麦克风。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用できるマイクがありません。"
+          }
+        }
+      }
+    },
+    "recording.error.start": {
+      "comment": "User-facing text: Recording could not start.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording could not start."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Aufnahme konnte nicht gestartet werden."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’enregistrement n’a pas pu démarrer."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo iniciar la grabación."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法开始录制。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "録画を開始できませんでした。"
           }
         }
       }
@@ -9699,6 +10497,90 @@
           "stringUnit": {
             "state": "translated",
             "value": "録画をトリミング"
+          }
+        }
+      }
+    },
+    "virtualDisplay.name": {
+      "comment": "User-facing text: Outcut Share",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outcut Share"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outcut Share"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outcut Share"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outcut Share"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outcut Share"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outcut Share"
+          }
+        }
+      }
+    },
+    "virtualMonitor.name": {
+      "comment": "User-facing text: Outcut Share Monitor",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outcut Share Monitor"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outcut Share-Monitor"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moniteur Outcut Share"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monitor de Outcut Share"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outcut Share 显示器"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outcut Shareモニタ"
           }
         }
       }
