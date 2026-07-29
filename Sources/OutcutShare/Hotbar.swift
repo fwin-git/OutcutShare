@@ -42,6 +42,45 @@ struct HotbarActions {
     var endDrag: () -> Void
 }
 
+/// One row of the follow dropdown, with its own hover highlight.
+private struct FollowMenuRow: View {
+    let mode: FollowMode
+    let selected: Bool
+    let action: () -> Void
+    @State private var hovered = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 9, weight: .semibold))
+                    .opacity(selected ? 1 : 0)
+                Text(mode.displayName)
+                    .font(.caption)
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(hovered ? Color.white.opacity(0.18) : .clear,
+                        in: RoundedRectangle(cornerRadius: 5))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovered = $0 }
+    }
+}
+
+/// Icon-row bounds keyed by their hover label (plus "__bar__" for the
+/// capsule), used to align the vertical bar's flyouts with their icons.
+private struct BarItemBounds: PreferenceKey {
+    static let defaultValue: [String: Anchor<CGRect>] = [:]
+    static func reduce(value: inout [String: Anchor<CGRect>],
+                       nextValue: () -> [String: Anchor<CGRect>]) {
+        value.merge(nextValue()) { $1 }
+    }
+}
+
 struct HotbarView: View {
     @ObservedObject var model: HotbarModel
     let actions: HotbarActions
@@ -50,22 +89,29 @@ struct HotbarView: View {
     var body: some View {
         Group {
             if model.vertical {
-                // Companions fly out to the side: below the bar they'd be
-                // clipped to the capsule's width.
-                HStack(alignment: .bottom, spacing: 6) {
+                // Companions fly out to the side (below the bar they'd be
+                // clipped to the capsule's width): an invisible copy in the
+                // layout reserves the panel's width, the overlay places the
+                // visible copies at the hovered icon's row.
+                HStack(alignment: .top, spacing: 6) {
                     bar
                     VStack(alignment: .leading, spacing: 6) {
-                        // Drawn in-panel: a real NSMenu opens at popup level,
-                        // which sits underneath this screenSaver+1 panel.
+                        tooltip.opacity(0)
                         if model.followMenuOpen && !model.regionless {
-                            followMenu
+                            followMenu.opacity(0).disabled(true)
                         }
-                        tooltip
+                    }
+                }
+                .overlayPreferenceValue(BarItemBounds.self) { anchors in
+                    GeometryReader { geo in
+                        verticalFlyouts(anchors: anchors, geo: geo)
                     }
                 }
             } else {
                 VStack(spacing: 5) {
                     bar
+                    // Drawn in-panel: a real NSMenu opens at popup level,
+                    // which sits underneath this screenSaver+1 panel.
                     if model.followMenuOpen && !model.regionless {
                         followMenu
                             .frame(maxWidth: .infinity, alignment: .trailing)
@@ -76,6 +122,30 @@ struct HotbarView: View {
             }
         }
         .fixedSize()
+    }
+
+    /// Vertical mode: tooltip rides at its icon's row, the dropdown at the
+    /// follow control's row — both to the right of the capsule.
+    private func verticalFlyouts(anchors: [String: Anchor<CGRect>],
+                                 geo: GeometryProxy) -> some View {
+        let flyoutX = anchors["__bar__"].map { geo[$0].maxX + 6 } ?? 50
+        var tooltipY = geo.size.height - 22
+        if let label = model.hoverLabel, let anchor = anchors[label] {
+            tooltipY = geo[anchor].midY - 11
+        }
+        tooltipY = min(max(0, tooltipY), geo.size.height - 22)
+        var menuY = geo.size.height - 64
+        if let anchor = anchors["Choose follow mode"] {
+            menuY = min(max(0, geo[anchor].minY - 20), geo.size.height - 64)
+        }
+        return ZStack(alignment: .topLeading) {
+            if model.followMenuOpen && !model.regionless {
+                followMenu.offset(x: flyoutX, y: menuY)
+            }
+            if model.hoverLabel != nil {
+                tooltip.offset(x: flyoutX, y: tooltipY)
+            }
+        }
     }
 
     // In-panel tooltip: system tooltips render at popup level, which sits
@@ -110,6 +180,11 @@ struct HotbarView: View {
         }
         .background(.ultraThinMaterial, in: Capsule())
         .overlay(Capsule().strokeBorder(.white.opacity(0.15)))
+        // transform (not set): the capsule's entry must MERGE with the
+        // items' anchors bubbling up from inside it.
+        .transformAnchorPreference(key: BarItemBounds.self, value: .bounds) {
+            $0["__bar__"] = $1
+        }
     }
 
     @ViewBuilder
@@ -139,6 +214,9 @@ struct HotbarView: View {
                         }
                 )
                 .onHover { hover(hover: $0, label: "Move (drag) / rotate (click)") }
+                .anchorPreference(key: BarItemBounds.self, value: .bounds) {
+                    ["Move (drag) / rotate (click)": $0]
+                }
 
             barButton("stop.fill", help: "Stop sharing", action: actions.stop)
             barButton(model.isPaused ? "play.fill" : "pause.fill",
@@ -178,6 +256,9 @@ struct HotbarView: View {
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
             .onHover { hover(hover: $0, label: "Hide hotbar") }
+            .anchorPreference(key: BarItemBounds.self, value: .bounds) {
+                ["Hide hotbar": $0]
+            }
     }
 
     private var ocrSymbol: String {
@@ -213,6 +294,9 @@ struct HotbarView: View {
         .foregroundStyle(model.followOn ? AnyShapeStyle(Color.accentColor)
                                         : AnyShapeStyle(.secondary))
         .onHover { hover(hover: $0, label: "Choose follow mode") }
+        .anchorPreference(key: BarItemBounds.self, value: .bounds) {
+            ["Choose follow mode": $0]
+        }
 
         if model.vertical {
             VStack(spacing: 2) {
@@ -237,20 +321,9 @@ struct HotbarView: View {
     }
 
     private func followMenuItem(_ mode: FollowMode) -> some View {
-        Button(action: { actions.selectFollow(mode) }) {
-            HStack(spacing: 5) {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 9, weight: .semibold))
-                    .opacity(model.followTarget == mode && model.followOn ? 1 : 0)
-                Text(mode.displayName)
-                    .font(.caption)
-            }
-            .foregroundStyle(.white)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
+        FollowMenuRow(mode: mode,
+                      selected: model.followTarget == mode && model.followOn,
+                      action: { actions.selectFollow(mode) })
     }
 
     private func shortLabel(_ mode: FollowMode) -> String {
@@ -271,6 +344,7 @@ struct HotbarView: View {
         .buttonStyle(.plain)
         .foregroundStyle(tint ?? (active ? Color.accentColor : Color.primary))
         .onHover { hover(hover: $0, label: help) }
+        .anchorPreference(key: BarItemBounds.self, value: .bounds) { [help: $0] }
     }
 }
 
@@ -463,11 +537,21 @@ final class HotbarController {
         model.vertical = vertical
         model.followMenuOpen = false
         let size = measuredBarSize()
-        let origin = clamped(CGPoint(x: topLeft.x, y: topLeft.y - size.height),
-                             size: size)
-        panel.setFrame(CGRect(origin: origin, size: size), display: true)
+        let hinge = CGPoint(x: topLeft.x, y: topLeft.y - size.height)
+        let settled = clamped(hinge, size: size)
+        // Rotate at the hinge instantly; when the rotated bar pokes past
+        // the screen, glide to the clamped spot instead of jumping there.
+        panel.setFrame(CGRect(origin: hinge, size: size), display: true)
+        if settled != hinge {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.3
+                context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                panel.animator().setFrame(CGRect(origin: settled, size: size),
+                                          display: true)
+            }
+        }
         if manualOrigin != nil {
-            manualOrigin = origin
+            manualOrigin = settled
         }
     }
 
