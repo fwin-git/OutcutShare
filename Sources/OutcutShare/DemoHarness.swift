@@ -210,7 +210,9 @@ final class DemoKeystrokeHUD {
 
 /// `--demo=<scenario>` — sets a clean 16:9 stage on the main screen, spawns
 /// the helper's fake windows, choreographs real interactions with synthetic
-/// input and records the stage to an .mp4. Scenarios: `monitor`, `region`.
+/// input and records the stage to an .mp4. Scenarios: `monitor`, `region`,
+/// `follow`, `zoom`, `capture` — plus `raycast`, a still of the Raycast
+/// command list.
 @MainActor
 final class DemoDirector {
     private let session: ShareSession
@@ -227,6 +229,8 @@ final class DemoDirector {
     private var savedPreview = false
     private var savedFollowBehavior: FollowBehavior = .glide
     private var savedFollowResizes = true
+    private var savedHotbarEnabled = true
+    private var savedZoomFactor = 2.0
     private var meetMock: DemoMeetMock?
 
     init(session: ShareSession, scenario: String) {
@@ -277,6 +281,8 @@ final class DemoDirector {
         savedPreview = settings.previewWindowEnabled
         savedFollowBehavior = settings.followBehavior
         savedFollowResizes = settings.followResizes
+        savedHotbarEnabled = settings.hotbarEnabled
+        savedZoomFactor = settings.zoomFactor
         stage = Geometry.demoStageRect(visibleFrame: screen.visibleFrame)
         keystrokeHUD = DemoKeystrokeHUD(stage: stage)
         showBackdrop()
@@ -292,6 +298,8 @@ final class DemoDirector {
             url = try await regionScenario(screen: screen)
         case "follow":
             url = try await followScenario(screen: screen)
+        case "zoom":
+            url = try await zoomScenario(screen: screen)
         default:
             throw DemoError.unknownScenario
         }
@@ -569,6 +577,90 @@ final class DemoDirector {
         return url
     }
 
+    /// Viewer zoom: the call mirror punches into a 2× window that tracks
+    /// the cursor while the stage visibly stays put; then a preset glides
+    /// the live region to new content — the share never drops.
+    private func zoomScenario(screen: NSScreen) async throws -> URL {
+        settings.shareMode = .hiddenWindow
+        settings.previewWindowEnabled = false // the call mock is the mirror
+        settings.hotbarEnabled = false // the bar would trail both region hops
+        settings.zoomFactor = 2.0
+        let callFrame = CGRect(x: stage.maxX - stage.width * 0.40 - 16,
+                               y: stage.minY + stage.height * 0.16,
+                               width: stage.width * 0.40, height: stage.height * 0.52)
+        let meet = DemoMeetMock(frame: callFrame)
+        meetMock = meet
+        session.demoFrameTap = { [weak meet] surface in
+            meet?.display(surface: surface)
+        }
+
+        // Two 16:9 region slots on the stage's left: notes + metrics fill
+        // the TOP one, chat waits in the BOTTOM one for the preset glide.
+        // The bottom slot must clear the caption chip at the stage's bottom
+        // center — the chip is a live window and would leak into the share.
+        let regionW = (stage.width * 0.40).rounded()
+        let regionH = (regionW * 9 / 16).rounded()
+        let regionTop = CGRect(x: stage.minX + stage.width * 0.035,
+                               y: stage.maxY - stage.height * 0.04 - regionH,
+                               width: regionW, height: regionH)
+        let regionBottom = regionTop.offsetBy(dx: 0,
+                                              dy: -(regionH + stage.height * 0.03))
+        let sorted = try helperWindows(in: stage).sorted { $0.frame.minX < $1.frame.minX }
+        guard sorted.count >= 3 else { throw DemoError.missingDemoWindow }
+        WindowMover.move(window: sorted[0], toAppKitOrigin:
+            CGPoint(x: regionTop.minX + 8, y: regionTop.minY + 4))
+        WindowMover.move(window: sorted[1], toAppKitOrigin:
+            CGPoint(x: regionTop.maxX - sorted[1].frame.width - 8,
+                    y: regionTop.minY + regionH * 0.10))
+        WindowMover.move(window: sorted[2], toAppKitOrigin:
+            CGPoint(x: regionBottom.midX - sorted[2].frame.width / 2,
+                    y: regionBottom.minY + (regionH - sorted[2].frame.height) / 2))
+        // Frontmost hygiene: ours, not whatever the user last used.
+        await driver.click(at: titleBarPoint(of: CGRect(
+            x: regionTop.minX + 8, y: regionTop.minY + 4,
+            width: sorted[0].frame.width, height: sorted[0].frame.height)))
+        await driver.pause(0.5)
+
+        let url = try startRecording(screen: screen)
+        await driver.pause(0.6)
+        session.startSharing(rect: regionTop, on: screen)
+        try await waitForActive()
+        await driver.pause(1.4)
+
+        // Beat 1: zoom in — the mirror punches in, the stage stays put.
+        keystrokeHUD?.show(key: "⌃⌥⌘Z", caption: "Viewers zoom in — your screen stays put")
+        await driver.move(to: CGPoint(x: regionTop.minX + regionW * 0.72,
+                                      y: regionTop.midY), over: 0.8)
+        session.toggleZoom()
+        await driver.pause(2.6)
+
+        // Beat 2: the zoom window trails the cursor across the content.
+        keystrokeHUD?.show(key: "Zoom", caption: "Follows your cursor")
+        await driver.move(to: CGPoint(x: regionTop.minX + regionW * 0.16,
+                                      y: regionTop.minY + regionH * 0.62), over: 1.7)
+        await driver.pause(0.8)
+        await driver.move(to: CGPoint(x: regionTop.minX + regionW * 0.20,
+                                      y: regionTop.minY + regionH * 0.22), over: 1.4)
+        await driver.pause(0.9)
+
+        // Beat 3: glide back out.
+        session.toggleZoom()
+        await driver.pause(1.6)
+
+        // Beat 4: live preset switch — the region glides, the share survives.
+        keystrokeHUD?.show(key: "⌃⌥⌘1", caption: "Preset — the region glides, the share never stops")
+        session.sharePreset(RegionPreset(
+            name: "Chat",
+            region: StoredRegion(rect: regionBottom, displayID: screen.displayID),
+            shareModeRaw: ShareMode.hiddenWindow.rawValue))
+        await driver.pause(3.0)
+        keystrokeHUD?.hide()
+        await driver.pause(0.6)
+        session.stop()
+        await driver.pause(0.8)
+        return url
+    }
+
     // MARK: Plumbing
 
     private func waitForActive() async throws {
@@ -722,6 +814,8 @@ final class DemoDirector {
         settings.previewWindowEnabled = savedPreview
         settings.followBehavior = savedFollowBehavior
         settings.followResizes = savedFollowResizes
+        settings.hotbarEnabled = savedHotbarEnabled
+        settings.zoomFactor = savedZoomFactor
         try? await Task.sleep(nanoseconds: 500_000_000)
     }
 }

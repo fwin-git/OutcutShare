@@ -223,8 +223,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + lifetime) { exit(0) }
             return
         }
-        // --demo=monitor|region records a feature showcase on a clean 16:9
-        // stage (see DemoHarness.swift).
+        // --demo=monitor|region|follow|zoom|capture records a feature
+        // showcase on a clean 16:9 stage (see DemoHarness.swift);
+        // --demo=raycast captures a still of the Raycast command list.
         if let arg = CommandLine.arguments.first(where: { $0.hasPrefix("--demo=") }) {
             let director = DemoDirector(session: session,
                                         scenario: String(arg.dropFirst("--demo=".count)))
