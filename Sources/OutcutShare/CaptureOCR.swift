@@ -1,6 +1,11 @@
 import CoreGraphics
 import Vision
 
+/// Feedback phases of a copy-text button (capture card and hotbar).
+enum OCRChipState {
+    case idle, working, done, empty
+}
+
 /// Text recognition for captures (the card's "copy text" chip).
 enum CaptureOCR {
     /// Orders Vision line observations into readable text: rows top to

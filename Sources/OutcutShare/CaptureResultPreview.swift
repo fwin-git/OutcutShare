@@ -24,8 +24,7 @@ final class CaptureResultModel: ObservableObject {
     /// Copy-chip feedback: shows a checkmark for a moment after copying.
     @Published var copied = false
 
-    enum OCRState { case idle, working, done, empty }
-    @Published var ocrState: OCRState = .idle
+    @Published var ocrState: OCRChipState = .idle
 }
 
 /// Countdown fraction on its own tiny observable: only the ring view

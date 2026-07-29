@@ -254,6 +254,20 @@ final class ShareSession {
         }
     }
 
+    /// Hotbar OCR: reads the current shared output and puts the recognized
+    /// text on the clipboard. Returns whether any text was found.
+    func copyRegionTextToClipboard() async -> Bool {
+        guard state == .active, let capture,
+              let image = try? await capture.captureStill() else { return false }
+        let text = await CaptureOCR.recognizeText(in: image)
+        guard !text.isEmpty else { return false }
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+        NSSound(named: "Pop")?.play()
+        return true
+    }
+
     /// Pauses/resumes what viewers see without touching the stream: frames
     /// stop being forwarded; the privacy style optionally covers the output.
     /// The virtual monitor is captured directly by the sharing app, so pause

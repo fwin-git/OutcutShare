@@ -10,6 +10,10 @@ final class HotbarModel: ObservableObject {
     @Published var followMenuOpen = false
     @Published var highlightsOn = false
     @Published var previewOn = false
+    /// Runs along a region edge instead of top/bottom: buttons stack, the
+    /// follow label collapses to icon + chevron.
+    @Published var vertical = false
+    @Published var ocrState: OCRChipState = .idle
     /// Virtual-monitor sessions have no on-screen region: adjust, presets,
     /// follow and highlights don't apply and their buttons are hidden.
     @Published var regionless = false
@@ -20,6 +24,8 @@ struct HotbarActions {
     var pause: () -> Void
     var record: () -> Void
     var screenshot: () -> Void
+    var copyText: () -> Void
+    var toggleOrientation: () -> Void
     var highlights: () -> Void
     var preview: () -> Void
     var adjust: () -> Void
@@ -45,9 +51,13 @@ struct HotbarView: View {
             // Drawn in-panel like the tooltip below: a real NSMenu opens at
             // popup level, which sits underneath this screenSaver+1 panel.
             if model.followMenuOpen && !model.regionless {
-                followMenu
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    .padding(.trailing, 48)
+                if model.vertical {
+                    followMenu
+                } else {
+                    followMenu
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .padding(.trailing, 48)
+                }
             }
             // In-panel tooltip: system tooltips render at popup level, which
             // sits below this panel — they'd be invisible. The label stays in
@@ -68,11 +78,29 @@ struct HotbarView: View {
     }
 
     private var bar: some View {
-        HStack(spacing: 13) {
+        Group {
+            if model.vertical {
+                VStack(spacing: 13) { barItems }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 14)
+            } else {
+                HStack(spacing: 13) { barItems }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+            }
+        }
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(.white.opacity(0.15)))
+    }
+
+    @ViewBuilder
+    private var barItems: some View {
             Image(systemName: "line.3.horizontal")
                 .foregroundStyle(.secondary)
                 .frame(width: 18)
                 .contentShape(Rectangle())
+                // Click = rotate the bar; drag (≥ 10 pt) = move it.
+                .onTapGesture { actions.toggleOrientation() }
                 .gesture(
                     // Positioning is driven by NSEvent.mouseLocation, not the
                     // gesture's translation: the gesture's coordinate space
@@ -91,7 +119,7 @@ struct HotbarView: View {
                             actions.endDrag()
                         }
                 )
-                .onHover { hover(hover: $0, label: "Move hotbar") }
+                .onHover { hover(hover: $0, label: "Move (drag) / rotate (click)") }
 
             barButton("stop.fill", help: "Stop sharing", action: actions.stop)
             barButton(model.isPaused ? "play.fill" : "pause.fill",
@@ -102,6 +130,8 @@ struct HotbarView: View {
                       tint: model.isRecording ? .red : nil, action: actions.record)
             barButton("camera", help: "Screenshot shared region",
                       action: actions.screenshot)
+            barButton(ocrSymbol, help: "Copy text in region (OCR)",
+                      action: actions.copyText)
             if !model.regionless {
                 barButton("cursorarrow.rays", help: "Presenter highlights",
                           active: model.highlightsOn, action: actions.highlights)
@@ -116,7 +146,11 @@ struct HotbarView: View {
                 followControl
             }
 
-            Divider().frame(height: 16)
+            if model.vertical {
+                Divider().frame(width: 16)
+            } else {
+                Divider().frame(height: 16)
+            }
 
             Button(action: actions.hide) {
                 Image(systemName: "xmark")
@@ -125,36 +159,52 @@ struct HotbarView: View {
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
             .onHover { hover(hover: $0, label: "Hide hotbar") }
+    }
+
+    private var ocrSymbol: String {
+        switch model.ocrState {
+        case .done: return "checkmark"
+        case .empty: return "questionmark"
+        default: return "text.viewfinder"
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(.white.opacity(0.15)))
     }
 
     /// Split control: the icon toggles the selected follow target on/off,
-    /// the label + chevron open the target dropdown.
+    /// the label (dropped in vertical bars) + chevron open the dropdown.
+    @ViewBuilder
     private var followControl: some View {
-        HStack(spacing: 3) {
-            barButton("scope",
-                      help: model.followOn ? "Stop following"
-                                           : "Follow \(shortLabel(model.followTarget))",
-                      active: model.followOn, action: actions.follow)
-            Button(action: actions.followMenu) {
-                HStack(spacing: 2) {
+        let scope = barButton("scope",
+                              help: model.followOn ? "Stop following"
+                                                   : "Follow \(shortLabel(model.followTarget))",
+                              active: model.followOn, action: actions.follow)
+        let menuButton = Button(action: actions.followMenu) {
+            HStack(spacing: 2) {
+                if !model.vertical {
                     Text(shortLabel(model.followTarget))
                         .font(.caption)
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 8, weight: .semibold))
-                        .rotationEffect(model.followMenuOpen ? .degrees(180) : .zero)
                 }
-                .padding(.vertical, 4)
-                .contentShape(Rectangle())
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .rotationEffect(model.followMenuOpen ? .degrees(180) : .zero)
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(model.followOn ? AnyShapeStyle(Color.accentColor)
-                                            : AnyShapeStyle(.secondary))
-            .onHover { hover(hover: $0, label: "Choose follow mode") }
+            .padding(model.vertical ? .horizontal : .vertical, 4)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(model.followOn ? AnyShapeStyle(Color.accentColor)
+                                        : AnyShapeStyle(.secondary))
+        .onHover { hover(hover: $0, label: "Choose follow mode") }
+
+        if model.vertical {
+            VStack(spacing: 2) {
+                scope
+                menuButton
+            }
+        } else {
+            HStack(spacing: 3) {
+                scope
+                menuButton
+            }
         }
     }
 
@@ -225,6 +275,11 @@ final class HotbarController {
     private var panelGestureAttached: Bool?
     private var lastPanelMoveAt: TimeInterval = 0
     private var lastFollowMode: FollowMode = .off
+    /// Grabber-click override; nil = orientation follows auto-placement.
+    private var verticalOverride: Bool?
+    /// Footprint of the horizontal bar — the auto-side decision always
+    /// reasons about whether THAT would fit below/above.
+    private var lastHorizontalSize: CGSize?
 
     init(session: ShareSession, settings: SettingsStore) {
         self.session = session
@@ -289,6 +344,7 @@ final class HotbarController {
     func close() {
         panel?.orderOut(nil)
         manualOrigin = nil
+        verticalOverride = nil
         model.followMenuOpen = false
     }
 
@@ -323,9 +379,25 @@ final class HotbarController {
 
     private func position(animated: Bool = false) {
         guard let panel else { return }
-        let origin = manualOrigin.map { clamped($0, size: panel.frame.size) }
-            ?? Geometry.hotbarOrigin(barSize: panel.frame.size, region: lastRegion,
-                                     screenFrame: screenFrame, gap: 12)
+        if let manualOrigin {
+            panel.setFrameOrigin(clamped(manualOrigin, size: panel.frame.size))
+            return
+        }
+        // The side decision reasons about the horizontal footprint; forced
+        // to a vertical edge (auto) — or overridden — the bar stacks.
+        let horizontal = model.vertical
+            ? (lastHorizontalSize
+               ?? CGSize(width: panel.frame.height, height: panel.frame.width))
+            : panel.frame.size
+        let side = Geometry.hotbarSide(barSize: horizontal, region: lastRegion,
+                                       screenFrame: screenFrame, gap: 12)
+        let wantVertical = verticalOverride ?? side.isVerticalEdge
+        if wantVertical != model.vertical {
+            applyOrientation(wantVertical)
+            return
+        }
+        let origin = Geometry.hotbarOrigin(barSize: panel.frame.size, region: lastRegion,
+                                           screenFrame: screenFrame, gap: 12, side: side)
         guard animated else {
             panel.setFrameOrigin(origin)
             return
@@ -335,6 +407,31 @@ final class HotbarController {
             context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             panel.animator().setFrame(CGRect(origin: origin, size: panel.frame.size),
                                       display: true)
+        }
+    }
+
+    /// Grabber click: rotate in place (and stop auto-orientation for the
+    /// session, like a manual drag stops auto-placement).
+    private func toggleOrientation() {
+        verticalOverride = !model.vertical
+        applyOrientation(verticalOverride!)
+    }
+
+    private func applyOrientation(_ vertical: Bool) {
+        guard model.vertical != vertical else { return }
+        if !model.vertical, let panel {
+            lastHorizontalSize = panel.frame.size
+        }
+        model.vertical = vertical
+        model.followMenuOpen = false
+        // The hosting view lays the rotated bar out on the next runloop
+        // pass — only then does fittingSize match the new orientation.
+        DispatchQueue.main.async { [weak self] in
+            guard let self, let panel = self.panel,
+                  let hosting = panel.contentView as? NSHostingView<HotbarView> else { return }
+            hosting.layoutSubtreeIfNeeded()
+            panel.setContentSize(hosting.fittingSize)
+            self.position()
         }
     }
 
@@ -349,6 +446,8 @@ final class HotbarController {
             pause: { [weak self] in self?.session?.togglePause() },
             record: { [weak self] in self?.session?.toggleRecording() },
             screenshot: { [weak self] in self?.session?.captureScreenshot() },
+            copyText: { [weak self] in self?.copyRegionText() },
+            toggleOrientation: { [weak self] in self?.toggleOrientation() },
             highlights: { [weak self] in self?.toggleHighlights() },
             preview: { [weak self] in self?.togglePreview() },
             adjust: { [weak self] in self?.session?.startAdjust() },
@@ -408,6 +507,20 @@ final class HotbarController {
     private func togglePreview() {
         settings.previewWindowEnabled.toggle()
         refresh()
+    }
+
+    private func copyRegionText() {
+        guard model.ocrState != .working else { return }
+        model.ocrState = .working
+        Task { [weak self] in
+            let found = await self?.session?.copyRegionTextToClipboard() ?? false
+            guard let self else { return }
+            self.model.ocrState = found ? .done : .empty
+            try? await Task.sleep(nanoseconds: 1_400_000_000)
+            if self.model.ocrState != .working {
+                self.model.ocrState = .idle
+            }
+        }
     }
 
     private func toggleFollow() {

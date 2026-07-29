@@ -154,6 +154,7 @@ Key invariants:
    (monitor ignores the rect — regionless virtual-monitor session)
    companions: --move-by=dx,dy  --resize-by=dw,dh  --pause-at=t1,t2
                --record-at=t1,t2  --screenshot-at=t1,t2  --zoom-at=t1,t2
+               --region-ocr-at=t
                --follow=activeWindow|cursor  --preview
 --hotkeys-test                          registered shortcuts
 --permissions-test                      permission status line

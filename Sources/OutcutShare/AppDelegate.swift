@@ -339,6 +339,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
+        // --region-ocr-at=t copies the region's text at the given offset.
+        if let ocrArg = CommandLine.arguments.first(where: { $0.hasPrefix("--region-ocr-at=") }) {
+            if let time = Double(ocrArg.dropFirst("--region-ocr-at=".count)) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + time) { [session] in
+                    Task { @MainActor in
+                        let found = await session.copyRegionTextToClipboard()
+                        let chars = NSPasteboard.general.string(forType: .string)?.count ?? 0
+                        print("SHARE-TEST region-ocr found=\(found) chars=\(chars)")
+                    }
+                }
+            }
+        }
         // --screenshot-at=t1,t2 saves region screenshots at the given offsets.
         if let shotArg = CommandLine.arguments.first(where: { $0.hasPrefix("--screenshot-at=") }) {
             let times = shotArg.dropFirst("--screenshot-at=".count).split(separator: ",").compactMap { Double($0) }

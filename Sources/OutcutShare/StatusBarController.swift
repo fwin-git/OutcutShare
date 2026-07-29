@@ -149,11 +149,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         if existing != SettingsStore.shared.recentCaptures {
             SettingsStore.shared.recentCaptures = existing
         }
-        guard !existing.isEmpty else {
+        if existing.isEmpty {
             let empty = NSMenuItem(title: "No captures yet", action: nil, keyEquivalent: "")
             empty.isEnabled = false
             submenu.addItem(empty)
-            return
         }
         for path in existing {
             let url = URL(fileURLWithPath: path)
@@ -166,11 +165,38 @@ final class StatusBarController: NSObject, NSMenuDelegate {
                                  accessibilityDescription: nil)
             submenu.addItem(item)
         }
+        submenu.addItem(.separator())
+        let recordings = NSMenuItem(title: "Open Recordings Folder",
+                                    action: #selector(openRecordingsFolder),
+                                    keyEquivalent: "")
+        recordings.target = self
+        recordings.image = NSImage(systemSymbolName: "folder", accessibilityDescription: nil)
+        submenu.addItem(recordings)
+        let screenshots = NSMenuItem(title: "Open Screenshots Folder",
+                                     action: #selector(openScreenshotsFolder),
+                                     keyEquivalent: "")
+        screenshots.target = self
+        screenshots.image = NSImage(systemSymbolName: "folder", accessibilityDescription: nil)
+        submenu.addItem(screenshots)
     }
 
     @objc private func showCapture(_ sender: NSMenuItem) {
         guard let path = sender.representedObject as? String else { return }
         session.showCaptureCard(url: URL(fileURLWithPath: path))
+    }
+
+    @objc private func openRecordingsFolder() {
+        openFolder(SettingsStore.shared.recordingFolderURL)
+    }
+
+    @objc private func openScreenshotsFolder() {
+        openFolder(SettingsStore.shared.screenshotFolderURL)
+    }
+
+    private func openFolder(_ url: URL) {
+        try? FileManager.default.createDirectory(at: url,
+                                                 withIntermediateDirectories: true)
+        NSWorkspace.shared.open(url)
     }
 
     private func rebuildPresetsMenu() {
