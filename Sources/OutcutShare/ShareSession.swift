@@ -254,6 +254,11 @@ final class ShareSession {
         }
     }
 
+    /// Harness hook (--follow-menu-at): drives the hotbar's follow dropdown.
+    func debugToggleFollowMenu() {
+        hotbar.debugToggleFollowMenu()
+    }
+
     /// Hotbar OCR: reads the current shared output and puts the recognized
     /// text on the clipboard. Returns whether any text was found.
     func copyRegionTextToClipboard() async -> Bool {

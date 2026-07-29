@@ -477,6 +477,12 @@ final class HotbarController {
             })
 
         let hosting = NSHostingView(rootView: HotbarView(model: model, actions: actions))
+        // A floating capsule panel must not track safe areas: the hosting
+        // view otherwise reacts to frame changes inside a display cycle
+        // with invalidateSafeAreaInsets → setNeedsUpdateConstraints, which
+        // AppKit forbids mid-flush and turns into a crash (seen when the
+        // vertical bar's follow dropdown refit the panel).
+        hosting.safeAreaRegions = []
         let size = hosting.fittingSize
         hosting.frame = CGRect(origin: .zero, size: size)
         let panel = NSPanel(contentRect: CGRect(origin: .zero, size: size),
@@ -542,6 +548,11 @@ final class HotbarController {
 
     private func toggleFollowMenu() {
         setFollowMenu(open: !model.followMenuOpen)
+    }
+
+    /// Harness hook (--follow-menu-at): same path as clicking the chevron.
+    func debugToggleFollowMenu() {
+        toggleFollowMenu()
     }
 
     private func setFollowMenu(open: Bool) {

@@ -806,6 +806,9 @@ final class CaptureResultController: NSObject {
             hoverChanged: { [weak self] in self?.hovering = $0 })
         let hosting = NSHostingView(rootView: CaptureResultView(
             model: model, ring: ring, actions: actions))
+        // No safe-area tracking in a floating panel — invalidations during
+        // a constraint flush crash (see the hotbar's identical guard).
+        hosting.safeAreaRegions = []
         let panel = NSPanel(contentRect: CGRect(x: 0, y: 0,
                                                 width: Self.cardWidth, height: 160),
                             styleMask: [.borderless, .nonactivatingPanel],

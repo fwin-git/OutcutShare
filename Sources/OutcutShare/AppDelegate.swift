@@ -339,6 +339,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
+        // --follow-menu-at=t opens the hotbar's follow dropdown (UI check).
+        if let menuArg = CommandLine.arguments.first(where: { $0.hasPrefix("--follow-menu-at=") }) {
+            if let time = Double(menuArg.dropFirst("--follow-menu-at=".count)) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + time) { [session] in
+                    session.debugToggleFollowMenu()
+                    print("SHARE-TEST follow menu toggled")
+                }
+            }
+        }
         // --region-ocr-at=t copies the region's text at the given offset.
         if let ocrArg = CommandLine.arguments.first(where: { $0.hasPrefix("--region-ocr-at=") }) {
             if let time = Double(ocrArg.dropFirst("--region-ocr-at=".count)) {
