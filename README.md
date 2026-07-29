@@ -33,6 +33,16 @@ clip mirrors what viewers see). Modifiers refine the shape:
 - **Space** while dragging freezes the size and moves the selection
   instead.
 
+### Viewer zoom & live presets
+
+![Viewer zoom tracking the cursor and a preset glide, mirrored into a mock call](docs/media/demo-zoom.gif)
+
+While sharing, **⌃⌥⌘Z** glides viewers into a 1.5–3× zoom toward your
+cursor and then tracks it — your own screen never changes (the mock call
+in the clip shows what viewers see). Saved presets move the live region
+the same way: **⌃⌥⌘1–9** glides it to another spot, and the share never
+drops.
+
 ### Follow mode
 
 ![Follow modes tracking the active window and the cursor](docs/media/demo-follow.gif)
@@ -49,6 +59,17 @@ targets — the clip shows Active Window first, then Cursor:
   moving once the cursor gets within 80 pt of an edge.
 - Movement is either **snap** (instant) or **glide** (eased) —
   *Settings → Follow movement*.
+
+### Screenshots, recording & trim
+
+![Capture workflow: screenshot to a preview card, drag-out into a chat, record, drag-to-trim](docs/media/demo-capture.gif)
+
+The hotbar's camera button saves a styled still of the shared picture and
+pops a preview card under the bar; the file drags straight out of the
+card — into a chat, a mail, Finder. The record button captures the region
+to .mp4 (with system audio and optional microphone); when it stops, the
+card returns with the clip and the scissors chip opens drag-to-trim: the
+handles scrub a filmstrip preview, ✓ saves the trimmed copy.
 
 ### Virtual Monitor
 
@@ -69,9 +90,9 @@ on it unless you put it there.
   brings the cursor back.
 - **Stopping** returns all windows to your real screen.
 
-*(All clips are recorded by the app itself — `--demo=region|follow|monitor`
-produces them on a synthetic stage with fake content, see
-[development](docs/development.md).)*
+*(All clips are recorded by the app itself —
+`--demo=region|zoom|follow|capture|monitor` produces them on a synthetic
+stage with fake content, see [development](docs/development.md).)*
 
 ## Install
 
