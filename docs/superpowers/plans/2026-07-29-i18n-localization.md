@@ -4,7 +4,7 @@
 
 **Goal:** Ship the macOS app with complete English, German, French, Spanish, Simplified Chinese, and Japanese localization selected by macOS.
 
-**Architecture:** Apple String Catalogs are the single translation store. A typed `L10n` facade resolves catalog keys for both AppKit and SwiftUI, while `make app` compiles the catalogs into the main app bundle and a source audit prevents production UI literals from bypassing localization.
+**Architecture:** Apple String Catalogs are the single translation store. A typed `L10n` facade resolves catalog keys for both AppKit and SwiftUI, while `make app` compiles the catalogs into the main app bundle and a source lint prevents production UI literals from bypassing localization.
 
 **Tech Stack:** Swift 5 language mode, AppKit, SwiftUI, Foundation `Bundle`, XCTest, Apple `xcstringstool`, Make.
 
@@ -30,7 +30,7 @@
 - `Sources/OutcutShare/L10n.swift` — typed keys and locale-aware catalog lookup.
 - `Tests/OutcutShareTests/LocalizationCatalogTests.swift` — catalog schema, locale, value, placeholder, and Info.plist parity tests.
 - `Tests/OutcutShareTests/LocalizationTests.swift` — `L10n` lookup, substitution, and fallback tests.
-- `Tests/OutcutShareTests/LocalizationSourceAuditTests.swift` — source scanner for production UI literal bypasses.
+- `Scripts/check-localization-source.sh` — static lint for production UI literal bypasses.
 - `Scripts/verify-localizations.sh` — compiled bundle and representative runtime lookup verifier.
 
 **Modify for packaging:**
@@ -277,7 +277,7 @@ git commit -m "feat: add typed localization runtime"
 
 **Files:**
 
-- Create: `Tests/OutcutShareTests/LocalizationSourceAuditTests.swift`
+- Create: `Scripts/check-localization-source.sh`
 - Modify: `Sources/OutcutShare/L10n.swift`
 - Modify: `Resources/Localization/Localizable.xcstrings`
 - Modify: `Sources/OutcutShare/FollowController.swift`
@@ -291,17 +291,20 @@ git commit -m "feat: add typed localization runtime"
 
 - Consumes: `L10n.string`.
 - Produces: localized `FollowMode.displayName`, `HotkeyAction.displayName`, and `DragOutModifier.displayName` while preserving raw values.
-- Produces: `assertNoUserFacingLiterals(in sourceFiles: [String])`.
+- Produces: `Scripts/check-localization-source.sh [source-file ...]`.
 
-- [ ] **Step 1: Add a failing targeted source audit**
+- [ ] **Step 1: Add a failing targeted source lint**
 
-The audit reads Swift source and detects literal English passed to
+The lint scans Swift source and detects literal English passed to
 `Text`, `Button`, `Toggle`, `Picker`, `Label`, `Section`, `NSMenuItem`,
 `NSMenu(title:)`, `.help`, `.accessibilityLabel`, alert title fields, window
 titles, and `addButton(withTitle:)`. It ignores empty strings, system-symbol
-names, format-only values, and exact technical constants.
+names, format-only values, and exact technical constants. Implement it as a
+developer lint, not an XCTest: it intentionally enforces a source convention
+rather than claiming to test runtime behavior.
 
-Start by auditing exactly the six files in this task. Assert persisted cases:
+Start by scanning exactly the six files in this task. Keep persisted-value
+behavior in the existing XCTest suite:
 
 ```swift
 XCTAssertEqual(FollowMode.activeWindow.rawValue, "activeWindow")
@@ -314,7 +317,8 @@ XCTAssertEqual(DragOutModifier.shift.rawValue, "shift")
 Run:
 
 ```bash
-swift test --filter LocalizationSourceAuditTests
+Scripts/check-localization-source.sh \
+  Sources/OutcutShare/{FollowController,Hotkeys,SettingsStore,StatusBarController,PermissionsView,AppPicker}.swift
 ```
 
 Expected: FAIL with current English menu, permission, picker, and enum display
@@ -344,7 +348,7 @@ formatted catalog key such as `Preset %d`, never `"Preset " + number`.
 Run:
 
 ```bash
-swift test --filter LocalizationSourceAuditTests
+Scripts/check-localization-source.sh
 swift test --filter LocalizationCatalogTests
 swift test
 ```
@@ -355,7 +359,7 @@ Expected: PASS; raw-value assertions unchanged.
 
 ```bash
 git add Sources/OutcutShare Resources/Localization/Localizable.xcstrings \
-  Tests/OutcutShareTests/LocalizationSourceAuditTests.swift
+  Scripts/check-localization-source.sh
 git commit -m "feat: localize menus and permissions"
 ```
 
@@ -371,7 +375,7 @@ git commit -m "feat: localize menus and permissions"
 - Modify: `Sources/OutcutShare/SettingsShortcutsPage.swift`
 - Modify: `Sources/OutcutShare/DimPreview.swift`
 - Modify: `Sources/OutcutShare/RegionPreviewCanvas.swift`
-- Modify: `Tests/OutcutShareTests/LocalizationSourceAuditTests.swift`
+- Modify: `Scripts/check-localization-source.sh`
 
 **Interfaces:**
 
@@ -380,14 +384,13 @@ git commit -m "feat: localize menus and permissions"
 
 - [ ] **Step 1: Expand the audit and verify RED**
 
-Add all five settings files to the audited source list. Add assertions that
-`SettingsPage.about` remains the final tab and that no settings enum raw value
-changes.
+Add all five settings files to the lint's default source list. Keep the existing
+`SettingsPage.about` final-tab test and persisted enum raw-value tests unchanged.
 
 Run:
 
 ```bash
-swift test --filter LocalizationSourceAuditTests
+Scripts/check-localization-source.sh
 ```
 
 Expected: FAIL with settings section titles, labels, captions, tooltips, and
@@ -427,7 +430,7 @@ git add Sources/OutcutShare/SettingsView.swift \
   Sources/OutcutShare/RegionPreviewCanvas.swift \
   Sources/OutcutShare/L10n.swift \
   Resources/Localization/Localizable.xcstrings \
-  Tests/OutcutShareTests/LocalizationSourceAuditTests.swift
+  Scripts/check-localization-source.sh
 git commit -m "feat: localize settings"
 ```
 
@@ -445,19 +448,19 @@ git commit -m "feat: localize settings"
 - Modify: `Sources/OutcutShare/PreviewWindow.swift`
 - Modify: `Sources/OutcutShare/RegionMover.swift`
 - Modify: `Sources/OutcutShare/RegionSelector.swift`
-- Modify: `Tests/OutcutShareTests/LocalizationSourceAuditTests.swift`
+- Modify: `Scripts/check-localization-source.sh`
 
 **Interfaces:**
 
 - Produces: `sharing.*`, `selector.*`, `hotbar.*`, `preview.*`, and
   `monitor.*` catalog groups.
 
-- [ ] **Step 1: Expand the source audit and verify RED**
+- [ ] **Step 1: Expand the source lint and verify RED**
 
-Add the six surface files to the audit and run:
+Add the six surface files to the lint and run:
 
 ```bash
-swift test --filter LocalizationSourceAuditTests
+Scripts/check-localization-source.sh
 ```
 
 Expected: FAIL with current hover help, selection instructions, pause text,
@@ -495,7 +498,7 @@ Expected: PASS with no geometry/state regressions.
 ```bash
 git add Sources/OutcutShare/{Hotbar,LiveFrameWindow,MonitorDrag,PreviewWindow,RegionMover,RegionSelector,L10n}.swift \
   Resources/Localization/Localizable.xcstrings \
-  Tests/OutcutShareTests/LocalizationSourceAuditTests.swift
+  Scripts/check-localization-source.sh
 git commit -m "feat: localize sharing controls"
 ```
 
@@ -508,15 +511,15 @@ git commit -m "feat: localize sharing controls"
 - Modify: `Sources/OutcutShare/L10n.swift`
 - Modify: `Resources/Localization/Localizable.xcstrings`
 - Modify: `Sources/OutcutShare/CaptureResultPreview.swift`
-- Modify: `Tests/OutcutShareTests/LocalizationSourceAuditTests.swift`
+- Modify: `Scripts/check-localization-source.sh`
 
 **Interfaces:**
 
 - Produces: `capture.*`, `ocr.*`, and `trim.*` catalog groups.
 
-- [ ] **Step 1: Expand the source audit and verify RED**
+- [ ] **Step 1: Expand the source lint and verify RED**
 
-Add `CaptureResultPreview.swift`; run the audit and expect all visible capture
+Add `CaptureResultPreview.swift`; run the lint and expect all visible capture
 card, delete, OCR, Quick Look, drag, trim, export, and error literals to fail.
 
 - [ ] **Step 2: Add translated capture keys**
@@ -547,7 +550,7 @@ Expected: PASS.
 ```bash
 git add Sources/OutcutShare/{CaptureResultPreview,L10n}.swift \
   Resources/Localization/Localizable.xcstrings \
-  Tests/OutcutShareTests/LocalizationSourceAuditTests.swift
+  Scripts/check-localization-source.sh
 git commit -m "feat: localize capture workflows"
 ```
 
@@ -563,7 +566,7 @@ git commit -m "feat: localize capture workflows"
 - Modify: `Sources/OutcutShare/ShareSession.swift`
 - Modify: `Sources/OutcutShare/MicCapture.swift`
 - Modify: `Sources/OutcutShare/RecordingEngine.swift`
-- Modify: `Tests/OutcutShareTests/LocalizationSourceAuditTests.swift`
+- Modify: `Scripts/check-localization-source.sh`
 
 **Interfaces:**
 
@@ -612,7 +615,7 @@ Expected: PASS.
 ```bash
 git add Sources/OutcutShare/{AppDelegate,ShareSession,MicCapture,RecordingEngine,L10n}.swift \
   Resources/Localization/Localizable.xcstrings \
-  Tests/OutcutShareTests/LocalizationSourceAuditTests.swift
+  Scripts/check-localization-source.sh
 git commit -m "feat: localize alerts and errors"
 ```
 
@@ -719,18 +722,18 @@ git commit -m "build: package and verify localizations"
 
 **Files:**
 
-- Modify: `Tests/OutcutShareTests/LocalizationSourceAuditTests.swift`
+- Modify: `Scripts/check-localization-source.sh`
 - Modify: `Resources/Localization/Localizable.xcstrings`
 - Modify: any production source file identified by the final audit.
 
 **Interfaces:**
 
-- Produces: full production-source localization audit with only exact
+- Produces: full production-source localization lint with only exact
   technical-literal allowlist entries.
 
 - [ ] **Step 1: Audit every production source file**
 
-Expand the source audit to every Swift file under `Sources/OutcutShare` except
+Expand the source lint to every Swift file under `Sources/OutcutShare` except
 `DemoContent.swift` and `DemoHarness.swift`. The allowlist may contain exact
 literal plus reason for system symbols, protocol strings, identifiers, paths,
 formats, and debug output. It must not exclude a whole production file.
@@ -738,7 +741,7 @@ formats, and debug output. It must not exclude a whole production file.
 Run:
 
 ```bash
-swift test --filter LocalizationSourceAuditTests
+Scripts/check-localization-source.sh
 ```
 
 Expected: any missed production UI literal fails with file and line.
@@ -793,7 +796,7 @@ only localized labels and do not restart or otherwise change sessions.
 
 ```bash
 git add Sources/OutcutShare Resources/Localization \
-  Tests/OutcutShareTests/LocalizationSourceAuditTests.swift
+  Scripts/check-localization-source.sh
 git commit -m "feat: complete app localization"
 ```
 
