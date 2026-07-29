@@ -56,6 +56,17 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(store.followTarget, .activeWindow)
     }
 
+    func testRecordingAudioDefaultsAndPersistence() {
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertTrue(store.recordSystemAudio)
+        XCTAssertFalse(store.recordMicrophone)
+        store.recordSystemAudio = false
+        store.recordMicrophone = true
+        let reloaded = SettingsStore(defaults: defaults)
+        XCTAssertFalse(reloaded.recordSystemAudio)
+        XCTAssertTrue(reloaded.recordMicrophone)
+    }
+
     func testZoomFactorDefaultAndPersistence() {
         let store = SettingsStore(defaults: defaults)
         XCTAssertEqual(store.zoomFactor, 2.0, accuracy: 0.0001)

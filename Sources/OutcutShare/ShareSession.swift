@@ -1,4 +1,5 @@
 import AppKit
+import AVFoundation
 import IOSurface
 
 /// Owns the lifecycle of one sharing session: selection, virtual display,
@@ -126,6 +127,9 @@ final class ShareSession {
         if let recorder {
             self.recorder = nil
             capture?.onSampleBuffer = nil
+            capture?.onAudioSampleBuffer = nil
+            mic?.stop()
+            mic = nil
             Task {
                 if let url = await recorder.stop() {
                     self.resultPreview.show(url: url, isVideo: true,
@@ -142,7 +146,9 @@ final class ShareSession {
         let recorder = RecordingEngine()
         do {
             try recorder.start(pixelWidth: activeOutputPixelSize.width,
-                               pixelHeight: activeOutputPixelSize.height, to: url)
+                               pixelHeight: activeOutputPixelSize.height, to: url,
+                               systemAudio: settings.recordSystemAudio,
+                               microphone: settings.recordMicrophone)
         } catch {
             presentError(error, title: "Recording couldn't start")
             return
@@ -152,6 +158,16 @@ final class ShareSession {
             // Respect privacy pause: no raw frames reach the file while paused.
             guard let self, !self.isPaused else { return }
             recorder.append(sample)
+        }
+        if settings.recordSystemAudio {
+            capture?.onAudioSampleBuffer = { [weak self] sample in
+                // Pause mutes the file's audio along with the picture.
+                guard let self, !self.isPaused else { return }
+                recorder.appendSystemAudio(sample)
+            }
+        }
+        if settings.recordMicrophone {
+            startMicrophone(for: recorder)
         }
         notifyUI()
     }
@@ -250,6 +266,44 @@ final class ShareSession {
     private lazy var preview = PreviewWindowController(session: self, settings: settings)
     private var lastPreviewEnabled = false
     private var monitorPrivacyCover: LiveFrameWindow?
+    private var mic: MicCapture?
+
+    /// Mic joins the running recording once (and if) access is granted;
+    /// a denied permission keeps the recording video/system-audio only.
+    private func startMicrophone(for recorder: RecordingEngine) {
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .authorized:
+            attachMic(to: recorder)
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .audio) { granted in
+                Task { @MainActor [weak self] in
+                    guard let self, granted, self.recorder === recorder else { return }
+                    self.attachMic(to: recorder)
+                }
+            }
+        default:
+            presentError(NSError(domain: "OutcutShare", code: 4, userInfo: [
+                NSLocalizedDescriptionKey: "The recording continues without the "
+                    + "microphone. Allow it under System Settings → Privacy & "
+                    + "Security → Microphone, or disable the mic toggle in "
+                    + "Settings → Recording."]),
+                title: "Microphone access is denied")
+        }
+    }
+
+    private func attachMic(to recorder: RecordingEngine) {
+        let mic = MicCapture()
+        mic.onSampleBuffer = { [weak self] sample in
+            guard let self, !self.isPaused else { return }
+            recorder.appendMic(sample)
+        }
+        do {
+            try mic.start()
+            self.mic = mic
+        } catch {
+            presentError(error, title: "Microphone couldn't start")
+        }
+    }
     private var activeMonitorSize: CGSize = .zero
     private lazy var monitorDrag = MonitorDragController(session: self)
     private lazy var resultPreview = CaptureResultController()
@@ -715,12 +769,15 @@ final class ShareSession {
         if let recorder {
             self.recorder = nil
             capture?.onSampleBuffer = nil
+            capture?.onAudioSampleBuffer = nil
             Task {
                 if let url = await recorder.stop() {
                     NSWorkspace.shared.activateFileViewerSelecting([url])
                 }
             }
         }
+        mic?.stop()
+        mic = nil
         mover?.close()
         mover = nil
         moveBackupRect = nil

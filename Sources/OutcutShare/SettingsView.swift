@@ -364,6 +364,13 @@ private struct RecordingPage: View {
                      + "together with privacy pause.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Toggle("Record system audio", isOn: $settings.recordSystemAudio)
+                Toggle("Record microphone", isOn: $settings.recordMicrophone)
+                Text("System audio is what the captured apps play (Outcut Share itself is "
+                     + "excluded). The microphone asks for permission on its first recording; "
+                     + "privacy pause silences both tracks.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             Section("Screenshots") {
                 HStack {

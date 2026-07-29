@@ -225,6 +225,20 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    @Published var recordSystemAudio: Bool {
+        didSet {
+            defaults.set(recordSystemAudio, forKey: "recordSystemAudio")
+            notifyChange()
+        }
+    }
+
+    @Published var recordMicrophone: Bool {
+        didSet {
+            defaults.set(recordMicrophone, forKey: "recordMicrophone")
+            notifyChange()
+        }
+    }
+
     @Published var cursorHighlight: Bool {
         didSet {
             defaults.set(cursorHighlight, forKey: "cursorHighlight")
@@ -500,6 +514,9 @@ final class SettingsStore: ObservableObject {
         self.screenshotQuality = defaults.object(forKey: "screenshotQuality") == nil
             ? 1.0 : defaults.double(forKey: "screenshotQuality")
         self.screenshotShadow = defaults.bool(forKey: "screenshotShadow")
+        defaults.register(defaults: ["recordSystemAudio": true])
+        self.recordSystemAudio = defaults.bool(forKey: "recordSystemAudio")
+        self.recordMicrophone = defaults.bool(forKey: "recordMicrophone")
         self.followBehavior = defaults.string(forKey: "followBehavior")
             .flatMap(FollowBehavior.init(rawValue:)) ?? .glide
         self.followResizes = defaults.bool(forKey: "followResizes")

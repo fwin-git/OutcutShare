@@ -128,7 +128,9 @@ enum HotkeyAction: String, CaseIterable {
         case .shareLastRegion: return KeyCombo(keyCode: 37, modifiers: [.control, .option, .command]) // L
         case .togglePause: return KeyCombo(keyCode: 35, modifiers: [.control, .option, .command])     // P
         case .toggleRecording: return KeyCombo(keyCode: 15, modifiers: [.control, .option, .command]) // R
-        case .toggleZoom: return KeyCombo(keyCode: 6, modifiers: [.control, .option, .command])       // Z
+        // Position 16 is Z on QWERTZ (the primary keyboard here); rebindable
+        // for layouts where it resolves differently.
+        case .toggleZoom: return KeyCombo(keyCode: 16, modifiers: [.control, .option, .command])      // Z (QWERTZ)
         }
     }
 
