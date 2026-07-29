@@ -41,6 +41,7 @@ performance verification).
 .build/debug/OutcutShare --demo=follow    # follow modes (window / cursor)
 .build/debug/OutcutShare --demo=zoom      # viewer zoom + live preset switch
 .build/debug/OutcutShare --demo=capture   # screenshot/record → card, drag-out, trim
+.build/debug/OutcutShare --demo=pause     # privacy pause + resume in the call mirror
 .build/debug/OutcutShare --demo=raycast   # still of the Raycast command list (.png)
 ```
 

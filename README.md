@@ -71,6 +71,15 @@ to .mp4 (with system audio and optional microphone); when it stops, the
 card returns with the clip and the scissors chip opens drag-to-trim: the
 handles scrub a filmstrip preview, ✓ saves the trimmed copy.
 
+### Privacy pause
+
+![Privacy pause: viewers get a blurred screen with a custom note, the presenter's screen stays live](docs/media/demo-pause.gif)
+
+**⌃⌥⌘P** freezes the share while you handle something private: viewers
+get a frozen frame or a blurred privacy screen — with your own message or
+image — and your own screen never changes. Resume picks the share back up
+instantly, right where it was.
+
 ### Virtual Monitor
 
 ![Virtual Monitor with drag & drop, layout grid and pull-out](docs/media/demo-monitor.gif)
@@ -90,9 +99,19 @@ on it unless you put it there.
   brings the cursor back.
 - **Stopping** returns all windows to your real screen.
 
+### Raycast extension
+
+![Outcut Share commands in Raycast's root search](docs/media/raycast.png)
+
+Everything you reach for mid-presentation — sharing, presets, pause,
+recording, modes — is also a Raycast command, with aliases and hotkeys
+like any other. Each one is an `outcutshare://` deep link underneath, so
+any automation tool can do the same. → [raycast & URL scheme](docs/raycast.md)
+
 *(All clips are recorded by the app itself —
-`--demo=region|zoom|follow|capture|monitor` produces them on a synthetic
-stage with fake content, see [development](docs/development.md).)*
+`--demo=region|zoom|follow|capture|pause|monitor` produces them on a
+synthetic stage with fake content, and `--demo=raycast` captures the
+still — see [development](docs/development.md).)*
 
 ## Install
 

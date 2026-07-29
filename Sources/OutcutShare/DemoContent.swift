@@ -46,6 +46,10 @@ final class DemoContentWindows {
 final class DemoMeetMock {
     private let window: NSWindow
     private nonisolated(unsafe) let mirrorLayer = CALayer()
+    /// Kept for the privacy screen's blurred backdrop — same input the
+    /// real output window uses.
+    private nonisolated(unsafe) var lastSurface: IOSurfaceRef?
+    private var privacyLayer: CALayer?
 
     init(frame: CGRect) {
         window = NSWindow(contentRect: frame,
@@ -138,10 +142,29 @@ final class DemoMeetMock {
 
     /// Fed from the session's capture queue.
     nonisolated func display(surface: IOSurfaceRef) {
+        lastSurface = surface
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         mirrorLayer.contents = surface
         CATransaction.commit()
+    }
+
+    /// The pause demo: viewers' privacy screen, built by the SAME factory
+    /// the real output window uses — the mirror shows exactly their view
+    /// (frames stop flowing while paused, so nothing overwrites it).
+    func showPrivacyScreen() {
+        hidePrivacyScreen()
+        let container = PrivacyScreenLayer.make(
+            bounds: mirrorLayer.bounds, lastSurface: lastSurface,
+            contentsScale: window.backingScaleFactor,
+            content: .fromSettings(.shared))
+        mirrorLayer.addSublayer(container)
+        privacyLayer = container
+    }
+
+    func hidePrivacyScreen() {
+        privacyLayer?.removeFromSuperlayer()
+        privacyLayer = nil
     }
 
     /// Live-selection mirroring: while the user still drags, the mirror
