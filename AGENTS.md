@@ -164,7 +164,8 @@ Key invariants:
    synthetic input — takes over the mouse ~30 s; needs AX; NEVER touch
    non-helper windows in choreography, see DemoHarness.swift)
 --show-selector / --show-permissions    open those UIs
---result-card-test=/path/img.png        capture-result preview card, standalone (4 s)
+--result-card-test=/path/img-or-mp4     capture-result preview card, standalone
+   companions: --open-trim (show the trim UI)  --trim-test=in,out (export range)
 ```
 
 Coordinates are AppKit (bottom-left origin) on the main screen. The shell

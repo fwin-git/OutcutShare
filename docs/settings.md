@@ -113,6 +113,12 @@ tap the eye again to close) or delete, straight from its corner buttons.
 Recordings show a duration + file-size pill; hovering the card keeps it
 open.
 
+The card's scissors button opens **drag-to-trim**: a filmstrip with two
+handles — drag anywhere on the strip and the nearer handle follows,
+while the big preview scrubs to the frame under it. ✓ saves the
+selection as `…_trim.mp4` next to the original (which stays untouched;
+no re-encode, audio kept), ✕ cancels.
+
 | Setting | Effect | Default |
 | --- | --- | --- |
 | Save screenshots to | Folder for region screenshots | ~/Pictures/OutcutShare |
