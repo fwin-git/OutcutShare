@@ -182,4 +182,19 @@ final class GeometryTests: XCTestCase {
                                            focus: CGPoint(x: 300, y: 300), factor: 0.5),
                        region)
     }
+
+    func testDemoAnchorScreenRectFlipsWithinPanel() {
+        let panel = CGRect(x: 100, y: 50, width: 300, height: 60)
+        // 5 pt below the panel's top edge in SwiftUI coordinates.
+        let local = CGRect(x: 10, y: 5, width: 30, height: 30)
+        XCTAssertEqual(Geometry.demoAnchorScreenRect(local: local, panelFrame: panel),
+                       CGRect(x: 110, y: 75, width: 30, height: 30))
+    }
+
+    func testDemoAnchorScreenRectAtPanelBottom() {
+        let panel = CGRect(x: 0, y: 200, width: 100, height: 40)
+        let local = CGRect(x: 0, y: 20, width: 100, height: 20) // bottom half
+        XCTAssertEqual(Geometry.demoAnchorScreenRect(local: local, panelFrame: panel),
+                       CGRect(x: 0, y: 200, width: 100, height: 20))
+    }
 }
