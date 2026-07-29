@@ -128,8 +128,8 @@ final class PreviewSettingsTests: XCTestCase {
 
     func testShareWindowTitleDefault() {
         let store = SettingsStore(defaults: defaults)
-        XCTAssertEqual(store.shareWindowTitle, "Outcut Share (Share Region)")
-        XCTAssertEqual(store.effectiveShareWindowTitle, "Outcut Share (Share Region)")
+        XCTAssertEqual(store.shareWindowTitle, SettingsStore.defaultShareWindowTitle)
+        XCTAssertEqual(store.effectiveShareWindowTitle, SettingsStore.defaultShareWindowTitle)
     }
 
     func testShareWindowTitlePersistence() {
@@ -144,6 +144,6 @@ final class PreviewSettingsTests: XCTestCase {
     func testEmptyShareWindowTitleFallsBackToDefault() {
         let store = SettingsStore(defaults: defaults)
         store.shareWindowTitle = "   "
-        XCTAssertEqual(store.effectiveShareWindowTitle, "Outcut Share (Share Region)")
+        XCTAssertEqual(store.effectiveShareWindowTitle, SettingsStore.defaultShareWindowTitle)
     }
 }

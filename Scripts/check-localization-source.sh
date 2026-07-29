@@ -11,6 +11,10 @@ else
         Sources/OutcutShare/StatusBarController.swift
         Sources/OutcutShare/PermissionsView.swift
         Sources/OutcutShare/AppPicker.swift
+        Sources/OutcutShare/SettingsView.swift
+        Sources/OutcutShare/SettingsShortcutsPage.swift
+        Sources/OutcutShare/DimPreview.swift
+        Sources/OutcutShare/RegionPreviewCanvas.swift
     )
 fi
 

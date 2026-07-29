@@ -394,7 +394,9 @@ final class SettingsStore: ObservableObject {
         }
     }
 
-    static let defaultShareWindowTitle = "Outcut Share (Share Region)"
+    static var defaultShareWindowTitle: String {
+        L10n.string(.settingsGeneralShareWindowDefaultTitle)
+    }
 
     /// Title sharing apps show for the hidden share window in their window
     /// pickers. Empty/whitespace falls back to the default.

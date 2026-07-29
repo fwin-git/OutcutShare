@@ -38,6 +38,8 @@ final class LocalizationTests: XCTestCase {
             [
                 "menu.selectRegion": "Select Region & Share",
                 "preset.defaultName": "Preset %d",
+                "settings.general.shareWindowDefaultTitle":
+                    "Outcut Share (Share Region)",
             ],
             locale: "en",
             resources: resources
@@ -46,6 +48,8 @@ final class LocalizationTests: XCTestCase {
             [
                 "menu.selectRegion": "Bereich auswählen und teilen",
                 "preset.defaultName": "Voreinstellung %d",
+                "settings.general.shareWindowDefaultTitle":
+                    "Outcut Share (Bereich teilen)",
             ],
             locale: "de",
             resources: resources
@@ -93,6 +97,17 @@ final class LocalizationTests: XCTestCase {
                 arguments: [3]
             ),
             "Voreinstellung 3"
+        )
+    }
+
+    func testViewerFacingDefaultResolvesInTheRequestedLocale() {
+        XCTAssertEqual(
+            L10n.string(
+                .settingsGeneralShareWindowDefaultTitle,
+                bundle: fixtureBundle,
+                localeIdentifier: "de"
+            ),
+            "Outcut Share (Bereich teilen)"
         )
     }
 
