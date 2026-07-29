@@ -294,6 +294,13 @@ final class DemoDirector {
         stage = Geometry.demoStageRect(visibleFrame: screen.visibleFrame)
         keystrokeHUD = DemoKeystrokeHUD(stage: stage)
         showBackdrop()
+        if scenario == "raycast" {
+            // A still, not a video: no helper, no stage recording. The
+            // backdrop still shields the desktop behind Raycast's vibrancy.
+            print("DEMO raycast still in 2s — hands off keyboard (Ctrl-C aborts)")
+            await driver.pause(2.0)
+            return try await raycastScenario()
+        }
         try await launchHelper()
         print("DEMO starting in 3s — hands off mouse & keyboard (Ctrl-C aborts)")
         await driver.pause(3.0)
@@ -804,6 +811,69 @@ final class DemoDirector {
         session.stop()
         await driver.pause(0.6)
         return url
+    }
+
+    /// A still of Raycast's root search filtered to the extension — the
+    /// one deliberate exception to "touch only helper windows": open the
+    /// launcher, type a query, Esc out. No Enter, no drags.
+    private func raycastScenario() async throws -> URL {
+        NSWorkspace.shared.open(URL(string: "raycast://")!)
+        await driver.pause(1.4)
+        if raycastWindowID() == nil {
+            // The deep link needs Raycast running; a plain activation is
+            // the fallback that also starts it.
+            NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications/Raycast.app"))
+            await driver.pause(2.0)
+        }
+        await typeString("outcut")
+        await driver.pause(1.8)
+        guard let windowID = raycastWindowID() else {
+            throw DemoError.missingDemoWindow
+        }
+        let dir = settings.recordingFolderURL.appendingPathComponent("Demos")
+        try FileManager.default.createDirectory(at: dir,
+                                                withIntermediateDirectories: true)
+        let url = dir.appendingPathComponent("demo-raycast.png")
+        let capture = Process()
+        capture.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+        capture.arguments = ["-x", "-o", "-l", String(windowID), url.path]
+        try capture.run()
+        capture.waitUntilExit()
+        // Leave Raycast as found: first Esc clears the query, second closes.
+        await driver.tapKey(53)
+        await driver.tapKey(53)
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            throw DemoError.missingDemoWindow
+        }
+        return url
+    }
+
+    /// Layout-independent typing (German QWERTZ in play): the characters
+    /// ride on the event, not on virtual key codes.
+    private func typeString(_ text: String) async {
+        for unit in Array(text.utf16) {
+            var chars = [unit]
+            for keyDown in [true, false] {
+                let event = CGEvent(keyboardEventSource: nil, virtualKey: 0,
+                                    keyDown: keyDown)
+                event?.keyboardSetUnicodeString(stringLength: 1, unicodeString: &chars)
+                event?.post(tap: .cghidEventTap)
+            }
+            await driver.pause(0.06)
+        }
+    }
+
+    private func raycastWindowID() -> CGWindowID? {
+        let list = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID)
+            as? [[String: Any]] ?? []
+        for info in list {
+            guard info[kCGWindowOwnerName as String] as? String == "Raycast",
+                  let bounds = info[kCGWindowBounds as String] as? [String: Any],
+                  let width = bounds["Width"] as? Double, width > 300,
+                  let number = info[kCGWindowNumber as String] as? Int else { continue }
+            return CGWindowID(number)
+        }
+        return nil
     }
 
     /// Polls a card anchor until the card is up and its slide-in settled.
