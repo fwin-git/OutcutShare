@@ -50,12 +50,25 @@ struct CaptureResultActions {
     var scrub: (Double?) -> Void
     var trash: () -> Void
     var hoverChanged: (Bool) -> Void
+    /// Demo runs only: resolved card-item rects (hosting-view coordinates).
+    var reportItemBounds: ([String: CGRect]) -> Void = { _ in }
 }
 
 /// The card that folds out under the hotbar after a capture: the shot (or
 /// the recording's poster), corner chips styled like the shared-output
 /// preview's pause button, a countdown ring and a duration/size pill.
 /// The scissors chip morphs it into a drag-to-trim editor.
+/// Card-item bounds keyed by chip help string (plus "__image__" for the
+/// drag-out surface and "__timeline__" for the trim strip) — demo
+/// choreography resolves these to click real chips.
+private struct CardItemBounds: PreferenceKey {
+    static let defaultValue: [String: Anchor<CGRect>] = [:]
+    static func reduce(value: inout [String: Anchor<CGRect>],
+                       nextValue: () -> [String: Anchor<CGRect>]) {
+        value.merge(nextValue()) { $1 }
+    }
+}
+
 struct CaptureResultView: View {
     static let timelineHeight: CGFloat = 74
 
@@ -69,10 +82,22 @@ struct CaptureResultView: View {
             if model.trimming {
                 TrimTimeline(model: model, scrub: actions.scrub)
                     .frame(height: Self.timelineHeight)
+                    .anchorPreference(key: CardItemBounds.self, value: .bounds) {
+                        ["__timeline__": $0]
+                    }
             }
         }
         .frame(width: model.cardSize.width, height: model.cardSize.height)
         .onHover { actions.hoverChanged($0) }
+        .overlayPreferenceValue(CardItemBounds.self) { anchors in
+            GeometryReader { geo in
+                Color.clear
+                    .onChange(of: anchors.mapValues { geo[$0] }, initial: true) { _, rects in
+                        if DemoState.active { actions.reportItemBounds(rects) }
+                    }
+            }
+            .allowsHitTesting(false)
+        }
     }
 
     private var imageHeight: CGFloat {
@@ -104,6 +129,9 @@ struct CaptureResultView: View {
                                   thumbnail: actions.dragThumbnail,
                                   onHover: actions.hoverChanged,
                                   dragActive: actions.dragActive))
+            .anchorPreference(key: CardItemBounds.self, value: .bounds) {
+                ["__image__": $0]
+            }
 
             HStack(spacing: 6) {
                 if model.trimming {
@@ -199,6 +227,7 @@ struct CaptureResultView: View {
         }
         .buttonStyle(.plain)
         .help(help)
+        .anchorPreference(key: CardItemBounds.self, value: .bounds) { [help: $0] }
     }
 }
 
@@ -427,8 +456,19 @@ final class CaptureResultController: NSObject {
     private var scrubGenerator: AVAssetImageGenerator?
     private var scrubInFlight = false
     private var pendingScrub: Double?
+    /// Card-item rects in hosting-view coordinates, reported by the view
+    /// during demo runs — resolved to screen rects on demand.
+    private var demoLocalAnchors: [String: CGRect] = [:]
 
     var currentURL: URL? { url }
+
+    /// Demo choreography: a chip's / the image's / the trim strip's current
+    /// screen rect, by key (chip help string, "__image__", "__timeline__").
+    func demoItemRect(_ key: String) -> CGRect? {
+        guard let panel, panel.isVisible,
+              let local = demoLocalAnchors[key] else { return nil }
+        return Geometry.demoAnchorScreenRect(local: local, panelFrame: panel.frame)
+    }
 
     func show(url: URL, isVideo: Bool, near anchor: CGRect?, on screen: NSScreen?) {
         self.url = url
@@ -803,7 +843,8 @@ final class CaptureResultController: NSObject {
             cancelTrim: { [weak self] in self?.cancelTrim() },
             scrub: { [weak self] in self?.scrub($0) },
             trash: { [weak self] in self?.trash() },
-            hoverChanged: { [weak self] in self?.hovering = $0 })
+            hoverChanged: { [weak self] in self?.hovering = $0 },
+            reportItemBounds: { [weak self] in self?.demoLocalAnchors = $0 })
         let hosting = NSHostingView(rootView: CaptureResultView(
             model: model, ring: ring, actions: actions))
         // No window auto-layout and no safe-area tracking in a floating

@@ -39,6 +39,9 @@ performance verification).
 .build/debug/OutcutShare --demo=monitor   # Virtual Monitor showcase
 .build/debug/OutcutShare --demo=region    # selection modifiers + mock call mirror
 .build/debug/OutcutShare --demo=follow    # follow modes (window / cursor)
+.build/debug/OutcutShare --demo=zoom      # viewer zoom + live preset switch
+.build/debug/OutcutShare --demo=capture   # screenshot/record → card, drag-out, trim
+.build/debug/OutcutShare --demo=raycast   # still of the Raycast command list (.png)
 ```
 
 Records a feature walkthrough to `~/Movies/OutcutShare/Demos/` — a clean
@@ -47,7 +50,12 @@ Records a feature walkthrough to `~/Movies/OutcutShare/Demos/` — a clean
 by synthetic input with a keystroke chip for held modifiers. Nothing
 personal appears in frame. The run takes over the mouse for ~30 s (3 s
 countdown, Ctrl-C aborts) and needs Screen Recording + Accessibility for
-the invoking binary.
+the invoking binary. The `raycast` scenario is a still, not a clip: it
+opens Raycast, types "outcut", captures the window and Escs out (the
+extension must be imported, see [raycast](raycast.md)).
+
+`Scripts/demo-gif.sh take.mp4 docs/media/demo-x.gif` converts a keeper
+take to a README GIF (900 px wide, 12.5 fps).
 
 ## Releases
 

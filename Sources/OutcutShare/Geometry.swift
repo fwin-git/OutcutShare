@@ -465,6 +465,15 @@ enum Geometry {
         ]
     }
 
+    /// A SwiftUI anchor rect (top-left origin inside a borderless panel's
+    /// hosting view) as an AppKit screen rect — demo choreography clicks
+    /// these to drive real buttons.
+    static func demoAnchorScreenRect(local: CGRect, panelFrame: CGRect) -> CGRect {
+        CGRect(x: panelFrame.minX + local.minX,
+               y: panelFrame.maxY - local.maxY,
+               width: local.width, height: local.height)
+    }
+
     /// True when the gap between two frames is within `threshold` — used to
     /// decide whether the hotbar counts as "attached" to the preview panel.
     static func framesAreNear(_ a: CGRect, _ b: CGRect, threshold: CGFloat) -> Bool {
