@@ -277,6 +277,8 @@ final class HotbarController {
     private var lastFollowMode: FollowMode = .off
     /// Grabber-click override; nil = orientation follows auto-placement.
     private var verticalOverride: Bool?
+    /// Kept for the measuring hosting controller (see measuredBarSize).
+    private var barActions: HotbarActions?
     /// Footprint of the horizontal bar — the auto-side decision always
     /// reasons about whether THAT would fit below/above.
     private var lastHorizontalSize: CGSize?
@@ -296,11 +298,19 @@ final class HotbarController {
         refresh()
         // The button set varies by mode (regionless hides region actions) —
         // refit the panel to the current content.
-        if let panel, let hosting = panel.contentView as? NSHostingView<HotbarView> {
-            panel.setContentSize(hosting.fittingSize)
-        }
+        panel?.setContentSize(measuredBarSize())
         position()
         panel?.orderFrontRegardless()
+    }
+
+    /// Content size measured OUTSIDE the panel: its own hosting view opts
+    /// out of auto-layout (see build), which zeroes fittingSize, so a
+    /// throwaway hosting controller over the same model does the measuring.
+    private func measuredBarSize() -> CGSize {
+        guard let barActions else { return panel?.frame.size ?? .zero }
+        let controller = NSHostingController(
+            rootView: HotbarView(model: model, actions: barActions))
+        return controller.sizeThatFits(in: CGSize(width: 4000, height: 4000))
     }
 
     func regionChanged(_ region: CGRect) {
@@ -424,15 +434,8 @@ final class HotbarController {
         }
         model.vertical = vertical
         model.followMenuOpen = false
-        // The hosting view lays the rotated bar out on the next runloop
-        // pass — only then does fittingSize match the new orientation.
-        DispatchQueue.main.async { [weak self] in
-            guard let self, let panel = self.panel,
-                  let hosting = panel.contentView as? NSHostingView<HotbarView> else { return }
-            hosting.layoutSubtreeIfNeeded()
-            panel.setContentSize(hosting.fittingSize)
-            self.position()
-        }
+        panel?.setContentSize(measuredBarSize())
+        position()
     }
 
     private func clamped(_ origin: CGPoint, size: CGSize) -> CGPoint {
@@ -477,13 +480,16 @@ final class HotbarController {
             })
 
         let hosting = NSHostingView(rootView: HotbarView(model: model, actions: actions))
-        // A floating capsule panel must not track safe areas: the hosting
-        // view otherwise reacts to frame changes inside a display cycle
-        // with invalidateSafeAreaInsets → setNeedsUpdateConstraints, which
-        // AppKit forbids mid-flush and turns into a crash (seen when the
-        // vertical bar's follow dropdown refit the panel).
+        // Keep this panel out of window auto-layout entirely: with the
+        // default sizingOptions the hosting view publishes intrinsic-size
+        // constraints, the window then runs constraint flushes, and ANY
+        // SwiftUI invalidation landing mid-flush (hover, dropdown refit,
+        // orientation change) throws inside _postWindowNeedsUpdateConstraints
+        // and crashes. The bar is sized explicitly via setContentSize.
+        hosting.sizingOptions = []
         hosting.safeAreaRegions = []
-        let size = hosting.fittingSize
+        self.barActions = actions
+        let size = measuredBarSize()
         hosting.frame = CGRect(origin: .zero, size: size)
         let panel = NSPanel(contentRect: CGRect(origin: .zero, size: size),
                             styleMask: [.borderless, .nonactivatingPanel],
@@ -558,18 +564,14 @@ final class HotbarController {
     private func setFollowMenu(open: Bool) {
         guard model.followMenuOpen != open else { return }
         model.followMenuOpen = open
-        // The hosting view lays the dropdown out on the next runloop pass —
-        // only then does fittingSize include it.
-        DispatchQueue.main.async { [weak self] in self?.refitPanel() }
+        refitPanel()
     }
 
     /// Resize to the current content, keeping the bar's top edge in place
     /// so the dropdown appears to fold out underneath.
     private func refitPanel() {
-        guard let panel,
-              let hosting = panel.contentView as? NSHostingView<HotbarView> else { return }
-        hosting.layoutSubtreeIfNeeded()
-        let size = hosting.fittingSize
+        guard let panel else { return }
+        let size = measuredBarSize()
         guard size != panel.frame.size else { return }
         let origin = CGPoint(x: panel.frame.origin.x,
                              y: panel.frame.maxY - size.height)
