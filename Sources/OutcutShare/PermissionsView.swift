@@ -10,45 +10,53 @@ struct PermissionsStatusView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             statusRow(state: screenRecordingState,
-                      title: "Screen & System Audio Recording",
+                      title: L10n.string(.permissionsScreenRecordingTitle),
                       detail: screenRecordingDetail)
 
             if !model.status.screenRecordingGranted {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("1.  Click **Request Permission** and choose *Allow* in the macOS dialog.")
-                    Text("2.  No dialog? Enable **Outcut Share** in *System Settings → Privacy & Security → Screen & System Audio Recording*.")
-                    Text("3.  Come back here — the checkmark updates by itself.")
+                    Text(LocalizedStringKey(L10n.string(.permissionsGuide1)))
+                    Text(LocalizedStringKey(L10n.string(.permissionsGuide2)))
+                    Text(LocalizedStringKey(L10n.string(.permissionsGuide3)))
                 }
                 .font(.callout)
                 .padding(.leading, 30)
 
                 HStack {
-                    Button("Request Permission") { model.requestScreenRecording() }
+                    Button(L10n.string(.permissionsRequest)) {
+                        model.requestScreenRecording()
+                    }
                         .keyboardShortcut(.defaultAction)
-                    Button("Open System Settings") { model.openSystemSettings() }
+                    Button(L10n.string(.permissionsOpenSystemSettings)) {
+                        model.openSystemSettings()
+                    }
                 }
                 .padding(.leading, 30)
             } else if model.status.needsRelaunch {
-                Button("Relaunch Outcut Share") { model.relaunch() }
+                Button(L10n.string(.permissionsRelaunch)) { model.relaunch() }
                     .keyboardShortcut(.defaultAction)
                     .padding(.leading, 30)
             }
 
             statusRow(state: model.status.virtualDisplayAvailable ? .ok : .warning,
-                      title: "Virtual display support",
+                      title: L10n.string(.permissionsVirtualDisplayTitle),
                       detail: model.status.virtualDisplayAvailable
-                          ? "Available — the region can appear as its own monitor."
-                          : "Unavailable on this macOS — use the Hidden Window share mode.")
+                          ? L10n.string(.permissionsVirtualDisplayAvailable)
+                          : L10n.string(.permissionsVirtualDisplayUnavailable))
 
             statusRow(state: model.status.accessibilityGranted ? .ok : .pending,
-                      title: "Accessibility (optional)",
+                      title: L10n.string(.permissionsAccessibilityTitle),
                       detail: model.status.accessibilityGranted
-                          ? "Granted — drag windows onto the virtual monitor's preview to move them there."
-                          : "Lets you move windows onto the Virtual Monitor by dropping them on its preview.")
+                          ? L10n.string(.permissionsAccessibilityGranted)
+                          : L10n.string(.permissionsAccessibilityPending))
             if !model.status.accessibilityGranted {
                 HStack {
-                    Button("Request Permission") { model.requestAccessibility() }
-                    Button("Open System Settings") { model.openAccessibilitySettings() }
+                    Button(L10n.string(.permissionsRequest)) {
+                        model.requestAccessibility()
+                    }
+                    Button(L10n.string(.permissionsOpenSystemSettings)) {
+                        model.openAccessibilitySettings()
+                    }
                 }
                 .padding(.leading, 30)
             }
@@ -65,12 +73,12 @@ struct PermissionsStatusView: View {
 
     private var screenRecordingDetail: String {
         if model.status.captureWorks {
-            return "Granted."
+            return L10n.string(.permissionsScreenRecordingGranted)
         }
         if model.status.needsRelaunch {
-            return "Granted — relaunch Outcut Share so it takes effect."
+            return L10n.string(.permissionsScreenRecordingRelaunch)
         }
-        return "Required to capture the selected screen region."
+        return L10n.string(.permissionsScreenRecordingRequired)
     }
 
     private func statusRow(state: RowState, title: String, detail: String) -> some View {
@@ -105,10 +113,10 @@ struct PermissionsView: View {
                     .font(.system(size: 28))
                     .foregroundStyle(.tint)
                 VStack(alignment: .leading) {
-                    Text("Welcome to Outcut Share").font(.title3).bold()
+                    Text(L10n.string(.permissionsWelcome)).font(.title3).bold()
                     Text(model.status.allSatisfied
-                         ? "All permissions are in place — nothing to do here."
-                         : "One system permission is needed before you can share a region.")
+                         ? L10n.string(.permissionsAllInPlace)
+                         : L10n.string(.permissionsOneNeeded))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
@@ -122,11 +130,19 @@ struct PermissionsView: View {
 
             HStack {
                 if model.status.allSatisfied {
-                    Label("All set — you're ready to share.", systemImage: "checkmark.seal.fill")
+                    Label(
+                        L10n.string(.permissionsReady),
+                        systemImage: "checkmark.seal.fill"
+                    )
                         .foregroundStyle(.green)
                 }
                 Spacer()
-                Button(model.status.allSatisfied ? "Done" : "Later") { onDone() }
+                Button(
+                    model.status.allSatisfied
+                        ? L10n.string(.commonDone) : L10n.string(.commonLater)
+                ) {
+                    onDone()
+                }
             }
         }
         .padding(20)
@@ -146,7 +162,7 @@ final class PermissionsWindowController {
                 self?.window?.close()
             })
             let window = NSWindow(contentViewController: hosting)
-            window.title = "Outcut Share Permissions"
+            window.title = L10n.string(.permissionsWindowTitle)
             window.styleMask = [.titled, .closable]
             window.isReleasedWhenClosed = false
             window.center()

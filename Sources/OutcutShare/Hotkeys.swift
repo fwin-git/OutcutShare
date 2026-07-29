@@ -110,13 +110,13 @@ enum HotkeyAction: String, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .selectRegion: return "Select Region & Share"
-        case .adjustRegion: return "Move / Resize Region"
-        case .stopSharing: return "Stop Sharing"
-        case .shareLastRegion: return "Share Last Region"
-        case .togglePause: return "Pause / Resume Sharing"
-        case .toggleRecording: return "Start / Stop Recording"
-        case .toggleZoom: return "Zoom In / Out (Viewers)"
+        case .selectRegion: return L10n.string(.hotkeySelectRegion)
+        case .adjustRegion: return L10n.string(.hotkeyAdjustRegion)
+        case .stopSharing: return L10n.string(.hotkeyStopSharing)
+        case .shareLastRegion: return L10n.string(.hotkeyShareLastRegion)
+        case .togglePause: return L10n.string(.hotkeyTogglePause)
+        case .toggleRecording: return L10n.string(.hotkeyToggleRecording)
+        case .toggleZoom: return L10n.string(.hotkeyToggleZoom)
         }
     }
 

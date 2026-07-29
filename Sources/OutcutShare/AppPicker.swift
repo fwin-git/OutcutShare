@@ -70,27 +70,30 @@ struct AppPickerSheet: View {
         VStack(spacing: 0) {
             HStack {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("Search apps", text: $query)
+                TextField(L10n.string(.pickerSearch), text: $query)
                     .textFieldStyle(.plain)
             }
             .padding(10)
             Divider()
             List {
                 if !suggested.isEmpty {
-                    Section("Suggested") {
+                    Section(L10n.string(.pickerSuggested)) {
                         ForEach(suggested) { row(for: $0) }
                     }
                 }
-                Section(query.isEmpty ? "All apps" : "Results") {
+                Section(
+                    query.isEmpty
+                        ? L10n.string(.pickerAllApps) : L10n.string(.pickerResults)
+                ) {
                     ForEach(filtered) { row(for: $0) }
                 }
             }
             .listStyle(.inset)
             Divider()
             HStack {
-                Button("Browse…") { browse() }
+                Button(L10n.string(.pickerBrowse)) { browse() }
                 Spacer()
-                Button("Done") { dismiss() }
+                Button(L10n.string(.commonDone)) { dismiss() }
                     .keyboardShortcut(.defaultAction)
             }
             .padding(10)
