@@ -55,6 +55,9 @@ private struct FollowMenuRow: View {
                 Image(systemName: "checkmark")
                     .font(.system(size: 9, weight: .semibold))
                     .opacity(selected ? 1 : 0)
+                Image(systemName: mode == .cursor ? "cursorarrow" : "macwindow")
+                    .font(.system(size: 10))
+                    .frame(width: 13)
                 Text(mode.displayName)
                     .font(.caption)
             }
@@ -90,9 +93,9 @@ struct HotbarView: View {
         Group {
             if model.vertical {
                 // Companions fly out to the side (below the bar they'd be
-                // clipped to the capsule's width): an invisible copy in the
-                // layout reserves the panel's width, the overlay places the
-                // visible copies at the hovered icon's row.
+                // clipped to the capsule's width): invisible copies in the
+                // layout reserve the panel's size, the overlay places the
+                // visible copies aligned with their icons.
                 HStack(alignment: .top, spacing: 6) {
                     bar
                     VStack(alignment: .leading, spacing: 6) {
@@ -102,48 +105,64 @@ struct HotbarView: View {
                         }
                     }
                 }
-                .overlayPreferenceValue(BarItemBounds.self) { anchors in
-                    GeometryReader { geo in
-                        verticalFlyouts(anchors: anchors, geo: geo)
-                    }
-                }
             } else {
                 VStack(spacing: 5) {
                     bar
-                    // Drawn in-panel: a real NSMenu opens at popup level,
-                    // which sits underneath this screenSaver+1 panel.
                     if model.followMenuOpen && !model.regionless {
-                        followMenu
-                            .frame(maxWidth: .infinity, alignment: .trailing)
-                            .padding(.trailing, 48)
+                        followMenu.opacity(0).disabled(true)
                     }
-                    tooltip
+                    tooltip.opacity(0)
                 }
             }
         }
         .fixedSize()
+        // Drawn in-panel: a real NSMenu opens at popup level, which sits
+        // underneath this screenSaver+1 panel.
+        .overlayPreferenceValue(BarItemBounds.self) { anchors in
+            GeometryReader { geo in
+                flyouts(anchors: anchors, geo: geo)
+            }
+        }
     }
 
-    /// Vertical mode: tooltip rides at its icon's row, the dropdown at the
-    /// follow control's row — both to the right of the capsule.
-    private func verticalFlyouts(anchors: [String: Anchor<CGRect>],
-                                 geo: GeometryProxy) -> some View {
-        let flyoutX = anchors["__bar__"].map { geo[$0].maxX + 6 } ?? 50
-        var tooltipY = geo.size.height - 22
-        if let label = model.hoverLabel, let anchor = anchors[label] {
-            tooltipY = geo[anchor].midY - 11
-        }
-        tooltipY = min(max(0, tooltipY), geo.size.height - 22)
-        var menuY = geo.size.height - 64
-        if let anchor = anchors["Choose follow mode"] {
-            menuY = min(max(0, geo[anchor].minY - 20), geo.size.height - 64)
-        }
+    /// The visible tooltip and dropdown, aligned with their icons: beside
+    /// the bar in vertical mode, beneath it in horizontal mode. The tooltip
+    /// yields while the dropdown is open (they'd overlap at the follow row).
+    private func flyouts(anchors: [String: Anchor<CGRect>],
+                         geo: GeometryProxy) -> some View {
+        let barRect = anchors["__bar__"].map { geo[$0] }
+            ?? CGRect(origin: .zero, size: geo.size)
+        let chevron = anchors["Choose follow mode"].map { geo[$0] }
         return ZStack(alignment: .topLeading) {
             if model.followMenuOpen && !model.regionless {
-                followMenu.offset(x: flyoutX, y: menuY)
-            }
-            if model.hoverLabel != nil {
-                tooltip.offset(x: flyoutX, y: tooltipY)
+                if model.vertical {
+                    followMenu
+                        .fixedSize()
+                        .offset(x: barRect.maxX + 6,
+                                y: min(max(0, (chevron?.minY ?? geo.size.height) - 20),
+                                       max(0, geo.size.height - 60)))
+                } else {
+                    followMenu
+                        .fixedSize()
+                        .offset(x: min(max(8, (chevron?.minX ?? 0) - 28),
+                                       max(8, geo.size.width - 140)),
+                                y: barRect.maxY + 5)
+                }
+            } else if let label = model.hoverLabel {
+                let anchor = anchors[label].map { geo[$0] }
+                if model.vertical {
+                    tooltip
+                        .fixedSize()
+                        .offset(x: barRect.maxX + 6,
+                                y: min(max(0, (anchor?.midY ?? geo.size.height) - 11),
+                                       geo.size.height - 22))
+                } else {
+                    tooltip
+                        .fixedSize()
+                        .position(x: min(max(80, anchor?.midX ?? geo.size.width / 2),
+                                         geo.size.width - 80),
+                                  y: barRect.maxY + 16)
+                }
             }
         }
     }
