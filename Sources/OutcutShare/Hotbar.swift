@@ -14,6 +14,8 @@ final class HotbarModel: ObservableObject {
     /// follow label collapses to icon + chevron.
     @Published var vertical = false
     @Published var ocrState: OCRChipState = .idle
+    /// In-panel tooltip text; on the model so sizing sees it too.
+    @Published var hoverLabel: String?
     /// Virtual-monitor sessions have no on-screen region: adjust, presets,
     /// follow and highlights don't apply and their buttons are hidden.
     @Published var regionless = false
@@ -34,6 +36,7 @@ struct HotbarActions {
     var followMenu: () -> Void
     var selectFollow: (FollowMode) -> Void
     var hide: () -> Void
+    var hover: (Bool, String) -> Void
     var beginDrag: () -> Void
     var drag: () -> Void
     var endDrag: () -> Void
@@ -43,38 +46,54 @@ struct HotbarView: View {
     @ObservedObject var model: HotbarModel
     let actions: HotbarActions
     @State private var dragging = false
-    @State private var hoverLabel: String?
 
     var body: some View {
-        VStack(spacing: 5) {
-            bar
-            // Drawn in-panel like the tooltip below: a real NSMenu opens at
-            // popup level, which sits underneath this screenSaver+1 panel.
-            if model.followMenuOpen && !model.regionless {
-                if model.vertical {
-                    followMenu
-                } else {
-                    followMenu
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                        .padding(.trailing, 48)
+        Group {
+            if model.vertical {
+                // Companions fly out to the side: below the bar they'd be
+                // clipped to the capsule's width.
+                HStack(alignment: .bottom, spacing: 6) {
+                    bar
+                    VStack(alignment: .leading, spacing: 6) {
+                        // Drawn in-panel: a real NSMenu opens at popup level,
+                        // which sits underneath this screenSaver+1 panel.
+                        if model.followMenuOpen && !model.regionless {
+                            followMenu
+                        }
+                        tooltip
+                    }
+                }
+            } else {
+                VStack(spacing: 5) {
+                    bar
+                    if model.followMenuOpen && !model.regionless {
+                        followMenu
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .padding(.trailing, 48)
+                    }
+                    tooltip
                 }
             }
-            // In-panel tooltip: system tooltips render at popup level, which
-            // sits below this panel — they'd be invisible. The label stays in
-            // the view tree permanently (opacity swap, plain background):
-            // inserting a material view on hover makes the window server
-            // rebuild the panel backdrop and stalls the app.
-            Text(hoverLabel ?? " ")
-                .font(.caption)
-                .lineLimit(1)
-                .foregroundStyle(.white)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(Color.black.opacity(0.72), in: Capsule())
-                .opacity(hoverLabel == nil ? 0 : 1)
-                .frame(height: 22)
         }
         .fixedSize()
+    }
+
+    // In-panel tooltip: system tooltips render at popup level, which sits
+    // below this panel — they'd be invisible. The label stays in the view
+    // tree permanently (opacity swap, plain background): inserting a
+    // material view on hover makes the window server rebuild the panel
+    // backdrop and stalls the app. The label lives on the model so the
+    // sizing pass (measuredBarSize) sees the same text.
+    private var tooltip: some View {
+        Text(model.hoverLabel ?? " ")
+            .font(.caption)
+            .lineLimit(1)
+            .foregroundStyle(.white)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(Color.black.opacity(0.72), in: Capsule())
+            .opacity(model.hoverLabel == nil ? 0 : 1)
+            .frame(height: 22)
     }
 
     private var bar: some View {
@@ -239,11 +258,7 @@ struct HotbarView: View {
     }
 
     private func hover(hover: Bool, label: String) {
-        if hover {
-            hoverLabel = label
-        } else if hoverLabel == label {
-            hoverLabel = nil
-        }
+        actions.hover(hover, label)
     }
 
     private func barButton(_ symbol: String, help: String, active: Bool = false,
@@ -420,11 +435,40 @@ final class HotbarController {
         }
     }
 
-    /// Grabber click: rotate in place (and stop auto-orientation for the
-    /// session, like a manual drag stops auto-placement).
+    /// Tooltip text lives on the model; in vertical mode it flies out to
+    /// the bar's side, so the panel must refit to the label's width.
+    private func hoverChanged(hovering: Bool, label: String) {
+        if hovering {
+            model.hoverLabel = label
+        } else if model.hoverLabel == label {
+            model.hoverLabel = nil
+        }
+        if model.vertical {
+            refitPanel()
+        }
+    }
+
+    /// Grabber click: rotate around the grabber like a hinge — the panel's
+    /// top-left (where the grabber sits in both orientations) stays put.
+    /// Also stops auto-orientation for the session, like a manual drag
+    /// stops auto-placement.
     private func toggleOrientation() {
-        verticalOverride = !model.vertical
-        applyOrientation(verticalOverride!)
+        let vertical = !model.vertical
+        verticalOverride = vertical
+        guard let panel else { return }
+        let topLeft = CGPoint(x: panel.frame.minX, y: panel.frame.maxY)
+        if !model.vertical {
+            lastHorizontalSize = panel.frame.size
+        }
+        model.vertical = vertical
+        model.followMenuOpen = false
+        let size = measuredBarSize()
+        let origin = clamped(CGPoint(x: topLeft.x, y: topLeft.y - size.height),
+                             size: size)
+        panel.setFrame(CGRect(origin: origin, size: size), display: true)
+        if manualOrigin != nil {
+            manualOrigin = origin
+        }
     }
 
     private func applyOrientation(_ vertical: Bool) {
@@ -462,6 +506,7 @@ final class HotbarController {
             followMenu: { [weak self] in self?.toggleFollowMenu() },
             selectFollow: { [weak self] in self?.selectFollow($0) },
             hide: { [weak self] in self?.hideForSession() },
+            hover: { [weak self] in self?.hoverChanged(hovering: $0, label: $1) },
             beginDrag: { [weak self] in
                 guard let self, let panel = self.panel else { return }
                 self.dragAnchor = (panel.frame.origin, NSEvent.mouseLocation)
