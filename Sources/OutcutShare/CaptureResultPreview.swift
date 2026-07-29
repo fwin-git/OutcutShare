@@ -163,7 +163,7 @@ struct CaptureResultView: View {
                         .background(Color.black.opacity(0.7))
                 }
             }
-            .frame(maxWidth: 160, maxHeight: 110)
+            .frame(maxWidth: 220, maxHeight: 150)
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .overlay(RoundedRectangle(cornerRadius: 8)
                 .strokeBorder(.white.opacity(0.6)))
