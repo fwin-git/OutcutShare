@@ -94,7 +94,7 @@ struct CaptureResultView: View {
                 .strokeBorder(.white.opacity(0.25)))
             // The picture itself is a drag source too — straight into
             // Finder, Slack, mails …
-            .onDrag(actions.dragProvider)
+            .onDrag(actions.dragProvider) { dragThumb }
 
             HStack(spacing: 6) {
                 if model.trimming {
@@ -112,7 +112,7 @@ struct CaptureResultView: View {
                     chip(model.copied ? "checkmark" : "doc.on.doc",
                          help: "Copy file — or drag it out",
                          action: actions.copyFile)
-                        .onDrag(actions.dragProvider)
+                        .onDrag(actions.dragProvider) { dragThumb }
                     chip("folder", help: "Show in Finder", action: actions.revealInFinder)
                     chip("eye", help: model.isVideo ? "Preview with playback" : "Preview large",
                          action: actions.quickLook)
@@ -142,6 +142,37 @@ struct CaptureResultView: View {
                     .padding(8)
                     .frame(maxWidth: .infinity, maxHeight: .infinity,
                            alignment: .bottomTrailing)
+            }
+        }
+    }
+
+    /// The ghost under the cursor while dragging the file out: a small
+    /// thumbnail of the capture with a badge for videos.
+    private var dragThumb: some View {
+        ZStack(alignment: .bottomTrailing) {
+            Group {
+                if let image = model.image {
+                    Image(nsImage: image)
+                        .resizable()
+                        .scaledToFit()
+                } else {
+                    Image(systemName: model.isVideo ? "film" : "photo")
+                        .font(.system(size: 28))
+                        .foregroundStyle(.white)
+                        .frame(width: 120, height: 80)
+                        .background(Color.black.opacity(0.7))
+                }
+            }
+            .frame(maxWidth: 160, maxHeight: 110)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(.white.opacity(0.6)))
+            if model.isVideo {
+                Image(systemName: "play.circle.fill")
+                    .font(.system(size: 16))
+                    .foregroundStyle(.white)
+                    .shadow(radius: 2)
+                    .padding(5)
             }
         }
     }
