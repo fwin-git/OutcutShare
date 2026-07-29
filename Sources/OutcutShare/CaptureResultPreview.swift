@@ -335,6 +335,7 @@ final class CaptureResultController: NSObject {
     private var scrubGenerator: AVAssetImageGenerator?
     private var scrubInFlight = false
     private var pendingScrub: Double?
+    private var dragLevelTimer: Timer?
 
     var currentURL: URL? { url }
 
@@ -451,7 +452,31 @@ final class CaptureResultController: NSObject {
             return NSItemProvider()
         }
         provider.suggestedName = url.lastPathComponent
+        beginDragLevelDrop()
         return provider
+    }
+
+    /// The card floats above screenSaver level, but the system draws the
+    /// drag ghost at the (far lower) dragging window level — in front of
+    /// the card the ghost would be invisible. Sink the card below the ghost
+    /// while the mouse button is held, then restore.
+    private func beginDragLevelDrop() {
+        guard let panel else { return }
+        panel.level = .floating
+        dragLevelTimer?.invalidate()
+        let timer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                if NSEvent.pressedMouseButtons & 1 == 0 {
+                    self.dragLevelTimer?.invalidate()
+                    self.dragLevelTimer = nil
+                    self.panel?.level = NSWindow.Level(
+                        rawValue: NSWindow.Level.screenSaver.rawValue + 1)
+                }
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        dragLevelTimer = timer
     }
 
     private func revealInFinder() {
