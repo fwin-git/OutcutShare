@@ -12,6 +12,7 @@ permissions needed. Configure them under *Settings → Shortcuts*.
 | Move / Resize Region | ⌃⌥⌘M |
 | Pause / Resume Sharing | ⌃⌥⌘P |
 | Start / Stop Recording | ⌃⌥⌘R |
+| Zoom In / Out (Viewers) | ⌃⌥⌘Z |
 | Stop Sharing | ⌃⌥⌘X |
 | Share preset 1–9 | ⌃⌥⌘1–9 (fixed) |
 

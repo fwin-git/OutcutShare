@@ -16,6 +16,7 @@ Menu bar → **Settings…** — eight pages.
 | Show floating hotbar | Quick-action bar next to the region: stop, pause, record, screenshot, highlights, preview, resize, save preset, follow (split button — icon toggles, label picks the mode). Auto-positions below → side → top; drag the ≡ grabber to place it manually; ✕ hides it until re-enabled. Stays parked while cursor follow runs, so the moving region can't push it out of reach | on |
 | Show shared-output preview | Small floating window with exactly what viewers see — no need to keep Zoom/Teams open. Also toggled by the hotbar's eye button | off |
 | Share window title | The name sharing apps list for the hidden share window in their window pickers (Hidden Window mode) | Outcut Share (Share Region) |
+| Viewer zoom magnification | How far ⌃⌥⌘Z zooms the shared picture toward the cursor (1.5×/2×/3×); the zoom glides and gently tracks the cursor, viewers-only | 2× |
 | Capture frame rate | 30/60 fps — applies to both the shared picture and recordings | 30 fps |
 | Launch at login | Start with macOS (app bundle only) | off |
 | Show Dock icon while active | Dock, ⌘-Tab and Force Quit presence while sharing or settings open | off |
@@ -94,6 +95,10 @@ Dimming and border are local-only: they're excluded from what viewers see.
 | Setting | Effect | Default |
 | --- | --- | --- |
 | Save recordings to | Folder for .mp4 recordings | ~/Movies/OutcutShare |
+| Record system audio | The captured apps' sound as an AAC track (Outcut Share itself excluded) | on |
+| Record microphone | Your voice as a second track; asks for mic permission on the first recording | off |
+
+Privacy pause silences both audio tracks together with the picture.
 
 ## Screenshots
 

@@ -106,6 +106,7 @@ enum HotkeyAction: String, CaseIterable {
     case shareLastRegion
     case togglePause
     case toggleRecording
+    case toggleZoom
 
     var displayName: String {
         switch self {
@@ -115,6 +116,7 @@ enum HotkeyAction: String, CaseIterable {
         case .shareLastRegion: return "Share Last Region"
         case .togglePause: return "Pause / Resume Sharing"
         case .toggleRecording: return "Start / Stop Recording"
+        case .toggleZoom: return "Zoom In / Out (Viewers)"
         }
     }
 
@@ -126,6 +128,9 @@ enum HotkeyAction: String, CaseIterable {
         case .shareLastRegion: return KeyCombo(keyCode: 37, modifiers: [.control, .option, .command]) // L
         case .togglePause: return KeyCombo(keyCode: 35, modifiers: [.control, .option, .command])     // P
         case .toggleRecording: return KeyCombo(keyCode: 15, modifiers: [.control, .option, .command]) // R
+        // Position 16 is Z on QWERTZ (the primary keyboard here); rebindable
+        // for layouts where it resolves differently.
+        case .toggleZoom: return KeyCombo(keyCode: 16, modifiers: [.control, .option, .command])      // Z (QWERTZ)
         }
     }
 

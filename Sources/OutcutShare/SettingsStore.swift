@@ -225,6 +225,20 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    @Published var recordSystemAudio: Bool {
+        didSet {
+            defaults.set(recordSystemAudio, forKey: "recordSystemAudio")
+            notifyChange()
+        }
+    }
+
+    @Published var recordMicrophone: Bool {
+        didSet {
+            defaults.set(recordMicrophone, forKey: "recordMicrophone")
+            notifyChange()
+        }
+    }
+
     @Published var cursorHighlight: Bool {
         didSet {
             defaults.set(cursorHighlight, forKey: "cursorHighlight")
@@ -287,6 +301,15 @@ final class SettingsStore: ObservableObject {
     @Published var followMode: FollowMode {
         didSet {
             defaults.set(followMode.rawValue, forKey: "followMode")
+            notifyChange()
+        }
+    }
+
+    /// Viewers-only zoom magnification (⌃⌥⌘Z): the capture window shrinks
+    /// to region/factor while the on-screen region stays put.
+    @Published var zoomFactor: Double {
+        didSet {
+            defaults.set(zoomFactor, forKey: "zoomFactor")
             notifyChange()
         }
     }
@@ -461,6 +484,8 @@ final class SettingsStore: ObservableObject {
         self.followTarget = defaults.string(forKey: "followTarget")
             .flatMap(FollowMode.init(rawValue:))
             .flatMap { $0 == .off ? nil : $0 } ?? .activeWindow
+        self.zoomFactor = defaults.object(forKey: "zoomFactor") == nil
+            ? 2.0 : defaults.double(forKey: "zoomFactor")
         self.hotbarEnabled = defaults.bool(forKey: "hotbarEnabled")
         self.previewWindowEnabled = defaults.bool(forKey: "previewWindowEnabled")
         self.shareWindowTitle = defaults.string(forKey: "shareWindowTitle")
@@ -489,6 +514,9 @@ final class SettingsStore: ObservableObject {
         self.screenshotQuality = defaults.object(forKey: "screenshotQuality") == nil
             ? 1.0 : defaults.double(forKey: "screenshotQuality")
         self.screenshotShadow = defaults.bool(forKey: "screenshotShadow")
+        defaults.register(defaults: ["recordSystemAudio": true])
+        self.recordSystemAudio = defaults.bool(forKey: "recordSystemAudio")
+        self.recordMicrophone = defaults.bool(forKey: "recordMicrophone")
         self.followBehavior = defaults.string(forKey: "followBehavior")
             .flatMap(FollowBehavior.init(rawValue:)) ?? .glide
         self.followResizes = defaults.bool(forKey: "followResizes")

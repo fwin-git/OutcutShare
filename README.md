@@ -135,7 +135,10 @@ permission; a guided row appears when it's needed.
   apps (Mail, Messages, …) are removed from the shared picture while staying
   visible to you. → [settings](docs/settings.md)
 - **Cursor emphasis** — halo + click ripples, drawn for viewers only.
-- **Recording** (⌃⌥⌘R) — the region straight to .mp4, no meeting needed.
+- **Viewer zoom** (⌃⌥⌘Z) — the shared picture glides into a 1.5–3× zoom
+  toward your cursor and tracks it; your own screen never changes.
+- **Recording** (⌃⌥⌘R) — the region straight to .mp4, with system audio
+  and optional microphone.
 - **Screenshots** — the hotbar's camera button saves the shared picture;
   folder, max size, quality and drop shadow are configurable. Every
   capture (and finished recording) pops a short-lived preview card with

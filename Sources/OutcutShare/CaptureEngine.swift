@@ -25,6 +25,9 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
     var onFrame: ((IOSurfaceRef) -> Void)?
     /// Raw sample-buffer tap (with timing) for the recording sink.
     var onSampleBuffer: ((CMSampleBuffer) -> Void)?
+    /// System-audio tap (48 kHz PCM from the stream; own app excluded).
+    /// Only connected while a recording with system audio runs.
+    nonisolated(unsafe) var onAudioSampleBuffer: ((CMSampleBuffer) -> Void)?
     var onStopped: ((Error?) -> Void)?
     /// Debug/testing aid; incremented on the sample queue, read opportunistically.
     private(set) nonisolated(unsafe) var frameCount = 0
@@ -33,6 +36,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
     private var config: SCStreamConfiguration?
     private var display: SCDisplay?
     private let sampleQueue = DispatchQueue(label: "com.outcutshare.capture")
+    private let audioQueue = DispatchQueue(label: "com.outcutshare.capture.audio")
 
     /// How the app's own windows are kept out of the capture. `.pidAndBundle`
     /// is the norm; the demo harness needs `.pidOnly` (its helper process
@@ -75,9 +79,14 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
         config.showsCursor = true
         config.pixelFormat = kCVPixelFormatType_32BGRA
         config.queueDepth = 5
+        // Audio is always captured (cheap); recordings decide whether to
+        // consume it. Own process excluded — no feedback from our output.
+        config.capturesAudio = true
+        config.excludesCurrentProcessAudio = true
 
         let stream = SCStream(filter: filter, configuration: config, delegate: self)
         try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: sampleQueue)
+        try stream.addStreamOutput(self, type: .audio, sampleHandlerQueue: audioQueue)
         try await stream.startCapture()
         self.stream = stream
         self.config = config
@@ -170,6 +179,10 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
 
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer,
                 of type: SCStreamOutputType) {
+        if type == .audio {
+            if sampleBuffer.isValid { onAudioSampleBuffer?(sampleBuffer) }
+            return
+        }
         guard type == .screen, sampleBuffer.isValid,
               let attachments = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer,
                     createIfNecessary: false) as? [[SCStreamFrameInfo: Any]],

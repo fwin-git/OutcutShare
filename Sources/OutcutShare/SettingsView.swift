@@ -207,6 +207,18 @@ private struct GeneralPage: View {
                     .foregroundStyle(.tint)
                 }
             }
+            Section("Viewer zoom") {
+                Picker("Magnification", selection: $settings.zoomFactor) {
+                    Text("1.5×").tag(1.5)
+                    Text("2×").tag(2.0)
+                    Text("3×").tag(3.0)
+                }
+                .pickerStyle(.segmented)
+                Text("Zoom In / Out (⌃⌥⌘Z) magnifies the shared picture toward your "
+                     + "cursor and gently tracks it — your own screen never changes.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Section("Companions") {
                 Toggle("Show floating hotbar while sharing", isOn: $settings.hotbarEnabled)
                 Text("Quick actions next to the region. Drag the ≡ grabber to reposition; ✕ hides it until re-enabled.")
@@ -350,6 +362,13 @@ private struct RecordingPage: View {
                 Text("Start/stop with ⌃⌥⌘R, the hotbar, or the menu bar while sharing. "
                      + "Recordings use the capture frame rate set under General and pause "
                      + "together with privacy pause.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Toggle("Record system audio", isOn: $settings.recordSystemAudio)
+                Toggle("Record microphone", isOn: $settings.recordMicrophone)
+                Text("System audio is what the captured apps play (Outcut Share itself is "
+                     + "excluded). The microphone asks for permission on its first recording; "
+                     + "privacy pause silences both tracks.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
