@@ -311,7 +311,9 @@ final class HotbarController {
         model.followTarget = settings.followTarget
         if lastFollowMode == .cursor, followMode != .cursor,
            panel?.isVisible == true {
-            position()
+            // Parked far from the region while cursor follow ran — glide
+            // back to the docked spot instead of teleporting.
+            position(animated: true)
         }
         lastFollowMode = followMode
         model.highlightsOn = settings.cursorHighlight || settings.clickRipples
@@ -319,15 +321,21 @@ final class HotbarController {
         model.regionless = session?.isVirtualMonitor ?? false
     }
 
-    private func position() {
+    private func position(animated: Bool = false) {
         guard let panel else { return }
-        if let manualOrigin {
-            panel.setFrameOrigin(clamped(manualOrigin, size: panel.frame.size))
+        let origin = manualOrigin.map { clamped($0, size: panel.frame.size) }
+            ?? Geometry.hotbarOrigin(barSize: panel.frame.size, region: lastRegion,
+                                     screenFrame: screenFrame, gap: 12)
+        guard animated else {
+            panel.setFrameOrigin(origin)
             return
         }
-        panel.setFrameOrigin(Geometry.hotbarOrigin(barSize: panel.frame.size,
-                                                   region: lastRegion,
-                                                   screenFrame: screenFrame, gap: 12))
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.3
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            panel.animator().setFrame(CGRect(origin: origin, size: panel.frame.size),
+                                      display: true)
+        }
     }
 
     private func clamped(_ origin: CGPoint, size: CGSize) -> CGPoint {
