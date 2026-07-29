@@ -39,8 +39,9 @@ clip mirrors what viewers see). Modifiers refine the shape:
 
 Follow mode moves the shared region automatically so it stays on what you
 are working on, instead of you re-selecting or dragging it around. It is
-enabled per session from the menu bar (*Follow*) and has two targets —
-the clip shows Active Window first, then Cursor:
+enabled per session from the menu bar (*Follow*) or the hotbar's follow
+button (the icon toggles it, the label picks the target) and has two
+targets — the clip shows Active Window first, then Cursor:
 
 - **Active Window** — the region jumps to the frontmost window whenever
   focus changes, and by default adopts that window's size.
