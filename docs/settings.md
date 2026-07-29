@@ -98,7 +98,13 @@ Dimming and border are local-only: they're excluded from what viewers see.
 ## Screenshots
 
 Taken with the hotbar's camera button while sharing — the picture is the
-shared output itself, including privacy exclusions.
+shared output itself, including privacy exclusions. If the region outline
+has a corner radius, the screenshot's corners are rounded to match.
+Files are named `screenshot_YYYY-MM-DD_HH-mm` (recordings:
+`recording_…`). After every capture a small preview card folds out under
+the hotbar for a few seconds — show in Finder, peek large with playback
+(Quick Look) or delete, straight from its corner buttons; hovering the
+card keeps it open.
 
 | Setting | Effect | Default |
 | --- | --- | --- |

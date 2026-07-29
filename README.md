@@ -136,8 +136,9 @@ permission; a guided row appears when it's needed.
 - **Cursor emphasis** — halo + click ripples, drawn for viewers only.
 - **Recording** (⌃⌥⌘R) — the region straight to .mp4, no meeting needed.
 - **Screenshots** — the hotbar's camera button saves the shared picture;
-  folder, max size, quality and drop shadow are configurable.
-  → [settings](docs/settings.md)
+  folder, max size, quality and drop shadow are configurable. Every
+  capture (and finished recording) pops a short-lived preview card with
+  Finder, Quick Look and delete at hand. → [settings](docs/settings.md)
 - **Hotbar** — floating quick actions next to the region or monitor preview
   (stop, pause, record, screenshot, highlights, preview, resize, preset,
   follow); draggable, dismissible, toggleable from menu & Settings.

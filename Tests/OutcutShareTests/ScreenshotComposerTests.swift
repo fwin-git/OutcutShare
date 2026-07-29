@@ -76,6 +76,27 @@ final class ScreenshotComposerTests: XCTestCase {
         XCTAssertEqual(decoded.pixelsHigh, 100 + 2 * margin)
     }
 
+    func testRenderRoundsCornersWhenRadiusSet() throws {
+        let source = try XCTUnwrap(Self.solidImage(width: 200, height: 100))
+        let data = try XCTUnwrap(ScreenshotComposer.render(
+            image: source, maxEdge: 0, shadow: false, quality: 1.0, cornerRadius: 30))
+        let decoded = try XCTUnwrap(NSBitmapImageRep(data: data))
+        let corner = try XCTUnwrap(decoded.colorAt(x: 1, y: 1))
+        let center = try XCTUnwrap(decoded.colorAt(x: 100, y: 50))
+        XCTAssertEqual(corner.alphaComponent, 0, accuracy: 0.02)
+        XCTAssertEqual(center.alphaComponent, 1, accuracy: 0.02)
+    }
+
+    func testRenderCornerRadiusSurvivesDownscale() throws {
+        let source = try XCTUnwrap(Self.solidImage(width: 400, height: 200))
+        let data = try XCTUnwrap(ScreenshotComposer.render(
+            image: source, maxEdge: 200, shadow: false, quality: 1.0, cornerRadius: 60))
+        let decoded = try XCTUnwrap(NSBitmapImageRep(data: data))
+        XCTAssertEqual(decoded.pixelsWide, 200)
+        let corner = try XCTUnwrap(decoded.colorAt(x: 1, y: 1))
+        XCTAssertEqual(corner.alphaComponent, 0, accuracy: 0.02)
+    }
+
     private static func solidImage(width: Int, height: Int) -> CGImage? {
         let context = CGContext(data: nil, width: width, height: height,
                                 bitsPerComponent: 8, bytesPerRow: 0,

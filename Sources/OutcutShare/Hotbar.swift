@@ -152,7 +152,8 @@ struct HotbarView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(model.followOn ? AnyShapeStyle(Color.accentColor)
+                                            : AnyShapeStyle(.secondary))
             .onHover { hover(hover: $0, label: "Choose follow mode") }
         }
     }
@@ -289,6 +290,12 @@ final class HotbarController {
         panel?.orderOut(nil)
         manualOrigin = nil
         model.followMenuOpen = false
+    }
+
+    /// Anchor for companion panels (the capture-result preview docks below).
+    var currentFrame: CGRect? {
+        guard let panel, panel.isVisible else { return nil }
+        return panel.frame
     }
 
     func refresh() {

@@ -128,16 +128,17 @@ final class ShareSession {
             capture?.onSampleBuffer = nil
             Task {
                 if let url = await recorder.stop() {
-                    NSWorkspace.shared.activateFileViewerSelecting([url])
+                    self.resultPreview.show(url: url, isVideo: true,
+                                            near: self.hotbar.currentFrame
+                                                ?? self.currentRegionRect,
+                                            on: self.currentScreen ?? NSScreen.screens.first)
                 }
                 self.notifyUI()
             }
             return
         }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
-        let url = settings.recordingFolderURL
-            .appendingPathComponent("Recording \(formatter.string(from: Date())).mp4")
+        let url = CaptureNaming.uniqueURL(in: settings.recordingFolderURL,
+                                          prefix: "recording", date: Date(), ext: "mp4")
         let recorder = RecordingEngine()
         do {
             try recorder.start(pixelWidth: activeOutputPixelSize.width,
@@ -162,19 +163,27 @@ final class ShareSession {
         Task {
             do {
                 let image = try await capture.captureStill()
+                // The outline's corner radius, converted to capture pixels.
+                var radius: CGFloat = 0
+                if !isVirtualMonitor, let rect = currentRegionRect, rect.width > 0 {
+                    radius = settings.borderRadius * CGFloat(image.width) / rect.width
+                }
                 guard let data = ScreenshotComposer.render(
                     image: image, maxEdge: settings.screenshotMaxSize,
                     shadow: settings.screenshotShadow,
-                    quality: settings.screenshotQuality) else { return }
-                let formatter = DateFormatter()
-                formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
-                let ext = ScreenshotComposer.fileExtension(quality: settings.screenshotQuality)
-                let url = settings.screenshotFolderURL
-                    .appendingPathComponent("Screenshot \(formatter.string(from: Date())).\(ext)")
-                try FileManager.default.createDirectory(at: url.deletingLastPathComponent(),
+                    quality: settings.screenshotQuality,
+                    cornerRadius: radius) else { return }
+                let folder = settings.screenshotFolderURL
+                try FileManager.default.createDirectory(at: folder,
                                                         withIntermediateDirectories: true)
+                let ext = ScreenshotComposer.fileExtension(quality: settings.screenshotQuality)
+                let url = CaptureNaming.uniqueURL(in: folder, prefix: "screenshot",
+                                                  date: Date(), ext: ext)
                 try data.write(to: url)
                 NSSound(named: "Pop")?.play()
+                resultPreview.show(url: url, isVideo: false,
+                                   near: hotbar.currentFrame ?? currentRegionRect,
+                                   on: currentScreen ?? NSScreen.screens.first)
             } catch {
                 presentError(error, title: "Screenshot couldn't be saved")
             }
@@ -243,6 +252,7 @@ final class ShareSession {
     private var monitorPrivacyCover: LiveFrameWindow?
     private var activeMonitorSize: CGSize = .zero
     private lazy var monitorDrag = MonitorDragController(session: self)
+    private lazy var resultPreview = CaptureResultController()
 
     /// True while a standalone virtual-monitor session runs (regionless:
     /// no dim overlay, no adjust/follow/presets).
@@ -674,6 +684,7 @@ final class ShareSession {
         }
         follow.set(mode: .off)
         hotbar.close()
+        resultPreview.close()
         preview.close()
         monitorPrivacyCover?.close()
         monitorPrivacyCover = nil
