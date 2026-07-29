@@ -21,6 +21,8 @@ final class CaptureResultModel: ObservableObject {
     /// Frame at the handle being dragged; replaces the poster while set.
     @Published var scrubImage: NSImage?
     @Published var duration: Double = 0
+    /// Copy-chip feedback: shows a checkmark for a moment after copying.
+    @Published var copied = false
 }
 
 /// Countdown fraction on its own tiny observable: only the ring view
@@ -32,6 +34,8 @@ final class CaptureResultRing: ObservableObject {
 }
 
 struct CaptureResultActions {
+    var copyFile: () -> Void
+    var dragProvider: () -> NSItemProvider
     var revealInFinder: () -> Void
     var quickLook: () -> Void
     var beginTrim: () -> Void
@@ -88,6 +92,9 @@ struct CaptureResultView: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12)
                 .strokeBorder(.white.opacity(0.25)))
+            // The picture itself is a drag source too — straight into
+            // Finder, Slack, mails …
+            .onDrag(actions.dragProvider)
 
             HStack(spacing: 6) {
                 if model.trimming {
@@ -102,6 +109,10 @@ struct CaptureResultView: View {
                     }
                     chip("xmark", help: "Cancel trim", action: actions.cancelTrim)
                 } else {
+                    chip(model.copied ? "checkmark" : "doc.on.doc",
+                         help: "Copy file — or drag it out",
+                         action: actions.copyFile)
+                        .onDrag(actions.dragProvider)
                     chip("folder", help: "Show in Finder", action: actions.revealInFinder)
                     chip("eye", help: model.isVideo ? "Preview with playback" : "Preview large",
                          action: actions.quickLook)
@@ -306,6 +317,7 @@ final class CaptureResultController: NSObject {
         model.scrubImage = nil
         model.thumbnails = []
         model.duration = 0
+        model.copied = false
         scrubGenerator = nil
         if isVideo {
             loadVideoPreview(url: url)
@@ -389,6 +401,27 @@ final class CaptureResultController: NSObject {
     }
 
     // MARK: Actions
+
+    private func copyFile() {
+        guard let url else { return }
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.writeObjects([url as NSURL])
+        model.copied = true
+        // Give the user time to switch apps and paste.
+        restartCountdown()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+            self?.model.copied = false
+        }
+    }
+
+    private func dragProvider() -> NSItemProvider {
+        guard let url, let provider = NSItemProvider(contentsOf: url) else {
+            return NSItemProvider()
+        }
+        provider.suggestedName = url.lastPathComponent
+        return provider
+    }
 
     private func revealInFinder() {
         guard let url else { return }
@@ -571,6 +604,8 @@ final class CaptureResultController: NSObject {
     private func ensurePanel() -> NSPanel {
         if let panel { return panel }
         let actions = CaptureResultActions(
+            copyFile: { [weak self] in self?.copyFile() },
+            dragProvider: { [weak self] in self?.dragProvider() ?? NSItemProvider() },
             revealInFinder: { [weak self] in self?.revealInFinder() },
             quickLook: { [weak self] in self?.quickLook() },
             beginTrim: { [weak self] in self?.beginTrim() },

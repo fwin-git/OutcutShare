@@ -122,6 +122,20 @@ enum Geometry {
         return CGRect(origin: origin, size: CGSize(width: w, height: h))
     }
 
+    /// Exponential-glide building blocks shared by follow, zoom and live
+    /// preset switching.
+    static func lerp(from: CGRect, to: CGRect, fraction: CGFloat) -> CGRect {
+        CGRect(x: from.minX + (to.minX - from.minX) * fraction,
+               y: from.minY + (to.minY - from.minY) * fraction,
+               width: from.width + (to.width - from.width) * fraction,
+               height: from.height + (to.height - from.height) * fraction)
+    }
+
+    static func rectsClose(_ a: CGRect, _ b: CGRect, tolerance: CGFloat) -> Bool {
+        abs(a.minX - b.minX) < tolerance && abs(a.minY - b.minY) < tolerance
+            && abs(a.width - b.width) < tolerance && abs(a.height - b.height) < tolerance
+    }
+
     /// The sub-rect of `region` a viewers-only zoom of `factor` shows:
     /// region-size / factor, centered on `focus`, clamped inside the region.
     /// Factor ≤ 1 means no zoom.

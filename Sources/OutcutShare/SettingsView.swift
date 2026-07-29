@@ -36,6 +36,15 @@ private struct PrivacyPage: View {
     @ObservedObject var settings: SettingsStore
     @State private var showAppPicker = false
 
+    private func choosePauseImage() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = false
+        panel.allowedContentTypes = [.image]
+        if panel.runModal() == .OK, let url = panel.url {
+            settings.pauseImagePath = url.path
+        }
+    }
+
     var body: some View {
         Form {
             Section("Preview — while paused") {
@@ -48,6 +57,24 @@ private struct PrivacyPage: View {
                     Text("Privacy screen").tag(PauseStyle.privacyScreen)
                 }
                 .pickerStyle(.menu)
+                TextField("Pause message", text: $settings.pauseMessage,
+                          prompt: Text("Sharing is paused"))
+                HStack {
+                    Text("Pause image")
+                    Spacer()
+                    Text(settings.pauseImagePath.isEmpty
+                         ? "None — icon and message" : settings.pauseImagePath)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    if !settings.pauseImagePath.isEmpty {
+                        Button("Clear") { settings.pauseImagePath = "" }
+                    }
+                    Button("Choose…") { choosePauseImage() }
+                }
+                Text("An image replaces the icon and message on the privacy screen.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             Section("Notifications") {
                 Toggle("Hide notification banners from viewers", isOn: $settings.hideNotificationBanners)

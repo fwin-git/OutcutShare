@@ -77,8 +77,8 @@ final class FollowController {
             return
         }
         // Glide: exponential ease toward the target.
-        let next = Self.lerp(from: current, to: target, fraction: 0.22)
-        if Self.isClose(next, to: target) {
+        let next = Geometry.lerp(from: current, to: target, fraction: 0.22)
+        if Geometry.rectsClose(next, target, tolerance: 1) {
             session.setRegionRect(target)
             self.target = nil
         } else {
@@ -117,15 +117,4 @@ final class FollowController {
         return CGRect(origin: origin, size: current.size)
     }
 
-    private static func lerp(from: CGRect, to: CGRect, fraction: CGFloat) -> CGRect {
-        CGRect(x: from.minX + (to.minX - from.minX) * fraction,
-               y: from.minY + (to.minY - from.minY) * fraction,
-               width: from.width + (to.width - from.width) * fraction,
-               height: from.height + (to.height - from.height) * fraction)
-    }
-
-    private static func isClose(_ a: CGRect, to b: CGRect) -> Bool {
-        abs(a.minX - b.minX) < 1 && abs(a.minY - b.minY) < 1
-            && abs(a.width - b.width) < 1 && abs(a.height - b.height) < 1
-    }
 }

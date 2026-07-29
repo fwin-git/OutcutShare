@@ -56,6 +56,32 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(store.followTarget, .activeWindow)
     }
 
+    func testPauseScreenDefaultsAndPersistence() {
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertEqual(store.pauseMessage, "")
+        XCTAssertEqual(store.pauseImagePath, "")
+        store.pauseMessage = "Be right back"
+        store.pauseImagePath = "/tmp/logo.png"
+        let reloaded = SettingsStore(defaults: defaults)
+        XCTAssertEqual(reloaded.pauseMessage, "Be right back")
+        XCTAssertEqual(reloaded.pauseImagePath, "/tmp/logo.png")
+    }
+
+    @MainActor
+    func testPauseScreenContentResolution() {
+        // No customization → stock text, no image.
+        let stock = PauseScreenContent.resolve(message: "", imagePath: "")
+        XCTAssertEqual(stock.text, "Sharing is paused")
+        XCTAssertNil(stock.image)
+        // Custom message.
+        XCTAssertEqual(PauseScreenContent.resolve(message: " brb ☕️ ", imagePath: "").text,
+                       "brb ☕️")
+        // An image path that can't be loaded falls back to the text screen.
+        let broken = PauseScreenContent.resolve(message: "hi", imagePath: "/nope/missing.png")
+        XCTAssertNil(broken.image)
+        XCTAssertEqual(broken.text, "hi")
+    }
+
     func testRecordingAudioDefaultsAndPersistence() {
         let store = SettingsStore(defaults: defaults)
         XCTAssertTrue(store.recordSystemAudio)

@@ -511,7 +511,8 @@ final class PreviewWindowController: NSObject {
         privacyLayer = nil
         guard privacyShowing, let view = panel?.contentView else { return }
         let layer = PrivacyScreenLayer.make(bounds: view.bounds, lastSurface: lastSurface,
-                                            contentsScale: panel?.backingScaleFactor ?? 2)
+                                            contentsScale: panel?.backingScaleFactor ?? 2,
+                                            content: .fromSettings(settings))
         // Below the corner controls' backing layers, above the live picture.
         layer.zPosition = 1
         grabber?.layer?.zPosition = 2
