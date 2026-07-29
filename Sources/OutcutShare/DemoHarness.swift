@@ -233,6 +233,9 @@ final class DemoDirector {
     private var savedZoomFactor = 2.0
     private var savedRecordSystemAudio = false
     private var savedRecordMicrophone = false
+    private var savedPauseStyle: PauseStyle = .privacyScreen
+    private var savedPauseMessage = ""
+    private var savedPauseImagePath = ""
     /// Set only when the capture scenario redirects the capture folders to
     /// a scratch dir — nil means nothing to restore.
     private var savedCaptureFolders: (screenshot: String, recording: String,
@@ -291,6 +294,9 @@ final class DemoDirector {
         savedZoomFactor = settings.zoomFactor
         savedRecordSystemAudio = settings.recordSystemAudio
         savedRecordMicrophone = settings.recordMicrophone
+        savedPauseStyle = settings.pauseStyle
+        savedPauseMessage = settings.pauseMessage
+        savedPauseImagePath = settings.pauseImagePath
         stage = Geometry.demoStageRect(visibleFrame: screen.visibleFrame)
         keystrokeHUD = DemoKeystrokeHUD(stage: stage)
         showBackdrop()
@@ -317,6 +323,8 @@ final class DemoDirector {
             url = try await zoomScenario(screen: screen)
         case "capture":
             url = try await captureScenario(screen: screen)
+        case "pause":
+            url = try await pauseScenario(screen: screen)
         default:
             throw DemoError.unknownScenario
         }
@@ -813,6 +821,82 @@ final class DemoDirector {
         return url
     }
 
+    /// Privacy pause: viewers get a blurred privacy screen with a custom
+    /// note while the presenter's own screen stays fully theirs; resume
+    /// picks the share back up instantly.
+    private func pauseScenario(screen: NSScreen) async throws -> URL {
+        settings.shareMode = .hiddenWindow
+        settings.previewWindowEnabled = false
+        settings.hotbarEnabled = false
+        settings.pauseStyle = .privacyScreen
+        settings.pauseMessage = "Be right back ☕"
+        settings.pauseImagePath = ""
+        let callFrame = CGRect(x: stage.maxX - stage.width * 0.40 - 16,
+                               y: stage.minY + stage.height * 0.16,
+                               width: stage.width * 0.40, height: stage.height * 0.52)
+        let meet = DemoMeetMock(frame: callFrame)
+        meetMock = meet
+        session.demoFrameTap = { [weak meet] surface in
+            meet?.display(surface: surface)
+        }
+
+        // Notes + metrics fill a 16:9 region up top; the chat waits below,
+        // OUTSIDE the region — the private thing handled during the pause.
+        let regionW = (stage.width * 0.40).rounded()
+        let regionH = (regionW * 9 / 16).rounded()
+        let region = CGRect(x: stage.minX + stage.width * 0.035,
+                            y: stage.maxY - stage.height * 0.04 - regionH,
+                            width: regionW, height: regionH)
+        let chatSlot = region.offsetBy(dx: 0, dy: -(regionH + stage.height * 0.03))
+        let sorted = try helperWindows(in: stage).sorted { $0.frame.minX < $1.frame.minX }
+        guard sorted.count >= 3 else { throw DemoError.missingDemoWindow }
+        WindowMover.move(window: sorted[0], toAppKitOrigin:
+            CGPoint(x: region.minX + 8, y: region.minY + 4))
+        WindowMover.move(window: sorted[1], toAppKitOrigin:
+            CGPoint(x: region.maxX - sorted[1].frame.width - 8,
+                    y: region.minY + regionH * 0.10))
+        let chatOrigin = CGPoint(x: chatSlot.midX - sorted[2].frame.width / 2,
+                                 y: chatSlot.minY + (regionH - sorted[2].frame.height) / 2)
+        WindowMover.move(window: sorted[2], toAppKitOrigin: chatOrigin)
+        await driver.click(at: titleBarPoint(of: CGRect(
+            x: region.minX + 8, y: region.minY + 4,
+            width: sorted[0].frame.width, height: sorted[0].frame.height)))
+        await driver.pause(0.5)
+
+        let url = try startRecording(screen: screen)
+        await driver.pause(0.6)
+        session.startSharing(rect: region, on: screen)
+        try await waitForActive()
+        await driver.pause(1.4)
+
+        // Beat 1: pause — the call flips to the privacy screen.
+        keystrokeHUD?.show(key: "⌃⌥⌘P", caption: "Pause — viewers see a privacy screen")
+        await driver.move(to: CGPoint(x: region.midX, y: region.midY), over: 0.7)
+        session.togglePause()
+        meet.showPrivacyScreen()
+        await driver.pause(3.0)
+
+        // Beat 2: meanwhile the presenter's screen is fully theirs.
+        keystrokeHUD?.show(key: "Meanwhile", caption: "Your screen stays yours")
+        let chatCenter = CGPoint(x: chatOrigin.x + sorted[2].frame.width / 2,
+                                 y: chatOrigin.y + sorted[2].frame.height / 2)
+        await driver.click(at: chatCenter)
+        await driver.pause(2.6)
+
+        // Beat 3: resume — the share picks up right where it was.
+        keystrokeHUD?.show(key: "⌃⌥⌘P", caption: "Resume — live again, instantly")
+        session.togglePause()
+        meet.hidePrivacyScreen()
+        await driver.move(to: CGPoint(x: region.midX + regionW * 0.18,
+                                      y: region.midY), over: 1.0)
+        await driver.pause(2.2)
+        keystrokeHUD?.hide()
+        await driver.pause(0.4)
+        session.stop()
+        await driver.pause(0.8)
+        return url
+    }
+
     /// A still of Raycast's root search filtered to the extension — the
     /// one deliberate exception to "touch only helper windows": open the
     /// launcher, type a query, Esc out. No Enter, no drags.
@@ -1046,6 +1130,9 @@ final class DemoDirector {
         settings.zoomFactor = savedZoomFactor
         settings.recordSystemAudio = savedRecordSystemAudio
         settings.recordMicrophone = savedRecordMicrophone
+        settings.pauseStyle = savedPauseStyle
+        settings.pauseMessage = savedPauseMessage
+        settings.pauseImagePath = savedPauseImagePath
         if let saved = savedCaptureFolders {
             settings.screenshotFolder = saved.screenshot
             settings.recordingFolder = saved.recording
