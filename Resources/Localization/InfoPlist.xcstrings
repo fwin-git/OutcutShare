@@ -1,0 +1,48 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "NSMicrophoneUsageDescription" : {
+      "comment" : "Privacy prompt explaining why Outcut Share may access the microphone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aufnahmen enthalten den Mikrofonton, wenn dies unter „Einstellungen“ → „Aufnahme“ aktiviert ist."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recordings include your microphone when enabled in Settings → Recording."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las grabaciones incluyen el audio del micrófono cuando está activado en Ajustes → Grabación."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les enregistrements incluent le son de votre microphone lorsque cette option est activée dans Réglages → Enregistrement."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「設定」→「録画」で有効にすると、録画にマイクの音声が含まれます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在“设置”→“录制”中启用麦克风后，录制内容将包含麦克风音频。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
