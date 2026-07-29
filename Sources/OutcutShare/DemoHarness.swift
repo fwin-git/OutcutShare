@@ -231,6 +231,12 @@ final class DemoDirector {
     private var savedFollowResizes = true
     private var savedHotbarEnabled = true
     private var savedZoomFactor = 2.0
+    private var savedRecordSystemAudio = false
+    private var savedRecordMicrophone = false
+    /// Set only when the capture scenario redirects the capture folders to
+    /// a scratch dir — nil means nothing to restore.
+    private var savedCaptureFolders: (screenshot: String, recording: String,
+                                      recents: [String])?
     private var meetMock: DemoMeetMock?
 
     init(session: ShareSession, scenario: String) {
@@ -283,6 +289,8 @@ final class DemoDirector {
         savedFollowResizes = settings.followResizes
         savedHotbarEnabled = settings.hotbarEnabled
         savedZoomFactor = settings.zoomFactor
+        savedRecordSystemAudio = settings.recordSystemAudio
+        savedRecordMicrophone = settings.recordMicrophone
         stage = Geometry.demoStageRect(visibleFrame: screen.visibleFrame)
         keystrokeHUD = DemoKeystrokeHUD(stage: stage)
         showBackdrop()
@@ -300,6 +308,8 @@ final class DemoDirector {
             url = try await followScenario(screen: screen)
         case "zoom":
             url = try await zoomScenario(screen: screen)
+        case "capture":
+            url = try await captureScenario(screen: screen)
         default:
             throw DemoError.unknownScenario
         }
@@ -661,6 +671,154 @@ final class DemoDirector {
         return url
     }
 
+    /// The capture workflow, driven through the real hotbar: screenshot →
+    /// preview card → drag the file into a chat, then record → drag-to-trim
+    /// with scrub preview → save, all on the card.
+    private func captureScenario(screen: NSScreen) async throws -> URL {
+        settings.shareMode = .hiddenWindow
+        settings.previewWindowEnabled = false
+        settings.hotbarEnabled = true // the bar IS the star of this clip
+        settings.recordSystemAudio = false
+        settings.recordMicrophone = false // a mic prompt would freeze the take
+
+        // Region high enough that the hotbar (below it) and the card (below
+        // the hotbar) stay inside the stage, clear of the caption chip.
+        let region = CGRect(x: stage.minX + stage.width * 0.04,
+                            y: stage.minY + stage.height * 0.46,
+                            width: stage.width * 0.42, height: stage.height * 0.48)
+        let chatFrame = CGRect(x: stage.minX + stage.width * 0.55,
+                               y: stage.minY + stage.height * 0.12,
+                               width: stage.width * 0.21, height: stage.height * 0.36)
+        let sorted = try helperWindows(in: stage).sorted { $0.frame.minX < $1.frame.minX }
+        guard sorted.count >= 3 else { throw DemoError.missingDemoWindow }
+        WindowMover.move(window: sorted[0], toAppKitOrigin:
+            CGPoint(x: region.minX + 10, y: region.minY + 10))
+        let metricsOrigin = CGPoint(x: region.midX - 20,
+                                    y: region.minY + region.height * 0.16)
+        WindowMover.move(window: sorted[1], toAppKitOrigin: metricsOrigin)
+        WindowMover.move(window: sorted[2], toAppKitOrigin: chatFrame.origin)
+        await driver.click(at: titleBarPoint(of: CGRect(
+            origin: CGPoint(x: region.minX + 10, y: region.minY + 10),
+            size: sorted[0].frame.size)))
+        await driver.pause(0.4)
+
+        let url = try startRecording(screen: screen)
+        // The scenario's own captures go to a scratch dir the user never
+        // sees — redirected AFTER the stage recording started (that one
+        // still belongs in Demos).
+        savedCaptureFolders = (settings.screenshotFolder,
+                               settings.recordingFolder, settings.recentCaptures)
+        let scratch = FileManager.default.temporaryDirectory
+            .appendingPathComponent("OutcutShareDemo", isDirectory: true).path
+        settings.screenshotFolder = scratch
+        settings.recordingFolder = scratch
+        await driver.pause(0.6)
+        session.startSharing(rect: region, on: screen)
+        try await waitForActive()
+        await driver.pause(1.5) // hotbar settles under the region
+
+        // Beat 1: screenshot from the hotbar; the card folds out beneath it.
+        keystrokeHUD?.show(key: "Screenshot", caption: "One click on the hotbar")
+        guard let camera = session.demoHotbarItemRect("Screenshot shared region") else {
+            throw DemoError.missingDemoWindow
+        }
+        await driver.click(at: CGPoint(x: camera.midX, y: camera.midY))
+        let image = try await waitForCardItem("__image__")
+        await driver.move(to: CGPoint(x: image.midX, y: image.midY), over: 0.5)
+        await driver.pause(1.0)
+
+        // Beat 2: drag the file out of the card, into the chat.
+        keystrokeHUD?.show(key: "Drag", caption: "The file goes anywhere — chat, mail, Finder")
+        await driver.pause(0.6)
+        guard let chat = try helperWindows(in: chatFrame.insetBy(dx: -30, dy: -30))
+            .first else {
+            throw DemoError.missingDemoWindow
+        }
+        await driver.drag(from: CGPoint(x: image.midX, y: image.midY),
+                          to: CGPoint(x: chat.frame.midX, y: chat.frame.midY - 20),
+                          over: 1.5)
+        await driver.pause(1.3) // the bubble lands; the card counts down
+
+        // Beat 3: record the region.
+        keystrokeHUD?.show(key: "Record", caption: "The region straight to .mp4")
+        guard let record = session.demoHotbarItemRect("Start recording") else {
+            throw DemoError.missingDemoWindow
+        }
+        await driver.click(at: CGPoint(x: record.midX, y: record.midY))
+        // Motion for the filmstrip: glide over the notes, nudge the metrics
+        // window — recorded frames must differ or the trim strip looks dead.
+        await driver.move(to: CGPoint(x: region.minX + region.width * 0.22,
+                                      y: region.midY + region.height * 0.18), over: 0.9)
+        let metricsNow = try helperWindows(in: stage)
+            .first { $0.frame.midX > region.midX - 60 && $0.frame.midX < region.maxX }
+        if let metricsNow {
+            await driver.drag(from: titleBarPoint(of: metricsNow.frame),
+                              to: CGPoint(x: metricsNow.frame.midX + 46,
+                                          y: metricsNow.frame.maxY - 40),
+                              over: 1.1)
+        }
+        await driver.pause(0.7)
+        guard let stop = session.demoHotbarItemRect("Stop recording") else {
+            throw DemoError.missingDemoWindow
+        }
+        await driver.click(at: CGPoint(x: stop.midX, y: stop.midY))
+        let video = try await waitForCardItem("__image__")
+        await driver.move(to: CGPoint(x: video.midX, y: video.midY), over: 0.5)
+        await driver.pause(0.6)
+
+        // Beat 4: trim right on the card — the handles scrub the preview.
+        keystrokeHUD?.show(key: "Trim", caption: "Cut it right on the card")
+        guard let scissors = session.demoCardItemRect("Trim recording") else {
+            throw DemoError.missingDemoWindow
+        }
+        await driver.click(at: CGPoint(x: scissors.midX, y: scissors.midY))
+        await driver.pause(1.2) // the card grows, the filmstrip loads
+        guard let strip = session.demoCardItemRect("__timeline__") else {
+            throw DemoError.missingDemoWindow
+        }
+        // The strip's gesture grabs the nearer handle: right end → out.
+        // The anchor includes the block's 6 pt padding + time labels — press
+        // well inside the filmstrip band or the gesture never sees the drag.
+        let stripY = strip.maxY - 26
+        await driver.move(to: CGPoint(x: strip.maxX - 16, y: stripY), over: 0.6)
+        await driver.press(at: CGPoint(x: strip.maxX - 16, y: stripY))
+        await driver.move(to: CGPoint(x: strip.minX + strip.width * 0.62, y: stripY),
+                          over: 1.3, dragging: true)
+        await driver.release(at: CGPoint(x: strip.minX + strip.width * 0.62, y: stripY))
+        await driver.pause(0.5)
+        await driver.press(at: CGPoint(x: strip.minX + 16, y: stripY))
+        await driver.move(to: CGPoint(x: strip.minX + strip.width * 0.18, y: stripY),
+                          over: 1.0, dragging: true)
+        await driver.release(at: CGPoint(x: strip.minX + strip.width * 0.18, y: stripY))
+        await driver.pause(0.5)
+        guard let save = session.demoCardItemRect("Save trimmed copy") else {
+            throw DemoError.missingDemoWindow
+        }
+        await driver.click(at: CGPoint(x: save.midX, y: save.midY))
+        await driver.pause(1.8) // export → pop → card back to normal size
+        keystrokeHUD?.hide()
+        // Step clear so the countdown runs out on film.
+        await driver.move(to: CGPoint(x: stage.minX + stage.width * 0.35,
+                                      y: stage.minY + stage.height * 0.30), over: 0.7)
+        await driver.pause(3.6)
+        session.stop()
+        await driver.pause(0.6)
+        return url
+    }
+
+    /// Polls a card anchor until the card is up and its slide-in settled.
+    private func waitForCardItem(_ key: String) async throws -> CGRect {
+        var last: CGRect?
+        for _ in 0..<60 {
+            try? await Task.sleep(nanoseconds: 100_000_000)
+            if let rect = session.demoCardItemRect(key) {
+                if let l = last, l == rect { return rect } // two stable reads
+                last = rect
+            }
+        }
+        throw DemoError.missingDemoWindow
+    }
+
     // MARK: Plumbing
 
     private func waitForActive() async throws {
@@ -816,6 +974,14 @@ final class DemoDirector {
         settings.followResizes = savedFollowResizes
         settings.hotbarEnabled = savedHotbarEnabled
         settings.zoomFactor = savedZoomFactor
+        settings.recordSystemAudio = savedRecordSystemAudio
+        settings.recordMicrophone = savedRecordMicrophone
+        if let saved = savedCaptureFolders {
+            settings.screenshotFolder = saved.screenshot
+            settings.recordingFolder = saved.recording
+            settings.recentCaptures = saved.recents
+            savedCaptureFolders = nil
+        }
         try? await Task.sleep(nanoseconds: 500_000_000)
     }
 }
