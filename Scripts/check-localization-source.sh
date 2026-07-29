@@ -21,6 +21,7 @@ else
         Sources/OutcutShare/PreviewWindow.swift
         Sources/OutcutShare/RegionMover.swift
         Sources/OutcutShare/RegionSelector.swift
+        Sources/OutcutShare/CaptureResultPreview.swift
     )
 fi
 

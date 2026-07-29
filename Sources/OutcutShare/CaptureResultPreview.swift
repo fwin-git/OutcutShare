@@ -113,20 +113,24 @@ struct CaptureResultView: View {
                             .frame(width: 30, height: 30)
                             .background(Color.black.opacity(0.55), in: Circle())
                     } else {
-                        chip("checkmark", help: "Save trimmed copy",
+                        chip("checkmark", help: L10n.string(.captureSaveTrimmed),
                              action: actions.applyTrim)
                     }
-                    chip("xmark", help: "Cancel trim", action: actions.cancelTrim)
+                    chip("xmark", help: L10n.string(.captureCancelTrim),
+                         action: actions.cancelTrim)
                 } else {
                     chip(model.copied ? "checkmark" : "doc.on.doc",
-                         help: "Copy file — or drag it out",
+                         help: L10n.string(.captureCopyFile),
                          action: actions.copyFile)
                         .overlay(FileDragArea(url: actions.dragURL,
                                               thumbnail: actions.dragThumbnail,
                                               onClick: actions.copyFile,
                                               dragActive: actions.dragActive))
-                    chip("folder", help: "Show in Finder", action: actions.revealInFinder)
-                    chip("eye", help: model.isVideo ? "Preview with playback" : "Preview large",
+                    chip("folder", help: L10n.string(.captureShowFinder),
+                         action: actions.revealInFinder)
+                    chip("eye", help: model.isVideo
+                         ? L10n.string(.capturePreviewPlayback)
+                         : L10n.string(.capturePreviewLarge),
                          action: actions.quickLook)
                     if model.ocrState == .working {
                         ProgressView()
@@ -134,12 +138,14 @@ struct CaptureResultView: View {
                             .frame(width: 30, height: 30)
                             .background(Color.black.opacity(0.55), in: Circle())
                     } else {
-                        chip(ocrSymbol, help: "Copy text (OCR)", action: actions.copyText)
+                        chip(ocrSymbol, help: ocrHelp, action: actions.copyText)
                     }
                     if model.isVideo {
-                        chip("scissors", help: "Trim recording", action: actions.beginTrim)
+                        chip("scissors", help: L10n.string(.trimRecording),
+                             action: actions.beginTrim)
                     }
-                    chip("trash", help: "Delete file", action: actions.trash)
+                    chip("trash", help: L10n.string(.captureDeleteFile),
+                         action: actions.trash)
                 }
             }
             .padding(6)
@@ -168,9 +174,17 @@ struct CaptureResultView: View {
 
     private var ocrSymbol: String {
         switch model.ocrState {
-        case .done: return "checkmark"
-        case .empty: return "questionmark"
-        default: return "text.viewfinder"
+        case .done: "checkmark"
+        case .empty: "questionmark"
+        default: "text.viewfinder"
+        }
+    }
+
+    private var ocrHelp: String {
+        switch model.ocrState {
+        case .done: L10n.string(.ocrCopied)
+        case .empty: L10n.string(.ocrNoText)
+        default: L10n.string(.ocrCopyText)
         }
     }
 
@@ -355,7 +369,14 @@ struct TrimTimeline: View {
             HStack {
                 Text(TrimMath.timeString(model.trimIn * model.duration))
                 Spacer()
-                Text("keeps \(TrimMath.timeString((model.trimOut - model.trimIn) * model.duration))")
+                Text(L10n.string(
+                    .trimKeepsDuration,
+                    arguments: [
+                        TrimMath.timeString(
+                            (model.trimOut - model.trimIn) * model.duration
+                        )
+                    ]
+                ))
                 Spacer()
                 Text(TrimMath.timeString(model.trimOut * model.duration))
             }
@@ -662,7 +683,7 @@ final class CaptureResultController: NSObject {
             guard let export = AVAssetExportSession(
                 asset: asset, presetName: AVAssetExportPresetPassthrough) else {
                 model.exporting = false
-                presentTrimError("The recording could not be opened for trimming.")
+                presentTrimError(L10n.string(.trimOpenFailed))
                 return
             }
             let output = CaptureNaming.uniqueSiblingOnDisk(of: url, suffix: "_trim")
@@ -677,7 +698,7 @@ final class CaptureResultController: NSObject {
             model.exporting = false
             guard export.status == .completed else {
                 presentTrimError(export.error?.localizedDescription
-                                 ?? "Export failed.")
+                                 ?? L10n.string(.trimExportFailed))
                 return
             }
             // The card now represents the trimmed copy; the original stays.
@@ -756,9 +777,9 @@ final class CaptureResultController: NSObject {
 
     private func presentTrimError(_ message: String) {
         let alert = NSAlert()
-        alert.messageText = "Trim failed"
+        alert.messageText = L10n.string(.trimFailed)
         alert.informativeText = message
-        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: L10n.string(.commonOK))
         NSApp.activate(ignoringOtherApps: true)
         alert.runModal()
     }
@@ -907,7 +928,7 @@ final class CaptureResultController: NSObject {
         let duration = TrimMath.timeString(seconds.rounded())
         guard let bytes else { return duration }
         let size = ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
-        return "\(duration) · \(size)"
+        return L10n.string(.captureMetadata, arguments: [duration, size])
     }
 }
 
