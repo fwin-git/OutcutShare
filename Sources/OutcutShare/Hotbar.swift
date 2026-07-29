@@ -132,7 +132,7 @@ struct HotbarView: View {
                          geo: GeometryProxy) -> some View {
         let barRect = anchors["__bar__"].map { geo[$0] }
             ?? CGRect(origin: .zero, size: geo.size)
-        let chevron = anchors["Choose follow mode"].map { geo[$0] }
+        let chevron = anchors[L10n.string(.hotbarChooseFollowMode)].map { geo[$0] }
         return ZStack(alignment: .topLeading) {
             if model.followMenuOpen && !model.regionless {
                 if model.vertical {
@@ -208,6 +208,7 @@ struct HotbarView: View {
 
     @ViewBuilder
     private var barItems: some View {
+            let moveRotateHelp = L10n.string(.hotbarMoveRotate)
             Image(systemName: "line.3.horizontal")
                 .foregroundStyle(.secondary)
                 .frame(width: 18)
@@ -232,32 +233,37 @@ struct HotbarView: View {
                             actions.endDrag()
                         }
                 )
-                .onHover { hover(hover: $0, label: "Move (drag) / rotate (click)") }
+                .onHover { hover(hover: $0, label: moveRotateHelp) }
                 .anchorPreference(key: BarItemBounds.self, value: .bounds) {
-                    ["Move (drag) / rotate (click)": $0]
+                    [moveRotateHelp: $0]
                 }
 
-            barButton("stop.fill", help: "Stop sharing", action: actions.stop)
+            barButton("stop.fill", help: L10n.string(.menuStopSharing), action: actions.stop)
             barButton(model.isPaused ? "play.fill" : "pause.fill",
-                      help: model.isPaused ? "Resume sharing" : "Pause sharing",
+                      help: model.isPaused
+                        ? L10n.string(.menuResumeSharing)
+                        : L10n.string(.menuPauseSharing),
                       active: model.isPaused, action: actions.pause)
             barButton(model.isRecording ? "stop.circle.fill" : "record.circle",
-                      help: model.isRecording ? "Stop recording" : "Start recording",
+                      help: model.isRecording
+                        ? L10n.string(.menuStopRecording)
+                        : L10n.string(.menuStartRecording),
                       tint: model.isRecording ? .red : nil, action: actions.record)
-            barButton("camera", help: "Screenshot shared region",
+            barButton("camera", help: L10n.string(.hotbarScreenshot),
                       action: actions.screenshot)
-            barButton(ocrSymbol, help: "Copy text in region (OCR)",
+            barButton(ocrSymbol, help: L10n.string(.hotbarCopyText),
                       action: actions.copyText)
             if !model.regionless {
-                barButton("cursorarrow.rays", help: "Presenter highlights",
+                barButton("cursorarrow.rays", help: L10n.string(.hotbarPresenterHighlights),
                           active: model.highlightsOn, action: actions.highlights)
             }
-            barButton("eye", help: "Preview shared output",
+            barButton("eye", help: L10n.string(.hotbarPreview),
                       active: model.previewOn, action: actions.preview)
             if !model.regionless {
-                barButton("arrow.up.left.and.arrow.down.right", help: "Move / resize region",
+                barButton("arrow.up.left.and.arrow.down.right",
+                          help: L10n.string(.hotbarMoveResize),
                           action: actions.adjust)
-                barButton("plus.square.on.square", help: "Save region as preset",
+                barButton("plus.square.on.square", help: L10n.string(.hotbarSavePreset),
                           action: actions.savePreset)
                 followControl
             }
@@ -274,17 +280,17 @@ struct HotbarView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
-            .onHover { hover(hover: $0, label: "Hide hotbar") }
+            .onHover { hover(hover: $0, label: L10n.string(.hotbarHide)) }
             .anchorPreference(key: BarItemBounds.self, value: .bounds) {
-                ["Hide hotbar": $0]
+                [L10n.string(.hotbarHide): $0]
             }
     }
 
     private var ocrSymbol: String {
         switch model.ocrState {
-        case .done: return "checkmark"
-        case .empty: return "questionmark"
-        default: return "text.viewfinder"
+        case .done: "checkmark"
+        case .empty: "questionmark"
+        default: "text.viewfinder"
         }
     }
 
@@ -293,8 +299,12 @@ struct HotbarView: View {
     @ViewBuilder
     private var followControl: some View {
         let scope = barButton("scope",
-                              help: model.followOn ? "Stop following"
-                                                   : "Follow \(shortLabel(model.followTarget))",
+                              help: model.followOn
+                                ? L10n.string(.hotbarStopFollowing)
+                                : L10n.string(
+                                    .hotbarFollowTarget,
+                                    arguments: [shortLabel(model.followTarget)]
+                                ),
                               active: model.followOn, action: actions.follow)
         let menuButton = Button(action: actions.followMenu) {
             HStack(spacing: 2) {
@@ -312,9 +322,9 @@ struct HotbarView: View {
         .buttonStyle(.plain)
         .foregroundStyle(model.followOn ? AnyShapeStyle(Color.accentColor)
                                         : AnyShapeStyle(.secondary))
-        .onHover { hover(hover: $0, label: "Choose follow mode") }
+        .onHover { hover(hover: $0, label: L10n.string(.hotbarChooseFollowMode)) }
         .anchorPreference(key: BarItemBounds.self, value: .bounds) {
-            ["Choose follow mode": $0]
+            [L10n.string(.hotbarChooseFollowMode): $0]
         }
 
         if model.vertical {
@@ -346,7 +356,9 @@ struct HotbarView: View {
     }
 
     private func shortLabel(_ mode: FollowMode) -> String {
-        mode == .cursor ? "Cursor" : "Window"
+        mode == .cursor
+            ? L10n.string(.hotbarTargetCursor)
+            : L10n.string(.hotbarTargetWindow)
     }
 
     private func hover(hover: Bool, label: String) {

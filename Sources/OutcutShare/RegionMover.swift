@@ -433,7 +433,7 @@ private final class AdjustView: NSView {
                 outline.lineWidth = 1
                 outline.stroke()
             }
-            drawHint("Click a window to snap the region to it — Space returns, Esc cancels")
+            drawHint(L10n.string(.moverPickWindow))
             return
         }
 
@@ -458,9 +458,9 @@ private final class AdjustView: NSView {
         }
 
         let resizeHint = freeResize
-            ? "corners & edges resize · ⇧ locks aspect · ⌃ snaps to standard sizes"
-            : "corners resize (aspect locked)"
-        drawHint("Drag to move — \(resizeHint) · Space picks a window (moves while resizing) · ⏎ commits · ⎋ cancels")
+            ? L10n.string(.moverResizeFree)
+            : L10n.string(.moverResizeLocked)
+        drawHint(L10n.string(.moverInstructions, arguments: [resizeHint]))
     }
 
     private func drawHint(_ text: String) {

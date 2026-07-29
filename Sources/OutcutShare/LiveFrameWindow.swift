@@ -158,11 +158,15 @@ struct PauseScreenContent {
     var text: String
     var image: NSImage?
 
-    static func resolve(message: String, imagePath: String) -> PauseScreenContent {
+    static func resolve(
+        message: String,
+        imagePath: String,
+        defaultMessage: () -> String = { L10n.string(.sharingPaused) }
+    ) -> PauseScreenContent {
         let image = imagePath.isEmpty
             ? nil : NSImage(contentsOfFile: (imagePath as NSString).expandingTildeInPath)
         let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
-        return PauseScreenContent(text: trimmed.isEmpty ? "Sharing is paused" : trimmed,
+        return PauseScreenContent(text: trimmed.isEmpty ? defaultMessage() : trimmed,
                                   image: image)
     }
 
@@ -212,7 +216,10 @@ enum PrivacyScreenLayer {
         let iconSize: CGFloat = min(container.bounds.height * 0.25, 96)
         let config = NSImage.SymbolConfiguration(pointSize: iconSize, weight: .medium)
             .applying(.init(paletteColors: [.white]))
-        if let icon = NSImage(systemSymbolName: "eye.slash.fill", accessibilityDescription: "Paused")?
+        if let icon = NSImage(
+            systemSymbolName: "eye.slash.fill",
+            accessibilityDescription: L10n.string(.sharingPausedAccessibility)
+        )?
             .withSymbolConfiguration(config) {
             let iconLayer = CALayer()
             var rect = CGRect(origin: .zero, size: icon.size)

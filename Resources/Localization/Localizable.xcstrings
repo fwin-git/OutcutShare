@@ -1,6 +1,48 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "app.name": {
+      "comment": "User-facing text: OutcutShare",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OutcutShare"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OutcutShare"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OutcutShare"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OutcutShare"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OutcutShare"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OutcutShare"
+          }
+        }
+      }
+    },
     "common.cancel": {
       "comment": "User-facing text: Cancel",
       "extractionState": "manual",
@@ -417,6 +459,552 @@
           "stringUnit": {
             "state": "translated",
             "value": "オフ"
+          }
+        }
+      }
+    },
+    "hotbar.chooseFollowMode": {
+      "comment": "User-facing text: Choose follow mode",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose follow mode"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folgemodus auswählen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisir le mode de suivi"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elegir modo de seguimiento"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择跟随模式"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "追従モードを選択"
+          }
+        }
+      }
+    },
+    "hotbar.copyText": {
+      "comment": "User-facing text: Copy text in region (OCR)",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy text in region (OCR)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text im Bereich kopieren (OCR)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copier le texte de la région (OCR)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copiar texto de la región (OCR)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拷贝区域中的文本（OCR）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "領域内のテキストをコピー（OCR）"
+          }
+        }
+      }
+    },
+    "hotbar.followTarget": {
+      "comment": "User-facing text: Follow %@",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follow %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ folgen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suivre %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seguir %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跟随%@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@を追従"
+          }
+        }
+      }
+    },
+    "hotbar.hide": {
+      "comment": "User-facing text: Hide hotbar",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide hotbar"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktionsleiste ausblenden"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Masquer la barre d’actions"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocultar barra de acciones"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隐藏操作栏"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アクションバーを非表示"
+          }
+        }
+      }
+    },
+    "hotbar.moveResize": {
+      "comment": "User-facing text: Move / resize region",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move / resize region"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bereich bewegen / Größe ändern"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déplacer / redimensionner la région"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mover / redimensionar región"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移动/调整区域大小"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "領域を移動／サイズ変更"
+          }
+        }
+      }
+    },
+    "hotbar.moveRotate": {
+      "comment": "User-facing text: Move (drag) / rotate (click)",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move (drag) / rotate (click)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bewegen (ziehen) / drehen (klicken)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déplacer (faire glisser) / pivoter (cliquer)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mover (arrastrar) / girar (clic)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移动（拖移）/旋转（点按）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移動（ドラッグ）／回転（クリック）"
+          }
+        }
+      }
+    },
+    "hotbar.presenterHighlights": {
+      "comment": "User-facing text: Presenter highlights",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presenter highlights"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Präsentationshervorhebungen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mises en évidence du présentateur"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resaltados del presentador"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "演示者高亮"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プレゼンターの強調表示"
+          }
+        }
+      }
+    },
+    "hotbar.preview": {
+      "comment": "User-facing text: Preview shared output",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview shared output"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geteilte Ausgabe anzeigen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aperçu de la sortie partagée"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vista previa de la salida compartida"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "预览共享输出"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有出力をプレビュー"
+          }
+        }
+      }
+    },
+    "hotbar.savePreset": {
+      "comment": "User-facing text: Save region as preset",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save region as preset"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bereich als Voreinstellung sichern"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer la région comme préréglage"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar región como preajuste"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将区域存为预设"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "領域をプリセットとして保存"
+          }
+        }
+      }
+    },
+    "hotbar.screenshot": {
+      "comment": "User-facing text: Screenshot shared region",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screenshot shared region"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geteilten Bereich aufnehmen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capturer la région partagée"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capturar región compartida"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "截取共享区域"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有領域を撮影"
+          }
+        }
+      }
+    },
+    "hotbar.stopFollowing": {
+      "comment": "User-facing text: Stop following",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop following"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folgen beenden"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêter le suivi"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dejar de seguir"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止跟随"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "追従を停止"
+          }
+        }
+      }
+    },
+    "hotbar.targetCursor": {
+      "comment": "User-facing text: Cursor",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cursor"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeiger"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pointeur"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puntero"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "指针"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ポインタ"
+          }
+        }
+      }
+    },
+    "hotbar.targetWindow": {
+      "comment": "User-facing text: Window",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Window"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fenster"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fenêtre"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ventana"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ウインドウ"
           }
         }
       }
@@ -1849,6 +2437,384 @@
         }
       }
     },
+    "monitor.control": {
+      "comment": "User-facing text: Control the monitor",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Control the monitor"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monitor steuern"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contrôler le moniteur"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Controlar el monitor"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "控制显示器"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "モニタを操作"
+          }
+        }
+      }
+    },
+    "monitor.controlOff": {
+      "comment": "User-facing text: Control the monitor (clicks pass through)",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Control the monitor (clicks pass through)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monitor steuern (Klicks werden weitergeleitet)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contrôler le moniteur (les clics sont transmis)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Controlar el monitor (los clics se transmiten)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "控制显示器（点按会传递）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "モニタを操作（クリックを転送）"
+          }
+        }
+      }
+    },
+    "monitor.controlOn": {
+      "comment": "User-facing text: Control mode on — clicks pass through to the monitor",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Control mode on — clicks pass through to the monitor"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steuermodus aktiv — Klicks werden an den Monitor weitergeleitet"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode contrôle activé — les clics sont transmis au moniteur"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modo de control activo: los clics se transmiten al monitor"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "控制模式已开启——点按会传递到显示器"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作モードはオンです。クリックはモニタに転送されます"
+          }
+        }
+      }
+    },
+    "monitor.dragWindowOut": {
+      "comment": "User-facing text: Drag the window out of the screen",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag the window out of the screen"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fenster aus dem Bildschirm ziehen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faites glisser la fenêtre hors de l’écran"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrastra la ventana fuera de la pantalla"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将窗口拖出屏幕"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ウインドウを画面の外へドラッグ"
+          }
+        }
+      }
+    },
+    "monitor.returnAtEdge": {
+      "comment": "User-facing text: Move to any edge of the screen to return",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move to any edge of the screen to return"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zum Zurückkehren den Zeiger an einen beliebigen Bildschirmrand bewegen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déplacez le pointeur vers un bord de l’écran pour revenir"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mueve el puntero a cualquier borde de la pantalla para volver"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将指针移到屏幕任意边缘即可返回"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "戻るにはポインタを画面のいずれかの端へ移動"
+          }
+        }
+      }
+    },
+    "mover.instructions": {
+      "comment": "User-facing text: Drag to move — %@ · Space picks a window (moves while resizing) · ⏎ commits · ⎋ cancels",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag to move — %@ · Space picks a window (moves while resizing) · ⏎ commits · ⎋ cancels"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zum Bewegen ziehen — %@ · Leertaste wählt ein Fenster (Verschieben während der Größenänderung) · ⏎ übernimmt · ⎋ bricht ab"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faites glisser pour déplacer — %@ · Espace choisit une fenêtre (déplacement pendant le redimensionnement) · ⏎ valide · ⎋ annule"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrastra para mover — %@ · Espacio elige una ventana (se mueve al redimensionar) · ⏎ confirma · ⎋ cancela"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拖移以移动——%@ · 空格键选择窗口（调整大小时可移动）· ⏎ 确认 · ⎋ 取消"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ドラッグして移動 — %@ · Spaceでウインドウを選択（サイズ変更中も移動）· ⏎で確定 · ⎋でキャンセル"
+          }
+        }
+      }
+    },
+    "mover.pickWindow": {
+      "comment": "User-facing text: Click a window to snap the region to it — Space returns, Esc cancels",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click a window to snap the region to it — Space returns, Esc cancels"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf ein Fenster klicken, um den Bereich daran auszurichten — Leertaste kehrt zurück, Esc bricht ab"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cliquez sur une fenêtre pour y ajuster la région — Espace revient, Échap annule"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haz clic en una ventana para ajustar la región a ella; Espacio vuelve y Esc cancela"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点按窗口以将区域吸附到该窗口——空格键返回，Esc 取消"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ウインドウをクリックして領域を合わせる — Spaceで戻る、Escでキャンセル"
+          }
+        }
+      }
+    },
+    "mover.resizeFree": {
+      "comment": "User-facing text: corners & edges resize · ⇧ locks aspect · ⌃ snaps to standard sizes",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "corners & edges resize · ⇧ locks aspect · ⌃ snaps to standard sizes"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ecken und Kanten ändern die Größe · ⇧ sperrt das Seitenverhältnis · ⌃ rastet auf Standardgrößen ein"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "les coins et bords redimensionnent · ⇧ verrouille les proportions · ⌃ ajuste aux tailles standard"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "esquinas y bordes redimensionan · ⇧ bloque la proporción · ⌃ ajusta a tamaños estándar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拖移角和边可调整大小 · ⇧ 锁定宽高比 · ⌃ 吸附到标准大小"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "角と辺でサイズ変更 · ⇧で縦横比を固定 · ⌃で標準サイズにスナップ"
+          }
+        }
+      }
+    },
+    "mover.resizeLocked": {
+      "comment": "User-facing text: corners resize (aspect locked)",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "corners resize (aspect locked)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ecken ändern die Größe (Seitenverhältnis gesperrt)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "les coins redimensionnent (proportions verrouillées)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "las esquinas redimensionan (proporción bloqueada)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拖移角可调整大小（宽高比已锁定）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "角でサイズ変更（縦横比を固定）"
+          }
+        }
+      }
+    },
     "permissions.accessibility.granted": {
       "comment": "User-facing text: Granted — drag windows onto the virtual monitor's preview to move them there.",
       "extractionState": "manual",
@@ -3147,6 +4113,174 @@
           "stringUnit": {
             "state": "translated",
             "value": "範囲をプリセットとして保存"
+          }
+        }
+      }
+    },
+    "preview.move": {
+      "comment": "User-facing text: Move preview",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move preview"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorschau bewegen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déplacer l’aperçu"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mover vista previa"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移动预览"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プレビューを移動"
+          }
+        }
+      }
+    },
+    "selector.dimensions": {
+      "comment": "User-facing text: %d × %d",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d × %d"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d × %d"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d × %d"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d × %d"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d × %d"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d × %d"
+          }
+        }
+      }
+    },
+    "selector.drag": {
+      "comment": "User-facing text: Drag to select — Space picks a window · hold ⇧ locks aspect · hold ⌃ snaps to standard sizes · Esc cancels",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag to select — Space picks a window · hold ⇧ locks aspect · hold ⌃ snaps to standard sizes · Esc cancels"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zum Auswählen ziehen — Leertaste wählt ein Fenster · ⇧ halten sperrt das Seitenverhältnis · ⌃ halten rastet auf Standardgrößen ein · Esc bricht ab"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faites glisser pour sélectionner — Espace choisit une fenêtre · maintenez ⇧ pour verrouiller les proportions · maintenez ⌃ pour ajuster aux tailles standard · Échap annule"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrastra para seleccionar — Espacio elige una ventana · mantén ⇧ para bloquear la proporción · mantén ⌃ para ajustar a tamaños estándar · Esc cancela"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拖移以选择——空格键选择窗口 · 按住 ⇧ 锁定宽高比 · 按住 ⌃ 吸附到标准大小 · Esc 取消"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ドラッグして選択 — Spaceでウインドウを選択 · ⇧を押したまま縦横比を固定 · ⌃を押したまま標準サイズにスナップ · Escでキャンセル"
+          }
+        }
+      }
+    },
+    "selector.pickWindow": {
+      "comment": "User-facing text: Click a window to share it — Space returns to drag selection, Esc cancels",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click a window to share it — Space returns to drag selection, Esc cancels"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf ein Fenster klicken, um es zu teilen — Leertaste kehrt zur Bereichsauswahl zurück, Esc bricht ab"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cliquez sur une fenêtre pour la partager — Espace revient à la sélection par glissement, Échap annule"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haz clic en una ventana para compartirla; Espacio vuelve a la selección por arrastre y Esc cancela"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点按窗口以共享——空格键返回拖移选择，Esc 取消"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ウインドウをクリックして共有 — Spaceでドラッグ選択に戻る、Escでキャンセル"
           }
         }
       }
@@ -7767,6 +8901,90 @@
           "stringUnit": {
             "state": "translated",
             "value": "ショートカット"
+          }
+        }
+      }
+    },
+    "sharing.paused": {
+      "comment": "User-facing text: Sharing is paused",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sharing is paused"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Freigabe ist pausiert"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le partage est en pause"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El uso compartido está en pausa"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共享已暂停"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有は一時停止中です"
+          }
+        }
+      }
+    },
+    "sharing.pausedAccessibility": {
+      "comment": "User-facing text: Paused",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausiert"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En pause"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En pausa"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已暂停"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一時停止中"
           }
         }
       }

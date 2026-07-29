@@ -112,7 +112,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
             symbol = session.isActive ? "rectangle.inset.filled.badge.record" : "rectangle.dashed"
         }
         statusItem.button?.image = NSImage(systemSymbolName: symbol,
-                                           accessibilityDescription: "OutcutShare")
+                                           accessibilityDescription: L10n.string(.appName))
         selectItem.title = SettingsStore.shared.shareMode == .virtualMonitor
             ? L10n.string(.menuStartVirtualMonitor) : L10n.string(.menuSelectRegion)
         selectItem.isEnabled = session.state == .idle
