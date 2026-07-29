@@ -12,6 +12,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     private let shareLastItem = NSMenuItem(title: "Share Last Region",
                                            action: #selector(shareLast), keyEquivalent: "l")
     private let presetsItem = NSMenuItem(title: "Presets", action: nil, keyEquivalent: "")
+    private let zoomItem = NSMenuItem(title: "Zoom In (Viewers)",
+                                      action: #selector(toggleZoom), keyEquivalent: "")
     private let moveItem = NSMenuItem(title: "Move / Resize Region",
                                       action: #selector(moveRegion), keyEquivalent: "m")
     private let followItem = NSMenuItem(title: "Follow", action: nil, keyEquivalent: "")
@@ -50,6 +52,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         menu.addItem(shareLastItem)
         menu.addItem(presetsItem)
         menu.addItem(moveItem)
+        menu.addItem(zoomItem)
         let followMenu = NSMenu(title: "Follow")
         followMenu.autoenablesItems = false
         for mode in FollowMode.allCases {
@@ -106,6 +109,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         selectItem.isEnabled = session.state == .idle
         shareLastItem.isEnabled = session.state == .idle && SettingsStore.shared.lastRegion != nil
         moveItem.isEnabled = session.isActive && !session.isVirtualMonitor
+        zoomItem.isEnabled = session.isActive && !session.isVirtualMonitor
+        zoomItem.title = session.isZoomedIn ? "Zoom Out (Viewers)" : "Zoom In (Viewers)"
         if let items = followItem.submenu?.items {
             for item in items {
                 item.state = (item.representedObject as? String)
@@ -170,6 +175,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     @objc private func selectRegion() {
         session.startSelection()
+    }
+
+    @objc private func toggleZoom() {
+        session.toggleZoom()
     }
 
     @objc private func moveRegion() {

@@ -140,4 +140,31 @@ final class GeometryTests: XCTestCase {
         XCTAssertEqual(s.width, 800)
         XCTAssertEqual(s.height, 598)
     }
+
+    func testZoomWindowCentersOnFocus() {
+        let region = CGRect(x: 100, y: 100, width: 800, height: 600)
+        let window = Geometry.zoomWindow(region: region,
+                                         focus: CGPoint(x: 500, y: 400), factor: 2)
+        XCTAssertEqual(window, CGRect(x: 300, y: 250, width: 400, height: 300))
+    }
+
+    func testZoomWindowClampsInsideRegion() {
+        let region = CGRect(x: 100, y: 100, width: 800, height: 600)
+        let atCorner = Geometry.zoomWindow(region: region,
+                                           focus: CGPoint(x: 110, y: 690), factor: 2)
+        XCTAssertEqual(atCorner, CGRect(x: 100, y: 400, width: 400, height: 300))
+        let outside = Geometry.zoomWindow(region: region,
+                                          focus: CGPoint(x: 5000, y: 5000), factor: 2)
+        XCTAssertEqual(outside, CGRect(x: 500, y: 400, width: 400, height: 300))
+    }
+
+    func testZoomWindowFactorOneOrLessReturnsRegion() {
+        let region = CGRect(x: 100, y: 100, width: 800, height: 600)
+        XCTAssertEqual(Geometry.zoomWindow(region: region,
+                                           focus: CGPoint(x: 300, y: 300), factor: 1),
+                       region)
+        XCTAssertEqual(Geometry.zoomWindow(region: region,
+                                           focus: CGPoint(x: 300, y: 300), factor: 0.5),
+                       region)
+    }
 }

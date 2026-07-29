@@ -253,6 +253,23 @@ final class ShareSession {
     private var activeMonitorSize: CGSize = .zero
     private lazy var monitorDrag = MonitorDragController(session: self)
     private lazy var resultPreview = CaptureResultController()
+    private lazy var zoom = ZoomController(session: self, settings: settings)
+
+    /// Viewers-only zoom toward the cursor (⌃⌥⌘Z); region modes only.
+    func toggleZoom() {
+        guard state == .active, activeShareMode != .virtualMonitor else { return }
+        zoom.toggle()
+        notifyUI()
+    }
+
+    var isZoomedIn: Bool { zoom.isZoomed }
+
+    /// ZoomController's outlet into the coalesced capture-update path.
+    /// Only the sourceRect moves — output size, overlays and region stay.
+    func applyZoomWindow(_ rect: CGRect) {
+        guard state == .active, let region = currentRegion else { return }
+        scheduleCaptureUpdate(rect, screen: region.screen, pixelSize: nil)
+    }
 
     /// True while a standalone virtual-monitor session runs (regionless:
     /// no dim overlay, no adjust/follow/presets).
@@ -327,6 +344,9 @@ final class ShareSession {
               let region = currentRegion, rect != region.rect else { return }
         let sizeChanged = rect.size != region.rect.size
         currentRegion = SelectedRegion(rect: rect, screen: region.screen)
+        // A moving region re-points the stream to its full rect below —
+        // the zoom just resets instead of fighting it.
+        zoom.cancel()
         overlay?.update(region: rect)
         hotbar.regionChanged(rect)
         if sizeChanged {
@@ -683,6 +703,7 @@ final class ShareSession {
                                                     to: home.visibleFrame)
         }
         follow.set(mode: .off)
+        zoom.cancel()
         hotbar.close()
         resultPreview.close()
         preview.close()

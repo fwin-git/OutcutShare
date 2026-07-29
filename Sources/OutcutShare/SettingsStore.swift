@@ -291,6 +291,15 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    /// Viewers-only zoom magnification (⌃⌥⌘Z): the capture window shrinks
+    /// to region/factor while the on-screen region stays put.
+    @Published var zoomFactor: Double {
+        didSet {
+            defaults.set(zoomFactor, forKey: "zoomFactor")
+            notifyChange()
+        }
+    }
+
     /// What the hotbar's follow button starts: the last non-off follow mode
     /// used. Never .off — writers only store real targets.
     @Published var followTarget: FollowMode {
@@ -461,6 +470,8 @@ final class SettingsStore: ObservableObject {
         self.followTarget = defaults.string(forKey: "followTarget")
             .flatMap(FollowMode.init(rawValue:))
             .flatMap { $0 == .off ? nil : $0 } ?? .activeWindow
+        self.zoomFactor = defaults.object(forKey: "zoomFactor") == nil
+            ? 2.0 : defaults.double(forKey: "zoomFactor")
         self.hotbarEnabled = defaults.bool(forKey: "hotbarEnabled")
         self.previewWindowEnabled = defaults.bool(forKey: "previewWindowEnabled")
         self.shareWindowTitle = defaults.string(forKey: "shareWindowTitle")

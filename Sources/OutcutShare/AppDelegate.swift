@@ -112,6 +112,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             case .action(.shareLastRegion): session.shareLastRegion()
             case .action(.togglePause): session.togglePause()
             case .action(.toggleRecording): session.toggleRecording()
+            case .action(.toggleZoom): session.toggleZoom()
             case .preset(let index):
                 let presets = SettingsStore.shared.presets
                 if index < presets.count {
@@ -287,6 +288,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 DispatchQueue.main.asyncAfter(deadline: .now() + time) { [session] in
                     session.toggleRecording()
                     print("SHARE-TEST recording toggled, recording=\(session.isRecording)")
+                }
+            }
+        }
+        // --zoom-at=t1,t2 toggles the viewers-only zoom at the given offsets.
+        if let zoomArg = CommandLine.arguments.first(where: { $0.hasPrefix("--zoom-at=") }) {
+            let times = zoomArg.dropFirst("--zoom-at=".count).split(separator: ",").compactMap { Double($0) }
+            for time in times {
+                DispatchQueue.main.asyncAfter(deadline: .now() + time) { [session] in
+                    session.toggleZoom()
+                    print("SHARE-TEST zoom toggled, zoomed=\(session.isZoomedIn)")
                 }
             }
         }

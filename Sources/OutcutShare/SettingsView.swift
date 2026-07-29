@@ -207,6 +207,18 @@ private struct GeneralPage: View {
                     .foregroundStyle(.tint)
                 }
             }
+            Section("Viewer zoom") {
+                Picker("Magnification", selection: $settings.zoomFactor) {
+                    Text("1.5×").tag(1.5)
+                    Text("2×").tag(2.0)
+                    Text("3×").tag(3.0)
+                }
+                .pickerStyle(.segmented)
+                Text("Zoom In / Out (⌃⌥⌘Z) magnifies the shared picture toward your "
+                     + "cursor and gently tracks it — your own screen never changes.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Section("Companions") {
                 Toggle("Show floating hotbar while sharing", isOn: $settings.hotbarEnabled)
                 Text("Quick actions next to the region. Drag the ≡ grabber to reposition; ✕ hides it until re-enabled.")

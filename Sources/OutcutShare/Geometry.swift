@@ -122,6 +122,18 @@ enum Geometry {
         return CGRect(origin: origin, size: CGSize(width: w, height: h))
     }
 
+    /// The sub-rect of `region` a viewers-only zoom of `factor` shows:
+    /// region-size / factor, centered on `focus`, clamped inside the region.
+    /// Factor ≤ 1 means no zoom.
+    static func zoomWindow(region: CGRect, focus: CGPoint, factor: CGFloat) -> CGRect {
+        guard factor > 1 else { return region }
+        let size = CGSize(width: region.width / factor, height: region.height / factor)
+        let origin = clampedRegionOrigin(CGPoint(x: focus.x - size.width / 2,
+                                                 y: focus.y - size.height / 2),
+                                         regionSize: size, screenFrame: region)
+        return CGRect(origin: origin, size: size)
+    }
+
     /// How far the region must move so `point` re-enters its inner margin
     /// (camera-follow dead zone). Zero while the point is comfortably inside.
     static func deadZoneShift(region: CGRect, point: CGPoint, margin: CGFloat) -> CGSize {

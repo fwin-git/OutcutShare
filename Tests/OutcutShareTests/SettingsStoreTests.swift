@@ -56,6 +56,13 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(store.followTarget, .activeWindow)
     }
 
+    func testZoomFactorDefaultAndPersistence() {
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertEqual(store.zoomFactor, 2.0, accuracy: 0.0001)
+        store.zoomFactor = 3.0
+        XCTAssertEqual(SettingsStore(defaults: defaults).zoomFactor, 3.0, accuracy: 0.0001)
+    }
+
     func testScreenshotDefaults() {
         let store = SettingsStore(defaults: defaults)
         XCTAssertEqual(store.screenshotFolder, "")
