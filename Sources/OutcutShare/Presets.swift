@@ -28,6 +28,28 @@ struct RegionPreset: Codable, Equatable, Identifiable {
     var shareModeRaw: String
 }
 
+/// Whether (and where) a preset can re-point the RUNNING session instead of
+/// restarting it: same display, same share mode, and in virtual-display
+/// mode the same aspect ratio (that display's resolution is fixed).
+enum PresetSwitch {
+    static func liveTarget(presetRect: CGRect, presetDisplayID: UInt32,
+                           presetMode: ShareMode?, activeMode: ShareMode,
+                           currentRect: CGRect, currentScreenID: UInt32,
+                           screens: [(id: UInt32, frame: CGRect)]) -> CGRect? {
+        guard activeMode != .virtualMonitor, presetMode == activeMode,
+              let resolved = RegionResolver.resolve(rect: presetRect,
+                                                    displayID: presetDisplayID,
+                                                    screens: screens),
+              screens[resolved.screenIndex].id == currentScreenID else { return nil }
+        if activeMode == .virtualDisplay {
+            let aspect = resolved.rect.width / resolved.rect.height
+            let current = currentRect.width / currentRect.height
+            guard abs(aspect - current) < 0.01 else { return nil }
+        }
+        return resolved.rect
+    }
+}
+
 /// Maps a stored region back onto today's screen layout.
 enum RegionResolver {
     /// Chooses the target screen (exact display id → most overlap → first)

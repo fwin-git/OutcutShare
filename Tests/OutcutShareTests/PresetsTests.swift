@@ -1,6 +1,52 @@
 import XCTest
 @testable import OutcutShare
 
+final class PresetSwitchTests: XCTestCase {
+    private let wide = (id: UInt32(3), frame: CGRect(x: 0, y: 0, width: 2560, height: 1440))
+    private let side = (id: UInt32(7), frame: CGRect(x: 2560, y: 360, width: 1920, height: 1080))
+    private var screens: [(id: UInt32, frame: CGRect)] { [wide, side] }
+    private let current = CGRect(x: 100, y: 100, width: 800, height: 600)
+
+    func testSameDisplaySameModeSwitchesLive() {
+        let target = PresetSwitch.liveTarget(
+            presetRect: CGRect(x: 900, y: 200, width: 600, height: 400),
+            presetDisplayID: 3, presetMode: .hiddenWindow, activeMode: .hiddenWindow,
+            currentRect: current, currentScreenID: 3, screens: screens)
+        XCTAssertEqual(target, CGRect(x: 900, y: 200, width: 600, height: 400))
+    }
+
+    func testDifferentModeOrMonitorRestarts() {
+        XCTAssertNil(PresetSwitch.liveTarget(
+            presetRect: current, presetDisplayID: 3,
+            presetMode: .virtualDisplay, activeMode: .hiddenWindow,
+            currentRect: current, currentScreenID: 3, screens: screens))
+        XCTAssertNil(PresetSwitch.liveTarget(
+            presetRect: current, presetDisplayID: 3,
+            presetMode: .virtualMonitor, activeMode: .virtualMonitor,
+            currentRect: current, currentScreenID: 3, screens: screens))
+    }
+
+    func testOtherDisplayRestarts() {
+        XCTAssertNil(PresetSwitch.liveTarget(
+            presetRect: CGRect(x: 2700, y: 500, width: 800, height: 600),
+            presetDisplayID: 7, presetMode: .hiddenWindow, activeMode: .hiddenWindow,
+            currentRect: current, currentScreenID: 3, screens: screens))
+    }
+
+    func testVirtualDisplayNeedsMatchingAspect() {
+        // 4:3 preset while sharing a 4:3 region → live switch.
+        XCTAssertNotNil(PresetSwitch.liveTarget(
+            presetRect: CGRect(x: 900, y: 200, width: 400, height: 300),
+            presetDisplayID: 3, presetMode: .virtualDisplay, activeMode: .virtualDisplay,
+            currentRect: current, currentScreenID: 3, screens: screens))
+        // 16:9 preset while sharing 4:3 → restart.
+        XCTAssertNil(PresetSwitch.liveTarget(
+            presetRect: CGRect(x: 900, y: 200, width: 1600, height: 900),
+            presetDisplayID: 3, presetMode: .virtualDisplay, activeMode: .virtualDisplay,
+            currentRect: current, currentScreenID: 3, screens: screens))
+    }
+}
+
 final class RegionResolverTests: XCTestCase {
     private let wide = (id: UInt32(3), frame: CGRect(x: 0, y: 0, width: 2560, height: 1440))
     private let side = (id: UInt32(7), frame: CGRect(x: 2560, y: 360, width: 1920, height: 1080))

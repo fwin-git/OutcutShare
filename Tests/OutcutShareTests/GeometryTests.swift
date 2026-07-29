@@ -158,6 +158,21 @@ final class GeometryTests: XCTestCase {
         XCTAssertEqual(outside, CGRect(x: 500, y: 400, width: 400, height: 300))
     }
 
+    func testLerpRectMovesByFraction() {
+        let from = CGRect(x: 0, y: 0, width: 100, height: 100)
+        let to = CGRect(x: 100, y: 200, width: 300, height: 500)
+        let mid = Geometry.lerp(from: from, to: to, fraction: 0.5)
+        XCTAssertEqual(mid, CGRect(x: 50, y: 100, width: 200, height: 300))
+    }
+
+    func testRectsCloseUsesTolerance() {
+        let a = CGRect(x: 0, y: 0, width: 100, height: 100)
+        XCTAssertTrue(Geometry.rectsClose(a, CGRect(x: 0.4, y: 0, width: 100.3, height: 100),
+                                          tolerance: 0.5))
+        XCTAssertFalse(Geometry.rectsClose(a, CGRect(x: 1, y: 0, width: 100, height: 100),
+                                           tolerance: 0.5))
+    }
+
     func testZoomWindowFactorOneOrLessReturnsRegion() {
         let region = CGRect(x: 100, y: 100, width: 800, height: 600)
         XCTAssertEqual(Geometry.zoomWindow(region: region,

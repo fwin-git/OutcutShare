@@ -87,6 +87,8 @@ Dimming and border are local-only: they're excluded from what viewers see.
 | Setting | Effect | Default |
 | --- | --- | --- |
 | When paused, viewers see | Frozen last frame, or a blurred privacy screen with a slashed-eye note | Privacy screen |
+| Pause message | Custom line under the privacy screen's icon | "Sharing is paused" |
+| Pause image | Shown INSTEAD of icon + message on the privacy screen (aspect-fit over the blur) | none |
 | Hide notification banners from viewers | Notification Center is excluded from the capture — banners stay visible on your screen but never appear in the shared picture | on |
 | Hidden apps | Windows of the apps you add never appear in the shared picture; viewers see what's behind them. “Add App…” opens a searchable list of installed apps (sensitive apps suggested first, Browse… for unusual locations). Changes apply live | empty |
 
@@ -113,11 +115,13 @@ tap the eye again to close) or delete, straight from its corner buttons.
 Recordings show a duration + file-size pill; hovering the card keeps it
 open.
 
-The card's scissors button opens **drag-to-trim**: a filmstrip with two
-handles — drag anywhere on the strip and the nearer handle follows,
-while the big preview scrubs to the frame under it. ✓ saves the
-selection as `…_trim.mp4` next to the original (which stays untouched;
-no re-encode, audio kept), ✕ cancels.
+The card's copy button puts the file on the clipboard (paste into Slack,
+mails, …) — and doubles as a drag source: drag the button, or the
+picture itself, straight into any app or Finder. The scissors button
+opens **drag-to-trim**: a filmstrip with two handles — drag anywhere on
+the strip and the nearer handle follows, while the big preview scrubs to
+the frame under it. ✓ saves the selection as `…_trim.mp4` next to the
+original (which stays untouched; no re-encode, audio kept), ✕ cancels.
 
 | Setting | Effect | Default |
 | --- | --- | --- |
@@ -132,6 +136,12 @@ Rename or delete saved regions. Save new ones while sharing via menu bar →
 *Presets → Save Current Region as Preset…*. The first nine are shared
 instantly with ⌃⌥⌘1–9; presets remember their share mode and fall back to
 the best-matching screen if their display is gone.
+
+**While already sharing**, a compatible preset (same display, same share
+mode — and in Virtual Display mode the same aspect ratio) re-points the
+running stream instead of restarting it: the region snaps or glides over,
+following the *Follow movement* setting, and viewers never see the share
+drop. Anything incompatible restarts the session as before.
 
 ## Shortcuts
 

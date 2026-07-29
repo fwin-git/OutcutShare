@@ -225,6 +225,22 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    /// Custom line on the privacy pause screen; empty = stock text.
+    @Published var pauseMessage: String {
+        didSet {
+            defaults.set(pauseMessage, forKey: "pauseMessage")
+            notifyChange()
+        }
+    }
+
+    /// Custom image shown INSTEAD of icon + text while paused; empty = none.
+    @Published var pauseImagePath: String {
+        didSet {
+            defaults.set(pauseImagePath, forKey: "pauseImagePath")
+            notifyChange()
+        }
+    }
+
     @Published var recordSystemAudio: Bool {
         didSet {
             defaults.set(recordSystemAudio, forKey: "recordSystemAudio")
@@ -514,6 +530,8 @@ final class SettingsStore: ObservableObject {
         self.screenshotQuality = defaults.object(forKey: "screenshotQuality") == nil
             ? 1.0 : defaults.double(forKey: "screenshotQuality")
         self.screenshotShadow = defaults.bool(forKey: "screenshotShadow")
+        self.pauseMessage = defaults.string(forKey: "pauseMessage") ?? ""
+        self.pauseImagePath = defaults.string(forKey: "pauseImagePath") ?? ""
         defaults.register(defaults: ["recordSystemAudio": true])
         self.recordSystemAudio = defaults.bool(forKey: "recordSystemAudio")
         self.recordMicrophone = defaults.bool(forKey: "recordMicrophone")

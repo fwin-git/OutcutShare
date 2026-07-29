@@ -247,13 +247,23 @@ struct RegionPreviewCanvas: View {
                         .fill(.ultraThinMaterial)
                     RoundedRectangle(cornerRadius: CGFloat(settings.borderRadius))
                         .fill(Color.black.opacity(0.4))
-                    VStack(spacing: 4) {
-                        Image(systemName: "eye.slash.fill")
-                            .font(.system(size: 22, weight: .medium))
-                        Text("Sharing is paused")
-                            .font(.system(size: 9, weight: .semibold))
+                    let content = PauseScreenContent.fromSettings(settings)
+                    if let image = content.image {
+                        Image(nsImage: image)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: region.width * 0.88,
+                                   height: region.height * 0.88)
+                    } else {
+                        VStack(spacing: 4) {
+                            Image(systemName: "eye.slash.fill")
+                                .font(.system(size: 22, weight: .medium))
+                            Text(content.text)
+                                .font(.system(size: 9, weight: .semibold))
+                                .lineLimit(1)
+                        }
+                        .foregroundStyle(.white)
                     }
-                    .foregroundStyle(.white)
                 }
                 .frame(width: region.width, height: region.height)
                 .position(x: region.midX, y: region.midY)

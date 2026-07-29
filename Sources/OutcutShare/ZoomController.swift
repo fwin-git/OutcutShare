@@ -87,8 +87,8 @@ final class ZoomController {
             }
         }
         // Soft exponential glide — same feel as follow's glide.
-        let next = Self.lerp(from: currentNow, to: targetNow, fraction: 0.16)
-        if Self.isClose(next, to: targetNow) {
+        let next = Geometry.lerp(from: currentNow, to: targetNow, fraction: 0.16)
+        if Geometry.rectsClose(next, targetNow, tolerance: 0.5) {
             current = targetNow
             session.applyZoomWindow(targetNow)
             if !isZoomed {
@@ -104,15 +104,4 @@ final class ZoomController {
         }
     }
 
-    private static func lerp(from: CGRect, to: CGRect, fraction: CGFloat) -> CGRect {
-        CGRect(x: from.minX + (to.minX - from.minX) * fraction,
-               y: from.minY + (to.minY - from.minY) * fraction,
-               width: from.width + (to.width - from.width) * fraction,
-               height: from.height + (to.height - from.height) * fraction)
-    }
-
-    private static func isClose(_ a: CGRect, to b: CGRect) -> Bool {
-        abs(a.minX - b.minX) < 0.5 && abs(a.minY - b.minY) < 0.5
-            && abs(a.width - b.width) < 0.5 && abs(a.height - b.height) < 0.5
-    }
 }

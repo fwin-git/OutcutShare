@@ -93,6 +93,13 @@ final class ShareSession {
 
     /// Shares a preset; if a session is active it is replaced.
     func sharePreset(_ preset: RegionPreset) {
+        // While already sharing, a compatible preset re-points the running
+        // stream (snap or glide, per the follow movement setting) instead of
+        // restarting — viewers never see the share drop.
+        if state == .active, let target = liveSwitchTarget(for: preset) {
+            glideRegion(to: target)
+            return
+        }
         if state != .idle {
             teardown()
             state = .idle
@@ -101,6 +108,47 @@ final class ShareSession {
             settings.shareMode = mode
         }
         startStored(region: preset.region)
+    }
+
+    private func liveSwitchTarget(for preset: RegionPreset) -> CGRect? {
+        guard let region = currentRegion else { return nil }
+        return PresetSwitch.liveTarget(
+            presetRect: preset.region.rect, presetDisplayID: preset.region.displayID,
+            presetMode: ShareMode(rawValue: preset.shareModeRaw),
+            activeMode: activeShareMode,
+            currentRect: region.rect, currentScreenID: region.screen.displayID,
+            screens: NSScreen.screens.map { ($0.displayID, $0.frame) })
+    }
+
+    private var presetGlideTimer: Timer?
+
+    private func glideRegion(to target: CGRect) {
+        presetGlideTimer?.invalidate()
+        presetGlideTimer = nil
+        guard settings.followBehavior == .glide else {
+            setRegionRect(target)
+            return
+        }
+        let timer = Timer(timeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                guard self.state == .active, let current = self.currentRegionRect else {
+                    self.presetGlideTimer?.invalidate()
+                    self.presetGlideTimer = nil
+                    return
+                }
+                let next = Geometry.lerp(from: current, to: target, fraction: 0.22)
+                if Geometry.rectsClose(next, target, tolerance: 0.5) {
+                    self.setRegionRect(target)
+                    self.presetGlideTimer?.invalidate()
+                    self.presetGlideTimer = nil
+                } else {
+                    self.setRegionRect(next)
+                }
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        presetGlideTimer = timer
     }
 
     func saveCurrentRegionAsPreset(named name: String) {
@@ -758,6 +806,8 @@ final class ShareSession {
         }
         follow.set(mode: .off)
         zoom.cancel()
+        presetGlideTimer?.invalidate()
+        presetGlideTimer = nil
         hotbar.close()
         resultPreview.close()
         preview.close()

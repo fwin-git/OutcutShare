@@ -74,7 +74,8 @@ final class LiveFrameWindow {
         hidePrivacyScreen()
         guard let view = window.contentView else { return }
         let container = PrivacyScreenLayer.make(bounds: view.bounds, lastSurface: lastSurface,
-                                                contentsScale: window.backingScaleFactor)
+                                                contentsScale: window.backingScaleFactor,
+                                                content: .fromSettings(.shared))
         view.layer?.addSublayer(container)
         privacyLayer = container
     }
@@ -151,9 +152,29 @@ final class LiveFrameWindow {
 /// Shared by the output window and the preview panel; glyph and text scale
 /// with the layer height so both sizes read well.
 @MainActor
+/// What the privacy pause screen shows: a custom image alone, or the
+/// slashed-eye icon with a (possibly custom) line below it.
+struct PauseScreenContent {
+    var text: String
+    var image: NSImage?
+
+    static func resolve(message: String, imagePath: String) -> PauseScreenContent {
+        let image = imagePath.isEmpty
+            ? nil : NSImage(contentsOfFile: (imagePath as NSString).expandingTildeInPath)
+        let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        return PauseScreenContent(text: trimmed.isEmpty ? "Sharing is paused" : trimmed,
+                                  image: image)
+    }
+
+    static func fromSettings(_ settings: SettingsStore) -> PauseScreenContent {
+        resolve(message: settings.pauseMessage, imagePath: settings.pauseImagePath)
+    }
+}
+
 enum PrivacyScreenLayer {
     static func make(bounds: CGRect, lastSurface: IOSurfaceRef?,
-                     contentsScale: CGFloat) -> CALayer {
+                     contentsScale: CGFloat,
+                     content: PauseScreenContent) -> CALayer {
         let container = CALayer()
         container.frame = bounds
         container.backgroundColor = NSColor.black.cgColor
@@ -173,6 +194,20 @@ enum PrivacyScreenLayer {
             }
         }
 
+        // A custom image replaces icon + text entirely.
+        if let custom = content.image {
+            let imageLayer = CALayer()
+            imageLayer.frame = container.bounds.insetBy(
+                dx: container.bounds.width * 0.06,
+                dy: container.bounds.height * 0.06)
+            var rect = CGRect(origin: .zero, size: custom.size)
+            imageLayer.contents = custom.cgImage(forProposedRect: &rect,
+                                                 context: nil, hints: nil)
+            imageLayer.contentsGravity = .resizeAspect
+            container.addSublayer(imageLayer)
+            return container
+        }
+
         let fontSize = max(11, min(22, bounds.height * 0.07))
         let iconSize: CGFloat = min(container.bounds.height * 0.25, 96)
         let config = NSImage.SymbolConfiguration(pointSize: iconSize, weight: .medium)
@@ -189,7 +224,7 @@ enum PrivacyScreenLayer {
         }
 
         let text = CATextLayer()
-        text.string = "Sharing is paused"
+        text.string = content.text
         text.font = NSFont.systemFont(ofSize: fontSize, weight: .semibold)
         text.fontSize = fontSize
         text.foregroundColor = NSColor.white.cgColor

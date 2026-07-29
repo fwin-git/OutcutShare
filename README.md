@@ -126,11 +126,14 @@ permission; a guided row appears when it's needed.
   configurable border; viewers never see either. → [settings](docs/settings.md)
 - **Shared-output preview** — a small floating window with exactly what
   viewers see, no need to keep the meeting app open.
-- **Presets & last region** — save regions, re-share with ⌃⌥⌘1–9 or ⌃⌥⌘L.
+- **Presets & last region** — save regions, re-share with ⌃⌥⌘1–9 or ⌃⌥⌘L;
+  while sharing, a compatible preset glides the live region over without
+  restarting the share.
 - **Follow mode** — the region tracks your active window or cursor
   (snap or glide).
 - **Privacy pause** (⌃⌥⌘P) — viewers see a frozen frame or a blurred
-  privacy screen while you handle something private.
+  privacy screen — with your own message or image — while you handle
+  something private.
 - **Viewer privacy filters** — notification banners and windows of chosen
   apps (Mail, Messages, …) are removed from the shared picture while staying
   visible to you. → [settings](docs/settings.md)
