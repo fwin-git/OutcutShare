@@ -8,6 +8,10 @@ final class CaptureResultModel: ObservableObject {
     @Published var image: NSImage?
     @Published var isVideo = false
     @Published var pill: String?
+    /// Card size is dictated by the controller — the view pins itself to it
+    /// so the hosting view can never inflate the panel to the image's
+    /// native size (which pushed the corner buttons out of frame).
+    @Published var cardSize = CGSize(width: 280, height: 160)
 }
 
 /// Countdown fraction on its own tiny observable: only the ring view
@@ -44,7 +48,10 @@ struct CaptureResultView: View {
                     Color.black.opacity(0.4)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Explicit size: scaledToFill reports its overflowing fill size,
+            // which would inflate the ZStack (and push every overlay out of
+            // the visible panel) if this only capped at maxWidth/maxHeight.
+            .frame(width: model.cardSize.width, height: model.cardSize.height)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12)
                 .strokeBorder(.white.opacity(0.25)))
@@ -75,6 +82,7 @@ struct CaptureResultView: View {
                            alignment: .bottomTrailing)
             }
         }
+        .frame(width: model.cardSize.width, height: model.cardSize.height)
         .onHover { actions.hoverChanged($0) }
     }
 
@@ -139,6 +147,7 @@ final class CaptureResultController: NSObject {
         let aspect = imageAspect()
         let height = min(200, max(90, Self.cardWidth / aspect))
         let size = CGSize(width: Self.cardWidth, height: height)
+        model.cardSize = size
         let target = targetOrigin(size: size, anchor: anchor, screen: screen)
         remaining = Self.displaySeconds
         ring.fraction = 1
@@ -311,6 +320,7 @@ final class CaptureResultController: NSObject {
     private func resizeToImage() {
         guard let panel, panel.isVisible else { return }
         let height = min(200, max(90, Self.cardWidth / imageAspect()))
+        model.cardSize = CGSize(width: Self.cardWidth, height: height)
         var frame = panel.frame
         frame.origin.y += frame.height - height
         frame.size.height = height
