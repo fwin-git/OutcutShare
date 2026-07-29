@@ -154,6 +154,7 @@ Key invariants:
    (monitor ignores the rect — regionless virtual-monitor session)
    companions: --move-by=dx,dy  --resize-by=dw,dh  --pause-at=t1,t2
                --record-at=t1,t2  --screenshot-at=t1,t2  --zoom-at=t1,t2
+               --region-ocr-at=t
                --follow=activeWindow|cursor  --preview
 --hotkeys-test                          registered shortcuts
 --permissions-test                      permission status line
@@ -166,6 +167,7 @@ Key invariants:
 --show-selector / --show-permissions    open those UIs
 --result-card-test=/path/img-or-mp4     capture-result preview card, standalone
    companions: --open-trim (show the trim UI)  --trim-test=in,out (export range)
+               --ocr-test (copy-text chip, prints clipboard)
 ```
 
 Coordinates are AppKit (bottom-left origin) on the main screen. The shell

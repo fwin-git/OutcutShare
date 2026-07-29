@@ -187,6 +187,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                             on: NSScreen.screens.first)
             print("RESULT-CARD shown")
             var lifetime: Double = 4
+            if CommandLine.arguments.contains("--ocr-test") {
+                lifetime = 8
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    controller.debugOCR()
+                }
+            }
             if CommandLine.arguments.contains("--open-trim") {
                 lifetime = 8
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
@@ -330,6 +336,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 DispatchQueue.main.asyncAfter(deadline: .now() + time) { [session] in
                     session.toggleZoom()
                     print("SHARE-TEST zoom toggled, zoomed=\(session.isZoomedIn)")
+                }
+            }
+        }
+        // --follow-menu-at=t opens the hotbar's follow dropdown (UI check).
+        if let menuArg = CommandLine.arguments.first(where: { $0.hasPrefix("--follow-menu-at=") }) {
+            if let time = Double(menuArg.dropFirst("--follow-menu-at=".count)) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + time) { [session] in
+                    session.debugToggleFollowMenu()
+                    print("SHARE-TEST follow menu toggled")
+                }
+            }
+        }
+        // --region-ocr-at=t copies the region's text at the given offset.
+        if let ocrArg = CommandLine.arguments.first(where: { $0.hasPrefix("--region-ocr-at=") }) {
+            if let time = Double(ocrArg.dropFirst("--region-ocr-at=".count)) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + time) { [session] in
+                    Task { @MainActor in
+                        let found = await session.copyRegionTextToClipboard()
+                        let chars = NSPasteboard.general.string(forType: .string)?.count ?? 0
+                        print("SHARE-TEST region-ocr found=\(found) chars=\(chars)")
+                    }
                 }
             }
         }

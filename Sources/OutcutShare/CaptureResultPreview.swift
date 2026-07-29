@@ -23,6 +23,8 @@ final class CaptureResultModel: ObservableObject {
     @Published var duration: Double = 0
     /// Copy-chip feedback: shows a checkmark for a moment after copying.
     @Published var copied = false
+
+    @Published var ocrState: OCRChipState = .idle
 }
 
 /// Countdown fraction on its own tiny observable: only the ring view
@@ -35,6 +37,7 @@ final class CaptureResultRing: ObservableObject {
 
 struct CaptureResultActions {
     var copyFile: () -> Void
+    var copyText: () -> Void
     var dragURL: () -> URL?
     var dragThumbnail: () -> NSImage?
     var dragActive: (Bool) -> Void
@@ -125,6 +128,14 @@ struct CaptureResultView: View {
                     chip("folder", help: "Show in Finder", action: actions.revealInFinder)
                     chip("eye", help: model.isVideo ? "Preview with playback" : "Preview large",
                          action: actions.quickLook)
+                    if model.ocrState == .working {
+                        ProgressView()
+                            .controlSize(.small)
+                            .frame(width: 30, height: 30)
+                            .background(Color.black.opacity(0.55), in: Circle())
+                    } else {
+                        chip(ocrSymbol, help: "Copy text (OCR)", action: actions.copyText)
+                    }
                     if model.isVideo {
                         chip("scissors", help: "Trim recording", action: actions.beginTrim)
                     }
@@ -152,6 +163,14 @@ struct CaptureResultView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity,
                            alignment: .bottomTrailing)
             }
+        }
+    }
+
+    private var ocrSymbol: String {
+        switch model.ocrState {
+        case .done: return "checkmark"
+        case .empty: return "questionmark"
+        default: return "text.viewfinder"
         }
     }
 
@@ -385,6 +404,12 @@ struct TrimTimeline: View {
 /// is open, and during trimming).
 @MainActor
 final class CaptureResultController: NSObject {
+    private let settings: SettingsStore
+
+    init(settings: SettingsStore = .shared) {
+        self.settings = settings
+    }
+
     private static let cardWidth: CGFloat = 280
     private static let trimCardWidth: CGFloat = 420
     private static let displaySeconds: Double = 3
@@ -407,6 +432,9 @@ final class CaptureResultController: NSObject {
 
     func show(url: URL, isVideo: Bool, near anchor: CGRect?, on screen: NSScreen?) {
         self.url = url
+        settings.recentCaptures = RecentCaptures.updated(settings.recentCaptures,
+                                                         adding: url.path)
+        model.ocrState = .idle
         model.isVideo = isVideo
         model.image = nil
         model.pill = nil
@@ -551,7 +579,33 @@ final class CaptureResultController: NSObject {
     private func trash() {
         guard let url else { return }
         try? FileManager.default.trashItem(at: url, resultingItemURL: nil)
+        settings.recentCaptures = RecentCaptures.removing(settings.recentCaptures,
+                                                          path: url.path)
         hide()
+    }
+
+    private func copyText() {
+        guard model.ocrState != .working,
+              let image = model.image,
+              let cgImage = image.cgImage(forProposedRect: nil, context: nil,
+                                          hints: nil) else { return }
+        model.ocrState = .working
+        Task { @MainActor in
+            let text = await CaptureOCR.recognizeText(in: cgImage)
+            if text.isEmpty {
+                model.ocrState = .empty
+            } else {
+                let pasteboard = NSPasteboard.general
+                pasteboard.clearContents()
+                pasteboard.setString(text, forType: .string)
+                model.ocrState = .done
+            }
+            restartCountdown()
+            try? await Task.sleep(nanoseconds: 1_400_000_000)
+            if model.ocrState != .working {
+                model.ocrState = .idle
+            }
+        }
     }
 
     private func quickLook() {
@@ -628,6 +682,8 @@ final class CaptureResultController: NSObject {
             }
             // The card now represents the trimmed copy; the original stays.
             self.url = output
+            settings.recentCaptures = RecentCaptures.updated(settings.recentCaptures,
+                                                             adding: output.path)
             model.trimming = false
             model.scrubImage = nil
             loadVideoPreview(url: output)
@@ -707,6 +763,18 @@ final class CaptureResultController: NSObject {
         alert.runModal()
     }
 
+    /// Harness hook (--result-card-test --ocr-test): run the copy-text chip
+    /// and print what landed on the clipboard.
+    func debugOCR() {
+        copyText()
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            let text = NSPasteboard.general.string(forType: .string) ?? ""
+            let sample = text.prefix(80).replacingOccurrences(of: "\n", with: "⏎")
+            print("OCR-TEST chars=\(text.count) sample=\(sample)")
+        }
+    }
+
     /// Harness hook (--result-card-test companions): open the trim UI and
     /// optionally export the given range, exactly like the UI's chips.
     func debugTrim(in inFraction: Double, out outFraction: Double, exportNow: Bool) {
@@ -724,6 +792,7 @@ final class CaptureResultController: NSObject {
         if let panel { return panel }
         let actions = CaptureResultActions(
             copyFile: { [weak self] in self?.copyFile() },
+            copyText: { [weak self] in self?.copyText() },
             dragURL: { [weak self] in self?.url },
             dragThumbnail: { [weak self] in self?.dragThumbnail() },
             dragActive: { [weak self] in self?.setDragActive($0) },
@@ -737,6 +806,12 @@ final class CaptureResultController: NSObject {
             hoverChanged: { [weak self] in self?.hovering = $0 })
         let hosting = NSHostingView(rootView: CaptureResultView(
             model: model, ring: ring, actions: actions))
+        // No window auto-layout and no safe-area tracking in a floating
+        // panel — invalidations during a constraint flush crash (see the
+        // hotbar's identical guard). The card is sized explicitly; its root
+        // view pins itself to cardSize, so nothing needs intrinsic sizing.
+        hosting.sizingOptions = []
+        hosting.safeAreaRegions = []
         let panel = NSPanel(contentRect: CGRect(x: 0, y: 0,
                                                 width: Self.cardWidth, height: 160),
                             styleMask: [.borderless, .nonactivatingPanel],

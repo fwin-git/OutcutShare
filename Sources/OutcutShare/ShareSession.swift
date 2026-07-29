@@ -254,6 +254,25 @@ final class ShareSession {
         }
     }
 
+    /// Harness hook (--follow-menu-at): drives the hotbar's follow dropdown.
+    func debugToggleFollowMenu() {
+        hotbar.debugToggleFollowMenu()
+    }
+
+    /// Hotbar OCR: reads the current shared output and puts the recognized
+    /// text on the clipboard. Returns whether any text was found.
+    func copyRegionTextToClipboard() async -> Bool {
+        guard state == .active, let capture,
+              let image = try? await capture.captureStill() else { return false }
+        let text = await CaptureOCR.recognizeText(in: image)
+        guard !text.isEmpty else { return false }
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+        NSSound(named: "Pop")?.play()
+        return true
+    }
+
     /// Pauses/resumes what viewers see without touching the stream: frames
     /// stop being forwarded; the privacy style optionally covers the output.
     /// The virtual monitor is captured directly by the sharing app, so pause
@@ -355,6 +374,15 @@ final class ShareSession {
     private var activeMonitorSize: CGSize = .zero
     private lazy var monitorDrag = MonitorDragController(session: self)
     private lazy var resultPreview = CaptureResultController()
+
+    /// Recent Captures menu: brings the capture card back for a past file
+    /// (works while idle too — the card then docks near the screen corner).
+    func showCaptureCard(url: URL) {
+        let isVideo = ["mp4", "mov"].contains(url.pathExtension.lowercased())
+        resultPreview.show(url: url, isVideo: isVideo,
+                           near: hotbar.currentFrame ?? currentRegionRect,
+                           on: currentScreen ?? NSScreen.screens.first)
+    }
     private lazy var zoom = ZoomController(session: self, settings: settings)
 
     /// Viewers-only zoom toward the cursor (⌃⌥⌘Z); region modes only.

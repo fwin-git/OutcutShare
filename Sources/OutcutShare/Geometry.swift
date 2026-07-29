@@ -206,27 +206,51 @@ enum Geometry {
         return r
     }
 
-    /// Auto-placement for the floating hotbar next to the region border.
+    enum HotbarSide {
+        case below, right, left, above, inside
+        var isVerticalEdge: Bool { self == .right || self == .left }
+    }
+
+    /// Which side auto-placement picks for a bar of this footprint.
     /// Preference: below → right → left → top → inside-bottom fallback.
+    static func hotbarSide(barSize: CGSize, region: CGRect,
+                           screenFrame: CGRect, gap: CGFloat) -> HotbarSide {
+        if region.minY - gap - barSize.height >= screenFrame.minY { return .below }
+        if region.maxX + gap + barSize.width <= screenFrame.maxX { return .right }
+        if region.minX - gap - barSize.width >= screenFrame.minX { return .left }
+        if region.maxY + gap + barSize.height <= screenFrame.maxY { return .above }
+        return .inside
+    }
+
+    /// Auto-placement for the floating hotbar next to the region border.
     static func hotbarOrigin(barSize: CGSize, region: CGRect,
                              screenFrame: CGRect, gap: CGFloat) -> CGPoint {
+        hotbarOrigin(barSize: barSize, region: region, screenFrame: screenFrame,
+                     gap: gap, side: hotbarSide(barSize: barSize, region: region,
+                                                screenFrame: screenFrame, gap: gap))
+    }
+
+    /// Origin for a bar pinned to a specific side (the vertical bar keeps
+    /// its side while its footprint differs from the horizontal one).
+    /// Always clamped into the screen.
+    static func hotbarOrigin(barSize: CGSize, region: CGRect, screenFrame: CGRect,
+                             gap: CGFloat, side: HotbarSide) -> CGPoint {
         let clampedX = min(max(region.midX - barSize.width / 2, screenFrame.minX),
                            screenFrame.maxX - barSize.width)
         let clampedY = min(max(region.midY - barSize.height / 2, screenFrame.minY),
                            screenFrame.maxY - barSize.height)
-        if region.minY - gap - barSize.height >= screenFrame.minY {
-            return CGPoint(x: clampedX, y: region.minY - gap - barSize.height)
+        let point: CGPoint
+        switch side {
+        case .below: point = CGPoint(x: clampedX, y: region.minY - gap - barSize.height)
+        case .right: point = CGPoint(x: region.maxX + gap, y: clampedY)
+        case .left: point = CGPoint(x: region.minX - gap - barSize.width, y: clampedY)
+        case .above: point = CGPoint(x: clampedX, y: region.maxY + gap)
+        case .inside: point = CGPoint(x: clampedX, y: region.minY + gap)
         }
-        if region.maxX + gap + barSize.width <= screenFrame.maxX {
-            return CGPoint(x: region.maxX + gap, y: clampedY)
-        }
-        if region.minX - gap - barSize.width >= screenFrame.minX {
-            return CGPoint(x: region.minX - gap - barSize.width, y: clampedY)
-        }
-        if region.maxY + gap + barSize.height <= screenFrame.maxY {
-            return CGPoint(x: clampedX, y: region.maxY + gap)
-        }
-        return CGPoint(x: clampedX, y: region.minY + gap)
+        return CGPoint(x: min(max(point.x, screenFrame.minX),
+                              screenFrame.maxX - barSize.width),
+                       y: min(max(point.y, screenFrame.minY),
+                              screenFrame.maxY - barSize.height))
     }
 
     /// Default placement for the shared-output preview panel: bottom-right

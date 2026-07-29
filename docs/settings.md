@@ -13,7 +13,7 @@ Menu bar → **Settings…** — eight pages.
 | Follow movement | Snap or smooth glide when follow mode moves the region | Glide |
 | Resize region to followed window | Follow mode adopts the window's size (aspect-fitted in Virtual Display mode) | on |
 | Follow | Off / Active Window / Cursor (also in menu bar → Follow) | Off |
-| Show floating hotbar | Quick-action bar next to the region: stop, pause, record, screenshot, highlights, preview, resize, save preset, follow (split button — icon toggles, label picks the mode). Auto-positions below → side → top; drag the ≡ grabber to place it manually; ✕ hides it until re-enabled. Stays parked while cursor follow runs, so the moving region can't push it out of reach | on |
+| Show floating hotbar | Quick-action bar next to the region: stop, pause, record, screenshot, copy region text (OCR), highlights, preview, resize, save preset, follow (split button — icon toggles, label picks the mode). Auto-positions below → side → top, and turns vertical when only a side edge fits; clicking the ≡ grabber rotates it manually (dragging moves it); ✕ hides it until re-enabled. Stays parked while cursor follow runs, so the moving region can't push it out of reach | on |
 | Show shared-output preview | Small floating window with exactly what viewers see — no need to keep Zoom/Teams open. Also toggled by the hotbar's eye button | off |
 | Share window title | The name sharing apps list for the hidden share window in their window pickers (Hidden Window mode) | Outcut Share (Share Region) |
 | Viewer zoom magnification | How far ⌃⌥⌘Z zooms the shared picture toward the cursor (1.5×/2×/3×); the zoom glides and gently tracks the cursor, viewers-only | 2× |
@@ -117,7 +117,14 @@ open.
 
 The card's copy button puts the file on the clipboard (paste into Slack,
 mails, …) — and doubles as a drag source: drag the button, or the
-picture itself, straight into any app or Finder. The scissors button
+picture itself, straight into any app or Finder. The text button runs
+on-device OCR over the picture (a recording's poster frame) and copies
+the recognized text — error messages, IDs, terminal output — reading
+order preserved. Menu bar → **Recent Captures** lists the last few files
+and brings the full card back for any of them, even after it auto-hid
+or the app restarted; its bottom entries open the recordings and
+screenshots folders directly. The hotbar's own text button OCRs whatever
+is in the region right now — no screenshot needed. The scissors button
 opens **drag-to-trim**: a filmstrip with two handles — drag anywhere on
 the strip and the nearer handle follows, while the big preview scrubs to
 the frame under it. ✓ saves the selection as `…_trim.mp4` next to the

@@ -145,11 +145,13 @@ permission; a guided row appears when it's needed.
 - **Screenshots** — the hotbar's camera button saves the shared picture;
   folder, max size, quality and drop shadow are configurable. Every
   capture (and finished recording) pops a short-lived preview card with
-  Finder, Quick Look, delete — and drag-to-trim for recordings, straight
-  on the card. → [settings](docs/settings.md)
+  copy/drag-out, Finder, Quick Look, copy-text (OCR), delete — and
+  drag-to-trim for recordings, straight on the card; menu bar → Recent
+  Captures brings it back anytime. → [settings](docs/settings.md)
 - **Hotbar** — floating quick actions next to the region or monitor preview
-  (stop, pause, record, screenshot, highlights, preview, resize, preset,
-  follow); draggable, dismissible, toggleable from menu & Settings.
+  (stop, pause, record, screenshot, copy region text, highlights, preview,
+  resize, preset, follow); draggable, click the grabber to flip it
+  vertical (automatic when only a side edge fits), dismissible.
 - **Global hotkeys** — all rebindable to any combo, with duplicate warnings.
   → [hotkeys](docs/hotkeys.md)
 - **Raycast extension** — trigger sharing, presets, pause, recording and

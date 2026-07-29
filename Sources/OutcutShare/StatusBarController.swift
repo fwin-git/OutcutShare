@@ -21,6 +21,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
                                         action: #selector(toggleHotbar), keyEquivalent: "")
     private let pauseItem = NSMenuItem(title: "Pause Sharing",
                                        action: #selector(togglePause), keyEquivalent: "p")
+    private let capturesItem = NSMenuItem(title: "Recent Captures", action: nil,
+                                          keyEquivalent: "")
     private let recordItem = NSMenuItem(title: "Start Recording",
                                         action: #selector(toggleRecording), keyEquivalent: "r")
     private let stopItem = NSMenuItem(title: "Stop Sharing",
@@ -69,6 +71,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         menu.addItem(pauseItem)
         recordItem.target = self
         menu.addItem(recordItem)
+        capturesItem.submenu = NSMenu(title: "Recent Captures")
+        menu.addItem(capturesItem)
         menu.addItem(stopItem)
         menu.addItem(.separator())
         let settingsItem = NSMenuItem(title: "Settings…",
@@ -131,6 +135,68 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         refresh()
         rebuildPresetsMenu()
+        rebuildCapturesMenu()
+    }
+
+    /// Last captures (pruned to files that still exist) — click brings the
+    /// capture card back with copy/drag, Quick Look, trim and delete.
+    private func rebuildCapturesMenu() {
+        guard let submenu = capturesItem.submenu else { return }
+        submenu.removeAllItems()
+        let existing = SettingsStore.shared.recentCaptures.filter {
+            FileManager.default.fileExists(atPath: $0)
+        }
+        if existing != SettingsStore.shared.recentCaptures {
+            SettingsStore.shared.recentCaptures = existing
+        }
+        if existing.isEmpty {
+            let empty = NSMenuItem(title: "No captures yet", action: nil, keyEquivalent: "")
+            empty.isEnabled = false
+            submenu.addItem(empty)
+        }
+        for path in existing {
+            let url = URL(fileURLWithPath: path)
+            let isVideo = ["mp4", "mov"].contains(url.pathExtension.lowercased())
+            let item = NSMenuItem(title: url.lastPathComponent,
+                                  action: #selector(showCapture(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = path
+            item.image = NSImage(systemSymbolName: isVideo ? "film" : "photo",
+                                 accessibilityDescription: nil)
+            submenu.addItem(item)
+        }
+        submenu.addItem(.separator())
+        let recordings = NSMenuItem(title: "Open Recordings Folder",
+                                    action: #selector(openRecordingsFolder),
+                                    keyEquivalent: "")
+        recordings.target = self
+        recordings.image = NSImage(systemSymbolName: "folder", accessibilityDescription: nil)
+        submenu.addItem(recordings)
+        let screenshots = NSMenuItem(title: "Open Screenshots Folder",
+                                     action: #selector(openScreenshotsFolder),
+                                     keyEquivalent: "")
+        screenshots.target = self
+        screenshots.image = NSImage(systemSymbolName: "folder", accessibilityDescription: nil)
+        submenu.addItem(screenshots)
+    }
+
+    @objc private func showCapture(_ sender: NSMenuItem) {
+        guard let path = sender.representedObject as? String else { return }
+        session.showCaptureCard(url: URL(fileURLWithPath: path))
+    }
+
+    @objc private func openRecordingsFolder() {
+        openFolder(SettingsStore.shared.recordingFolderURL)
+    }
+
+    @objc private func openScreenshotsFolder() {
+        openFolder(SettingsStore.shared.screenshotFolderURL)
+    }
+
+    private func openFolder(_ url: URL) {
+        try? FileManager.default.createDirectory(at: url,
+                                                 withIntermediateDirectories: true)
+        NSWorkspace.shared.open(url)
     }
 
     private func rebuildPresetsMenu() {
