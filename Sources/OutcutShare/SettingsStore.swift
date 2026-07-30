@@ -306,6 +306,23 @@ final class SettingsStore: ObservableObject {
         return ids
     }
 
+    /// UI language override; "" follows the system. Mirrored into the
+    /// standard per-app `AppleLanguages` override (the mechanism macOS's own
+    /// per-app language setting uses), which AppKit reads on the next
+    /// launch. Tracked under our own key because reading `AppleLanguages`
+    /// back would fall through to the global domain when no override is set.
+    @Published var appLanguage: String {
+        didSet {
+            defaults.set(appLanguage, forKey: "appLanguage")
+            if appLanguage.isEmpty {
+                defaults.removeObject(forKey: "AppleLanguages")
+            } else {
+                defaults.set([appLanguage], forKey: "AppleLanguages")
+            }
+            notifyChange()
+        }
+    }
+
     /// Shows a Dock icon (and Cmd-Tab / Force Quit presence) while a session
     /// is active or the settings window is open.
     @Published var dockIconWhileActive: Bool {
@@ -542,6 +559,7 @@ final class SettingsStore: ObservableObject {
             .flatMap(DragOutModifier.init(rawValue:)) ?? .shift
         self.crispOutput = defaults.bool(forKey: "crispOutput")
         self.dockIconWhileActive = defaults.bool(forKey: "dockIconWhileActive")
+        self.appLanguage = defaults.string(forKey: "appLanguage") ?? ""
         defaults.register(defaults: ["hideNotificationBanners": true])
         self.hideNotificationBanners = defaults.bool(forKey: "hideNotificationBanners")
         if let data = defaults.data(forKey: "hiddenApps"),

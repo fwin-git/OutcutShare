@@ -269,6 +269,18 @@ private struct GeneralPage: View {
             }
             Section(L10n.string(.settingsGeneralCompanions)) {
                 Toggle(L10n.string(.settingsGeneralHotbarToggle), isOn: $settings.hotbarEnabled)
+                LabeledContent(L10n.string(.settingsGeneralHotbarSize)) {
+                    HStack {
+                        Slider(value: $settings.hotbarScale, in: 1.0...2.0)
+                        Text(L10n.string(
+                            .settingsAppearancePercent,
+                            arguments: [Int((settings.hotbarScale * 100).rounded())]
+                        ))
+                            .monospacedDigit()
+                            .frame(width: 44, alignment: .trailing)
+                    }
+                }
+                .disabled(!settings.hotbarEnabled)
                 Text(L10n.string(.settingsGeneralHotbarCaption))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -281,6 +293,19 @@ private struct GeneralPage: View {
                     .foregroundStyle(.secondary)
             }
             Section(L10n.string(.settingsGeneralSystem)) {
+                Picker(L10n.string(.settingsGeneralLanguage),
+                       selection: $settings.appLanguage) {
+                    Text(L10n.string(.settingsGeneralLanguageSystem)).tag("")
+                    Divider()
+                    ForEach(L10n.supportedLocales, id: \.self) { locale in
+                        Text(verbatim: L10n.nativeLanguageName(for: locale))
+                            .tag(locale)
+                    }
+                }
+                .pickerStyle(.menu)
+                Text(L10n.string(.settingsGeneralLanguageCaption))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Toggle(L10n.string(.settingsGeneralLaunchAtLogin), isOn: launchAtLoginBinding)
                     .disabled(!LoginItem.available)
                 if !LoginItem.available {
@@ -639,19 +664,6 @@ private struct AppearancePage: View {
                               range: 0...30)
                     .disabled(!settings.showRegionBorder)
             }
-            Section(L10n.string(.settingsAppearanceHotbar)) {
-                LabeledContent(L10n.string(.settingsAppearanceHotbarSize)) {
-                    HStack {
-                        Slider(value: $settings.hotbarScale, in: 1.0...2.0)
-                        Text(L10n.string(
-                            .settingsAppearancePercent,
-                            arguments: [Int((settings.hotbarScale * 100).rounded())]
-                        ))
-                            .monospacedDigit()
-                            .frame(width: 44, alignment: .trailing)
-                    }
-                }
-            }
         }
         .formStyle(.grouped)
     }
@@ -766,7 +778,7 @@ final class SettingsWindowController {
         case .general:
             controller = NSHostingController(
                 rootView: AnyView(GeneralPage(settings: settings)
-                    .frame(width: Self.contentWidth, height: 1105)))
+                    .frame(width: Self.contentWidth, height: 1215)))
         case .privacy:
             controller = NSHostingController(
                 rootView: AnyView(PrivacyPage(settings: settings)
@@ -782,7 +794,7 @@ final class SettingsWindowController {
         case .appearance:
             controller = NSHostingController(
                 rootView: AnyView(AppearancePage(settings: settings)
-                    .frame(width: Self.contentWidth, height: 870)))
+                    .frame(width: Self.contentWidth, height: 780)))
         case .shortcuts:
             controller = NSHostingController(
                 rootView: AnyView(ShortcutsPage(settings: settings)

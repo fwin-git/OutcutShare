@@ -20,23 +20,40 @@ it up to 2×.
   `ShareSession.settingsDidChange()` already ends its no-restart branch
   with `hotbar.refresh()`.
 
-## Settings UI (Appearance tab)
+## Settings UI (General tab; revised 2026-07-30)
 
-New `Section` "Hot bar" after "Border" in `AppearancePage`
-(SettingsView.swift), one row: a `Slider` (1.0…2.0) labeled "Size" with a
-right-aligned percent label reusing `settings.appearance.percent` — the
-dimOpacity row pattern, minus the dim preview. The appearance page's
-hardcoded hosting height (SettingsView.swift `pageController(for:)`,
-currently 780) grows to 870 to fit the new section.
+Originally shipped as its own Appearance section; the user moved it: the
+slider lives in **General → Companions**, directly under the hotbar
+toggle (disabled while the hotbar is off). One row: a `Slider` (1.0…2.0)
+labeled "Hotbar size" with a right-aligned percent label reusing
+`settings.appearance.percent`. The General page's hardcoded hosting
+height (SettingsView.swift `pageController(for:)`) grows to fit.
 
-The Appearance preview's mini hot bar (`RegionPreviewCanvas.miniHotbar`)
-multiplies its literals (font 6.5, spacing 4.5, padding 7/4) by
-`settings.hotbarScale` so the preview reflects the setting live.
+The General preview's mini hot bar (`RegionPreviewCanvas.miniHotbar`,
+shown with `showsHotbar: true` on the General page only) multiplies its
+literals (font 6.5, spacing 4.5, padding 7/4) by `settings.hotbarScale`
+so the preview reflects the setting live and proportionally.
 
-New localized keys (all ten locales, same commit, per docs/localization.md):
+New localized key (all ten locales, same commit, per docs/localization.md):
 
-- `settings.appearance.hotbar` — "Hot bar" (section header)
-- `settings.appearance.hotbarSize` — "Size" (slider label)
+- `settings.general.hotbarSize` — "Hotbar size" (slider label)
+
+## Language picker (added 2026-07-30)
+
+Fallout from the localization QA: a stale per-app `AppleLanguages`
+override left the app in Japanese with no UI to change it. New setting in
+**General → System**: a "Language" dropdown with "System default" plus
+the ten shipped locales shown as endonyms (`Locale.localizedString(
+forIdentifier:)`, no translation needed). Backed by
+`SettingsStore.appLanguage` ("" = system), which mirrors the choice into
+the standard per-app `AppleLanguages` override — read by AppKit on next
+launch (caption `settings.general.languageCaption` says so). Tracked
+under its own `"appLanguage"` key because reading `AppleLanguages` back
+falls through to the global domain when no override exists.
+
+Keys: `settings.general.language`, `settings.general.languageSystem`,
+`settings.general.languageCaption`. `L10n` gains `supportedLocales` and
+`nativeLanguageName(for:)`.
 
 ## Applying the scale to the bar
 

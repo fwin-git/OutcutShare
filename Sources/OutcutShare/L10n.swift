@@ -154,8 +154,6 @@ enum L10n {
         case settingsAppearanceDimming = "settings.appearance.dimming"
         case settingsAppearanceDotted = "settings.appearance.dotted"
         case settingsAppearanceHighlightCursor = "settings.appearance.highlightCursor"
-        case settingsAppearanceHotbar = "settings.appearance.hotbar"
-        case settingsAppearanceHotbarSize = "settings.appearance.hotbarSize"
         case settingsAppearancePoints = "settings.appearance.points"
         case settingsAppearancePercent = "settings.appearance.percent"
         case settingsAppearanceShowBorder = "settings.appearance.showBorder"
@@ -175,7 +173,11 @@ enum L10n {
         case settingsGeneralFrameRate60 = "settings.general.frameRate60"
         case settingsGeneralHiddenWindow = "settings.general.hiddenWindow"
         case settingsGeneralHotbarCaption = "settings.general.hotbarCaption"
+        case settingsGeneralHotbarSize = "settings.general.hotbarSize"
         case settingsGeneralHotbarToggle = "settings.general.hotbarToggle"
+        case settingsGeneralLanguage = "settings.general.language"
+        case settingsGeneralLanguageCaption = "settings.general.languageCaption"
+        case settingsGeneralLanguageSystem = "settings.general.languageSystem"
         case settingsGeneralLaunchAtLogin = "settings.general.launchAtLogin"
         case settingsGeneralLaunchUnavailable = "settings.general.launchUnavailable"
         case settingsGeneralLayoutGridWith = "settings.general.layoutGridWith"
@@ -261,6 +263,18 @@ enum L10n {
         case trimRecording = "trim.recording"
         case virtualDisplayName = "virtualDisplay.name"
         case virtualMonitorName = "virtualMonitor.name"
+    }
+
+    /// Every locale the app ships, in the catalog's canonical order.
+    static let supportedLocales = ["en", "de", "fr", "es", "zh-Hans", "ja",
+                                   "pt-BR", "ko", "zh-Hant", "it"]
+
+    /// A locale's name in its own language ("Deutsch", "日本語"), for the
+    /// language picker — endonyms need no per-UI-language translation.
+    static func nativeLanguageName(for identifier: String) -> String {
+        let locale = Locale(identifier: identifier)
+        return locale.localizedString(forIdentifier: identifier)?
+            .capitalized(with: locale) ?? identifier
     }
 
     static func string(

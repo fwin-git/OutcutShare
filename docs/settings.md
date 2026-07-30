@@ -14,10 +14,12 @@ Menu bar → **Settings…** — eight pages.
 | Resize region to followed window | Follow mode adopts the window's size (aspect-fitted in Virtual Display mode) | on |
 | Follow | Off / Active Window / Cursor (also in menu bar → Follow) | Off |
 | Show floating hotbar | Quick-action bar next to the region: stop, pause, record, screenshot, copy region text (OCR), highlights, preview, resize, save preset, follow (split button — icon toggles, label picks the mode). Auto-positions below → side → top, and turns vertical when only a side edge fits; clicking the ≡ grabber rotates it manually (dragging moves it); ✕ hides it until re-enabled. Stays parked while cursor follow runs, so the moving region can't push it out of reach | on |
+| Hotbar size | Scales the hotbar's icons, text, tooltips and dropdown, 100–200 % | 100 % |
 | Show shared-output preview | Small floating window with exactly what viewers see — no need to keep Zoom/Teams open. Also toggled by the hotbar's eye button | off |
 | Share window title | The name sharing apps list for the hidden share window in their window pickers (Hidden Window mode) | Outcut Share (Share Region) |
 | Viewer zoom magnification | How far ⌃⌥⌘Z zooms the shared picture toward the cursor (1.5×/2×/3×); the zoom glides and gently tracks the cursor, viewers-only | 2× |
 | Capture frame rate | 30/60 fps — applies to both the shared picture and recordings | 30 fps |
+| Language | UI language override (any of the ten shipped locales); applies on next launch | System default |
 | Launch at login | Start with macOS (app bundle only) | off |
 | Show Dock icon while active | Dock, ⌘-Tab and Force Quit presence while sharing or settings open | off |
 | Version | Current version + build for support | — |
@@ -79,7 +81,6 @@ windows there like on any screen.
 | Show click ripples | Click animation — viewers only | on |
 | Show border around region | Frame just outside the region | on |
 | Border color / style / thickness / radius | Any color incl. opacity · solid, dashed, dotted · 1–10 pt · 0–30 pt | red · dashed · 3 pt · 8 pt |
-| Hotbar size | Scales the hotbar's icons, text, tooltips and dropdown, 100–200 % | 100 % |
 
 Dimming and border are local-only: they're excluded from what viewers see.
 
