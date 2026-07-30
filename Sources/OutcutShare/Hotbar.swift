@@ -19,6 +19,9 @@ final class HotbarModel: ObservableObject {
     /// Virtual-monitor sessions have no on-screen region: adjust, presets,
     /// follow and highlights don't apply and their buttons are hidden.
     @Published var regionless = false
+    /// Multiplier on every font, icon and padding in the bar (Appearance →
+    /// Hotbar → Size); 1 is the original layout.
+    @Published var scale: CGFloat = 1
 }
 
 struct HotbarActions {
@@ -48,27 +51,28 @@ struct HotbarActions {
 private struct FollowMenuRow: View {
     let mode: FollowMode
     let selected: Bool
+    let scale: CGFloat
     let action: () -> Void
     @State private var hovered = false
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 5) {
+            HStack(spacing: 5 * scale) {
                 Image(systemName: "checkmark")
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.system(size: 9 * scale, weight: .semibold))
                     .opacity(selected ? 1 : 0)
                 Image(systemName: mode == .cursor ? "cursorarrow" : "macwindow")
-                    .font(.system(size: 10))
-                    .frame(width: 13)
+                    .font(.system(size: 10 * scale))
+                    .frame(width: 13 * scale)
                 Text(mode.displayName)
-                    .font(.caption)
+                    .font(.system(size: 10 * scale))
             }
             .foregroundStyle(.white)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
+            .padding(.horizontal, 6 * scale)
+            .padding(.vertical, 3 * scale)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(hovered ? Color.white.opacity(0.18) : .clear,
-                        in: RoundedRectangle(cornerRadius: 5))
+                        in: RoundedRectangle(cornerRadius: 5 * scale))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -102,6 +106,13 @@ struct HotbarView: View {
     let actions: HotbarActions
     @State private var dragging = false
 
+    /// Every size literal in the bar runs through this: the whole layout
+    /// (fonts, icons, paddings, flyout offsets) grows uniformly with the
+    /// Appearance → Hotbar → Size setting.
+    private func s(_ value: CGFloat) -> CGFloat {
+        value * model.scale
+    }
+
     var body: some View {
         Group {
             if model.vertical {
@@ -109,9 +120,9 @@ struct HotbarView: View {
                 // clipped to the capsule's width): invisible copies in the
                 // layout reserve the panel's size, the overlay places the
                 // visible copies aligned with their icons.
-                HStack(alignment: .top, spacing: 6) {
+                HStack(alignment: .top, spacing: s(6)) {
                     bar
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: s(6)) {
                         tooltip.opacity(0)
                         if model.followMenuOpen && !model.regionless {
                             followMenu.opacity(0).disabled(true)
@@ -119,7 +130,7 @@ struct HotbarView: View {
                     }
                 }
             } else {
-                VStack(spacing: 5) {
+                VStack(spacing: s(5)) {
                     bar
                     if model.followMenuOpen && !model.regionless {
                         followMenu.opacity(0).disabled(true)
@@ -160,30 +171,30 @@ struct HotbarView: View {
                 if model.vertical {
                     followMenu
                         .fixedSize()
-                        .offset(x: barRect.maxX + 6,
-                                y: min(max(0, (chevron?.minY ?? geo.size.height) - 20),
-                                       max(0, geo.size.height - 60)))
+                        .offset(x: barRect.maxX + s(6),
+                                y: min(max(0, (chevron?.minY ?? geo.size.height) - s(20)),
+                                       max(0, geo.size.height - s(60))))
                 } else {
                     followMenu
                         .fixedSize()
-                        .offset(x: min(max(8, (chevron?.minX ?? 0) - 28),
-                                       max(8, geo.size.width - 140)),
-                                y: barRect.maxY + 5)
+                        .offset(x: min(max(s(8), (chevron?.minX ?? 0) - s(28)),
+                                       max(s(8), geo.size.width - s(140))),
+                                y: barRect.maxY + s(5))
                 }
             } else if let label = model.hoverLabel {
                 let anchor = anchors[label].map { geo[$0] }
                 if model.vertical {
                     tooltip
                         .fixedSize()
-                        .offset(x: barRect.maxX + 6,
-                                y: min(max(0, (anchor?.midY ?? geo.size.height) - 11),
-                                       geo.size.height - 22))
+                        .offset(x: barRect.maxX + s(6),
+                                y: min(max(0, (anchor?.midY ?? geo.size.height) - s(11)),
+                                       geo.size.height - s(22)))
                 } else {
                     tooltip
                         .fixedSize()
-                        .position(x: min(max(80, anchor?.midX ?? geo.size.width / 2),
-                                         geo.size.width - 80),
-                                  y: barRect.maxY + 16)
+                        .position(x: min(max(s(80), anchor?.midX ?? geo.size.width / 2),
+                                         geo.size.width - s(80)),
+                                  y: barRect.maxY + s(16))
                 }
             }
         }
@@ -197,26 +208,26 @@ struct HotbarView: View {
     // sizing pass (measuredBarSize) sees the same text.
     private var tooltip: some View {
         Text(model.hoverLabel ?? " ")
-            .font(.caption)
+            .font(.system(size: s(10)))
             .lineLimit(1)
             .foregroundStyle(.white)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
+            .padding(.horizontal, s(8))
+            .padding(.vertical, s(3))
             .background(Color.black.opacity(0.72), in: Capsule())
             .opacity(model.hoverLabel == nil ? 0 : 1)
-            .frame(height: 22)
+            .frame(height: s(22))
     }
 
     private var bar: some View {
         Group {
             if model.vertical {
-                VStack(spacing: 13) { barItems }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 14)
+                VStack(spacing: s(13)) { barItems }
+                    .padding(.horizontal, s(10))
+                    .padding(.vertical, s(14))
             } else {
-                HStack(spacing: 13) { barItems }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
+                HStack(spacing: s(13)) { barItems }
+                    .padding(.horizontal, s(14))
+                    .padding(.vertical, s(10))
             }
         }
         .background(.ultraThinMaterial, in: Capsule())
@@ -238,8 +249,9 @@ struct HotbarView: View {
     private var barItems: some View {
             let moveRotateHelp = L10n.string(.hotbarMoveRotate)
             Image(systemName: "line.3.horizontal")
+                .font(.system(size: s(13)))
                 .foregroundStyle(.secondary)
-                .frame(width: 18)
+                .frame(width: s(18))
                 .contentShape(Rectangle())
                 // Click = rotate the bar; drag (≥ 10 pt) = move it.
                 .onTapGesture { actions.toggleOrientation() }
@@ -298,14 +310,14 @@ struct HotbarView: View {
             }
 
             if model.vertical {
-                Divider().frame(width: 16)
+                Divider().frame(width: s(16))
             } else {
-                Divider().frame(height: 16)
+                Divider().frame(height: s(16))
             }
 
             Button(action: actions.hide) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: s(12), weight: .semibold))
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
@@ -336,16 +348,16 @@ struct HotbarView: View {
                                 ),
                               active: model.followOn, action: actions.follow)
         let menuButton = Button(action: actions.followMenu) {
-            HStack(spacing: 2) {
+            HStack(spacing: s(2)) {
                 if !model.vertical {
                     Text(shortLabel(model.followTarget))
-                        .font(.caption)
+                        .font(.system(size: s(10)))
                 }
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 8, weight: .semibold))
+                    .font(.system(size: s(8), weight: .semibold))
                     .rotationEffect(model.followMenuOpen ? .degrees(180) : .zero)
             }
-            .padding(model.vertical ? .horizontal : .vertical, 4)
+            .padding(model.vertical ? .horizontal : .vertical, s(4))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -357,12 +369,12 @@ struct HotbarView: View {
         }
 
         if model.vertical {
-            VStack(spacing: 2) {
+            VStack(spacing: s(2)) {
                 scope
                 menuButton
             }
         } else {
-            HStack(spacing: 3) {
+            HStack(spacing: s(3)) {
                 scope
                 menuButton
             }
@@ -370,17 +382,18 @@ struct HotbarView: View {
     }
 
     private var followMenu: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: s(2)) {
             followMenuItem(.activeWindow)
             followMenuItem(.cursor)
         }
-        .padding(6)
-        .background(Color.black.opacity(0.72), in: RoundedRectangle(cornerRadius: 8))
+        .padding(s(6))
+        .background(Color.black.opacity(0.72), in: RoundedRectangle(cornerRadius: s(8)))
     }
 
     private func followMenuItem(_ mode: FollowMode) -> some View {
         FollowMenuRow(mode: mode,
                       selected: model.followTarget == mode && model.followOn,
+                      scale: model.scale,
                       action: { actions.selectFollow(mode) })
     }
 
@@ -399,8 +412,8 @@ struct HotbarView: View {
                            tint: Color? = nil, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 15, weight: .medium))
-                .frame(width: 22, height: 22)
+                .font(.system(size: s(15), weight: .medium))
+                .frame(width: s(22), height: s(22))
         }
         .buttonStyle(.plain)
         .foregroundStyle(tint ?? (active ? Color.accentColor : Color.primary))
@@ -439,10 +452,13 @@ final class HotbarController {
     /// Footprint of the horizontal bar — the auto-side decision always
     /// reasons about whether THAT would fit below/above.
     private var lastHorizontalSize: CGSize?
+    /// Localized label widths change with the language — refit on change.
+    private var lastLanguage: String
 
     init(session: ShareSession, settings: SettingsStore) {
         self.session = session
         self.settings = settings
+        self.lastLanguage = settings.appLanguage
     }
 
     func show(region: CGRect, screen: NSScreen) {
@@ -550,6 +566,26 @@ final class HotbarController {
         model.highlightsOn = settings.cursorHighlight || settings.clickRipples
         model.previewOn = settings.previewWindowEnabled
         model.regionless = session?.isVirtualMonitor ?? false
+        applyScale(CGFloat(settings.hotbarScale))
+        if lastLanguage != settings.appLanguage {
+            lastLanguage = settings.appLanguage
+            if let panel, panel.isVisible {
+                panel.setContentSize(measuredBarSize())
+                position()
+            }
+        }
+    }
+
+    /// A scale change resizes the whole bar: refit the panel around the new
+    /// content and re-run placement (the cached horizontal footprint used
+    /// for the side decision is stale at the new scale).
+    private func applyScale(_ scale: CGFloat) {
+        guard model.scale != scale else { return }
+        model.scale = scale
+        lastHorizontalSize = nil
+        guard let panel, panel.isVisible else { return }
+        panel.setContentSize(measuredBarSize())
+        position()
     }
 
     private func position(animated: Bool = false) {

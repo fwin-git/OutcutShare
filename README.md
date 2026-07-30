@@ -191,7 +191,13 @@ permission; a guided row appears when it's needed.
 - **Hotbar** — floating quick actions next to the region or monitor preview
   (stop, pause, record, screenshot, copy region text, highlights, preview,
   resize, preset, follow); draggable, click the grabber to flip it
-  vertical (automatic when only a side edge fits), dismissible.
+  vertical (automatic when only a side edge fits), dismissible, and
+  scalable to 100–200 % (Settings → General → Companions).
+- **Ten languages** — English, German, French, Spanish, Portuguese
+  (Brazil), Italian, Japanese, Korean, Simplified and Traditional Chinese.
+  Follows the system language, or pick one under Settings → General →
+  System — the app switches live, no relaunch.
+  → [localization](docs/localization.md)
 - **Global hotkeys** — all rebindable to any combo, with duplicate warnings.
   → [hotkeys](docs/hotkeys.md)
 - **Raycast extension** — trigger sharing, presets, pause, recording and

@@ -306,6 +306,29 @@ final class SettingsStore: ObservableObject {
         return ids
     }
 
+    /// UI language override; "" follows the system. Mirrored into the
+    /// standard per-app `AppleLanguages` override (the mechanism macOS's own
+    /// per-app language setting uses), which AppKit reads on the next
+    /// launch. Tracked under our own key because reading `AppleLanguages`
+    /// back would fall through to the global domain when no override is set.
+    @Published var appLanguage: String {
+        didSet {
+            defaults.set(appLanguage, forKey: "appLanguage")
+            if appLanguage.isEmpty {
+                defaults.removeObject(forKey: "AppleLanguages")
+            } else {
+                defaults.set([appLanguage], forKey: "AppleLanguages")
+            }
+            // Before notifyChange: observers re-render against the new
+            // language. "System default" resolves the system's language
+            // explicitly — the bundle default would stay on the launch
+            // language until a relaunch.
+            L10n.languageOverride = appLanguage.isEmpty
+                ? L10n.systemPreferredLocale() : appLanguage
+            notifyChange()
+        }
+    }
+
     /// Shows a Dock icon (and Cmd-Tab / Force Quit presence) while a session
     /// is active or the settings window is open.
     @Published var dockIconWhileActive: Bool {
@@ -353,6 +376,20 @@ final class SettingsStore: ObservableObject {
     @Published var hotbarEnabled: Bool {
         didSet {
             defaults.set(hotbarEnabled, forKey: "hotbarEnabled")
+            notifyChange()
+        }
+    }
+
+    /// Multiplier on the hotbar's fonts, icons, tooltips and dropdown;
+    /// 1.0 (the original sizes) is the minimum.
+    @Published var hotbarScale: Double {
+        didSet {
+            let clamped = min(max(hotbarScale, 1.0), 2.0)
+            if clamped != hotbarScale {
+                hotbarScale = clamped
+                return
+            }
+            defaults.set(hotbarScale, forKey: "hotbarScale")
             notifyChange()
         }
     }
@@ -515,6 +552,8 @@ final class SettingsStore: ObservableObject {
         self.zoomFactor = defaults.object(forKey: "zoomFactor") == nil
             ? 2.0 : defaults.double(forKey: "zoomFactor")
         self.hotbarEnabled = defaults.bool(forKey: "hotbarEnabled")
+        self.hotbarScale = defaults.object(forKey: "hotbarScale") == nil
+            ? 1.0 : defaults.double(forKey: "hotbarScale")
         self.previewWindowEnabled = defaults.bool(forKey: "previewWindowEnabled")
         self.shareWindowTitle = defaults.string(forKey: "shareWindowTitle")
             ?? Self.defaultShareWindowTitle
@@ -526,6 +565,7 @@ final class SettingsStore: ObservableObject {
             .flatMap(DragOutModifier.init(rawValue:)) ?? .shift
         self.crispOutput = defaults.bool(forKey: "crispOutput")
         self.dockIconWhileActive = defaults.bool(forKey: "dockIconWhileActive")
+        self.appLanguage = defaults.string(forKey: "appLanguage") ?? ""
         defaults.register(defaults: ["hideNotificationBanners": true])
         self.hideNotificationBanners = defaults.bool(forKey: "hideNotificationBanners")
         if let data = defaults.data(forKey: "hiddenApps"),

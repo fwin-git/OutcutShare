@@ -29,6 +29,18 @@ final class StatusBarController: NSObject, NSMenuDelegate {
                                         action: #selector(toggleRecording), keyEquivalent: "r")
     private let stopItem = NSMenuItem(title: L10n.string(.menuStopSharing),
                                       action: #selector(stopSharing), keyEquivalent: ".")
+    private let settingsItem = NSMenuItem(title: L10n.string(.menuSettings),
+                                          action: #selector(openSettings), keyEquivalent: ",")
+    private let permissionsItem = NSMenuItem(title: L10n.string(.menuPermissions),
+                                             action: #selector(openPermissions), keyEquivalent: "")
+    private let versionItem = NSMenuItem(title: L10n.string(
+        .menuVersion,
+        arguments: [AppVersion.display]
+    ),
+                                         action: nil, keyEquivalent: "")
+    private let quitItem = NSMenuItem(title: L10n.string(.menuQuit),
+                                      action: #selector(NSApplication.terminate(_:)),
+                                      keyEquivalent: "q")
 
     init(session: ShareSession, permissions: PermissionsWindowController) {
         self.session = session
@@ -77,24 +89,13 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         menu.addItem(capturesItem)
         menu.addItem(stopItem)
         menu.addItem(.separator())
-        let settingsItem = NSMenuItem(title: L10n.string(.menuSettings),
-                                      action: #selector(openSettings), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(settingsItem)
-        let permissionsItem = NSMenuItem(title: L10n.string(.menuPermissions),
-                                         action: #selector(openPermissions), keyEquivalent: "")
         permissionsItem.target = self
         menu.addItem(permissionsItem)
         menu.addItem(.separator())
-        let versionItem = NSMenuItem(title: L10n.string(
-            .menuVersion,
-            arguments: [AppVersion.display]
-        ),
-                                     action: nil, keyEquivalent: "")
         versionItem.isEnabled = false
         menu.addItem(versionItem)
-        let quitItem = NSMenuItem(title: L10n.string(.menuQuit),
-                                  action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quitItem)
         statusItem.menu = menu
 
@@ -141,9 +142,36 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
+        relocalize()
         refresh()
         rebuildPresetsMenu()
         rebuildCapturesMenu()
+    }
+
+    /// Item titles resolve L10n once at creation; re-resolving them on every
+    /// open keeps the menu current after a live language change. The items
+    /// refresh() retitles anyway (select, zoom, pause, record) are skipped,
+    /// and the presets/captures submenus are rebuilt per open.
+    private func relocalize() {
+        shareLastItem.title = L10n.string(.menuShareLastRegion)
+        presetsItem.title = L10n.string(.menuPresets)
+        presetsItem.submenu?.title = L10n.string(.menuPresets)
+        moveItem.title = L10n.string(.menuMoveResizeRegion)
+        followItem.title = L10n.string(.menuFollow)
+        followItem.submenu?.title = L10n.string(.menuFollow)
+        for item in followItem.submenu?.items ?? [] {
+            guard let raw = item.representedObject as? String,
+                  let mode = FollowMode(rawValue: raw) else { continue }
+            item.title = mode.displayName
+        }
+        hotbarItem.title = L10n.string(.menuShowHotbar)
+        capturesItem.title = L10n.string(.menuRecentCaptures)
+        capturesItem.submenu?.title = L10n.string(.menuRecentCaptures)
+        stopItem.title = L10n.string(.menuStopSharing)
+        settingsItem.title = L10n.string(.menuSettings)
+        permissionsItem.title = L10n.string(.menuPermissions)
+        versionItem.title = L10n.string(.menuVersion, arguments: [AppVersion.display])
+        quitItem.title = L10n.string(.menuQuit)
     }
 
     /// Last captures (pruned to files that still exist) — click brings the

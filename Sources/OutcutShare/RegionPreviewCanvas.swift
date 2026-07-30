@@ -294,16 +294,17 @@ struct RegionPreviewCanvas: View {
     }
 
     private var miniHotbar: some View {
-        HStack(spacing: 4.5) {
+        let scale = settings.hotbarScale
+        return HStack(spacing: 4.5 * scale) {
             ForEach(["line.3.horizontal", "stop.fill", "pause.fill", "record.circle",
                      "cursorarrow.rays", "arrow.up.left.and.arrow.down.right",
                      "plus.square.on.square", "scope", "xmark"], id: \.self) { symbol in
                 Image(systemName: symbol)
-                    .font(.system(size: 6.5, weight: .medium))
+                    .font(.system(size: 6.5 * scale, weight: .medium))
             }
         }
-        .padding(.horizontal, 7)
-        .padding(.vertical, 4)
+        .padding(.horizontal, 7 * scale)
+        .padding(.vertical, 4 * scale)
         .background(.ultraThinMaterial, in: Capsule())
         .overlay(Capsule().strokeBorder(.white.opacity(0.2)))
     }

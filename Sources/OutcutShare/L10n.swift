@@ -173,7 +173,11 @@ enum L10n {
         case settingsGeneralFrameRate60 = "settings.general.frameRate60"
         case settingsGeneralHiddenWindow = "settings.general.hiddenWindow"
         case settingsGeneralHotbarCaption = "settings.general.hotbarCaption"
+        case settingsGeneralHotbarSize = "settings.general.hotbarSize"
         case settingsGeneralHotbarToggle = "settings.general.hotbarToggle"
+        case settingsGeneralLanguage = "settings.general.language"
+        case settingsGeneralLanguageCaption = "settings.general.languageCaption"
+        case settingsGeneralLanguageSystem = "settings.general.languageSystem"
         case settingsGeneralLaunchAtLogin = "settings.general.launchAtLogin"
         case settingsGeneralLaunchUnavailable = "settings.general.launchUnavailable"
         case settingsGeneralLayoutGridWith = "settings.general.layoutGridWith"
@@ -261,15 +265,47 @@ enum L10n {
         case virtualMonitorName = "virtualMonitor.name"
     }
 
+    /// Every locale the app ships, in the catalog's canonical order.
+    static let supportedLocales = ["en", "de", "fr", "es", "zh-Hans", "ja",
+                                   "pt-BR", "ko", "zh-Hant", "it"]
+
+    /// Live UI language, mirrored from `SettingsStore.appLanguage` so a
+    /// settings change re-resolves strings without a relaunch; nil keeps
+    /// the language the process launched with. Explicit `localeIdentifier`
+    /// arguments always win over this.
+    static var languageOverride: String?
+
+    /// The system's preferred shipped locale, read from the global domain:
+    /// the process-cached `Locale.preferredLanguages` would still report
+    /// the launch-time state after a live switch back to "System default".
+    static func systemPreferredLocale() -> String? {
+        let global = CFPreferencesCopyValue("AppleLanguages" as CFString,
+                                            kCFPreferencesAnyApplication,
+                                            kCFPreferencesCurrentUser,
+                                            kCFPreferencesAnyHost) as? [String]
+            ?? Locale.preferredLanguages
+        return Bundle.preferredLocalizations(from: supportedLocales,
+                                             forPreferences: global).first
+    }
+
+    /// A locale's name in its own language ("Deutsch", "日本語"), for the
+    /// language picker — endonyms need no per-UI-language translation.
+    static func nativeLanguageName(for identifier: String) -> String {
+        let locale = Locale(identifier: identifier)
+        return locale.localizedString(forIdentifier: identifier)?
+            .capitalized(with: locale) ?? identifier
+    }
+
     static func string(
         _ key: Key,
         bundle: Bundle = .main,
         localeIdentifier: String? = nil,
         arguments: [CVarArg] = []
     ) -> String {
+        let effective = localeIdentifier ?? languageOverride
         let resolvedBundle = localizedBundle(
             in: bundle,
-            localeIdentifier: localeIdentifier
+            localeIdentifier: effective
         )
         let format = resolvedBundle.localizedString(
             forKey: key.rawValue,
@@ -277,7 +313,7 @@ enum L10n {
             table: "Localizable"
         )
         guard !arguments.isEmpty else { return format }
-        let locale = localeIdentifier.map(Locale.init(identifier:)) ?? .current
+        let locale = effective.map(Locale.init(identifier:)) ?? .current
         return String(format: format, locale: locale, arguments: arguments)
     }
 

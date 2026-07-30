@@ -240,6 +240,48 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(store.borderThickness, 10, accuracy: 0.0001)
     }
 
+    func testHotbarScaleDefaultAndPersistence() {
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertEqual(store.hotbarScale, 1.0, accuracy: 0.0001)
+        store.hotbarScale = 1.5
+        let reloaded = SettingsStore(defaults: defaults)
+        XCTAssertEqual(reloaded.hotbarScale, 1.5, accuracy: 0.0001)
+    }
+
+    func testHotbarScaleClamped() {
+        let store = SettingsStore(defaults: defaults)
+        store.hotbarScale = 0.5
+        XCTAssertEqual(store.hotbarScale, 1.0, accuracy: 0.0001)
+        store.hotbarScale = 3.0
+        XCTAssertEqual(store.hotbarScale, 2.0, accuracy: 0.0001)
+    }
+
+    func testAppLanguageDefaultsToSystem() {
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertEqual(store.appLanguage, "")
+    }
+
+    func testAppLanguageUpdatesLiveOverride() {
+        let store = SettingsStore(defaults: defaults)
+        store.appLanguage = "ja"
+        XCTAssertEqual(L10n.languageOverride, "ja")
+        store.appLanguage = ""
+        XCTAssertNotEqual(L10n.languageOverride, "ja")
+    }
+
+    func testAppLanguageWritesAndClearsAppleLanguagesOverride() {
+        let store = SettingsStore(defaults: defaults)
+        store.appLanguage = "ja"
+        XCTAssertEqual(
+            defaults.persistentDomain(forName: suiteName)?["AppleLanguages"] as? [String],
+            ["ja"]
+        )
+        let reloaded = SettingsStore(defaults: defaults)
+        XCTAssertEqual(reloaded.appLanguage, "ja")
+        reloaded.appLanguage = ""
+        XCTAssertNil(defaults.persistentDomain(forName: suiteName)?["AppleLanguages"])
+    }
+
     func testHexColorRoundTrip() {
         let color = NSColor(hexRGBA: "#3366CC80")
         XCTAssertNotNil(color)
