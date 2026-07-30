@@ -41,7 +41,7 @@ struct HotbarActions {
     var drag: () -> Void
     var endDrag: () -> Void
     /// Demo runs only: resolved bar-item rects (hosting-view coordinates).
-    var reportItemBounds: ([String: CGRect]) -> Void = { _ in }
+    var reportItemBounds: ([DemoControlID: CGRect]) -> Void = { _ in }
 }
 
 /// One row of the follow dropdown, with its own hover highlight.
@@ -86,6 +86,14 @@ private struct BarItemBounds: PreferenceKey {
     }
 }
 
+private struct DemoBarItemBounds: PreferenceKey {
+    static let defaultValue: [DemoControlID: Anchor<CGRect>] = [:]
+    static func reduce(value: inout [DemoControlID: Anchor<CGRect>],
+                       nextValue: () -> [DemoControlID: Anchor<CGRect>]) {
+        value.merge(nextValue()) { $1 }
+    }
+}
+
 struct HotbarView: View {
     /// Sentinel for hover exits that must clear whatever label is showing.
     static let anyLabel = "__any__"
@@ -126,12 +134,16 @@ struct HotbarView: View {
         .overlayPreferenceValue(BarItemBounds.self) { anchors in
             GeometryReader { geo in
                 flyouts(anchors: anchors, geo: geo)
-                    // Demo choreography clicks real buttons — it needs their
-                    // resolved rects (inert outside demo runs).
+            }
+        }
+        .overlayPreferenceValue(DemoBarItemBounds.self) { anchors in
+            GeometryReader { geo in
+                Color.clear
                     .onChange(of: anchors.mapValues { geo[$0] }, initial: true) { _, rects in
                         if DemoState.active { actions.reportItemBounds(rects) }
                     }
             }
+            .allowsHitTesting(false)
         }
     }
 
@@ -260,12 +272,13 @@ struct HotbarView: View {
                         ? L10n.string(.menuResumeSharing)
                         : L10n.string(.menuPauseSharing),
                       active: model.isPaused, action: actions.pause)
+            let recording = HotbarRecordingPresentation(isRecording: model.isRecording)
             barButton(model.isRecording ? "stop.circle.fill" : "record.circle",
-                      help: model.isRecording
-                        ? L10n.string(.menuStopRecording)
-                        : L10n.string(.menuStartRecording),
+                      help: recording.help,
+                      demoID: recording.controlID,
                       tint: model.isRecording ? .red : nil, action: actions.record)
             barButton("camera", help: L10n.string(.hotbarScreenshot),
+                      demoID: .hotbarScreenshot,
                       action: actions.screenshot)
             barButton(ocrSymbol, help: L10n.string(.hotbarCopyText),
                       action: actions.copyText)
@@ -381,7 +394,8 @@ struct HotbarView: View {
         actions.hover(hover, label)
     }
 
-    private func barButton(_ symbol: String, help: String, active: Bool = false,
+    private func barButton(_ symbol: String, help: String,
+                           demoID: DemoControlID? = nil, active: Bool = false,
                            tint: Color? = nil, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
@@ -392,6 +406,10 @@ struct HotbarView: View {
         .foregroundStyle(tint ?? (active ? Color.accentColor : Color.primary))
         .onHover { hover(hover: $0, label: help) }
         .anchorPreference(key: BarItemBounds.self, value: .bounds) { [help: $0] }
+        .anchorPreference(key: DemoBarItemBounds.self, value: .bounds) { anchor in
+            guard let demoID else { return [:] }
+            return [demoID: anchor]
+        }
     }
 }
 
@@ -417,7 +435,7 @@ final class HotbarController {
     private var barActions: HotbarActions?
     /// Bar-item rects in hosting-view coordinates, reported by the view
     /// during demo runs — resolved to screen rects on demand.
-    private var demoLocalAnchors: [String: CGRect] = [:]
+    private var demoLocalAnchors: [DemoControlID: CGRect] = [:]
     /// Footprint of the horizontal bar — the auto-side decision always
     /// reasons about whether THAT would fit below/above.
     private var lastHorizontalSize: CGSize?
@@ -503,11 +521,11 @@ final class HotbarController {
         return panel.frame
     }
 
-    /// Demo choreography: a bar button's current screen rect, by its help
-    /// string — resolved on demand so panel moves never go stale.
-    func demoItemRect(_ help: String) -> CGRect? {
+    /// Demo choreography: a bar button's current screen rect, addressed
+    /// independently from its localized visible help text.
+    func demoItemRect(_ id: DemoControlID) -> CGRect? {
         guard let panel, panel.isVisible,
-              let local = demoLocalAnchors[help] else { return nil }
+              let local = demoLocalAnchors[id] else { return nil }
         return Geometry.demoAnchorScreenRect(local: local, panelFrame: panel.frame)
     }
 

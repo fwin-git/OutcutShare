@@ -51,20 +51,19 @@ struct CaptureResultActions {
     var trash: () -> Void
     var hoverChanged: (Bool) -> Void
     /// Demo runs only: resolved card-item rects (hosting-view coordinates).
-    var reportItemBounds: ([String: CGRect]) -> Void = { _ in }
+    var reportItemBounds: ([DemoControlID: CGRect]) -> Void = { _ in }
 }
 
 /// The card that folds out under the hotbar after a capture: the shot (or
 /// the recording's poster), corner chips styled like the shared-output
 /// preview's pause button, a countdown ring and a duration/size pill.
 /// The scissors chip morphs it into a drag-to-trim editor.
-/// Card-item bounds keyed by chip help string (plus "__image__" for the
-/// drag-out surface and "__timeline__" for the trim strip) — demo
-/// choreography resolves these to click real chips.
+/// Card-item bounds keyed by stable technical identities — demo
+/// choreography resolves these to click real controls regardless of locale.
 private struct CardItemBounds: PreferenceKey {
-    static let defaultValue: [String: Anchor<CGRect>] = [:]
-    static func reduce(value: inout [String: Anchor<CGRect>],
-                       nextValue: () -> [String: Anchor<CGRect>]) {
+    static let defaultValue: [DemoControlID: Anchor<CGRect>] = [:]
+    static func reduce(value: inout [DemoControlID: Anchor<CGRect>],
+                       nextValue: () -> [DemoControlID: Anchor<CGRect>]) {
         value.merge(nextValue()) { $1 }
     }
 }
@@ -83,7 +82,7 @@ struct CaptureResultView: View {
                 TrimTimeline(model: model, scrub: actions.scrub)
                     .frame(height: Self.timelineHeight)
                     .anchorPreference(key: CardItemBounds.self, value: .bounds) {
-                        ["__timeline__": $0]
+                        [.captureTimeline: $0]
                     }
             }
         }
@@ -130,7 +129,7 @@ struct CaptureResultView: View {
                                   onHover: actions.hoverChanged,
                                   dragActive: actions.dragActive))
             .anchorPreference(key: CardItemBounds.self, value: .bounds) {
-                ["__image__": $0]
+                [.captureImage: $0]
             }
 
             HStack(spacing: 6) {
@@ -142,6 +141,7 @@ struct CaptureResultView: View {
                             .background(Color.black.opacity(0.55), in: Circle())
                     } else {
                         chip("checkmark", help: L10n.string(.captureSaveTrimmed),
+                             demoID: .captureSaveTrimmedCopy,
                              action: actions.applyTrim)
                     }
                     chip("xmark", help: L10n.string(.captureCancelTrim),
@@ -170,6 +170,7 @@ struct CaptureResultView: View {
                     }
                     if model.isVideo {
                         chip("scissors", help: L10n.string(.trimRecording),
+                             demoID: .captureTrim,
                              action: actions.beginTrim)
                     }
                     chip("trash", help: L10n.string(.captureDeleteFile),
@@ -231,6 +232,7 @@ struct CaptureResultView: View {
     }
 
     private func chip(_ symbol: String, help: String,
+                      demoID: DemoControlID? = nil,
                       action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
@@ -241,7 +243,10 @@ struct CaptureResultView: View {
         }
         .buttonStyle(.plain)
         .help(help)
-        .anchorPreference(key: CardItemBounds.self, value: .bounds) { [help: $0] }
+        .anchorPreference(key: CardItemBounds.self, value: .bounds) { anchor in
+            guard let demoID else { return [:] }
+            return [demoID: anchor]
+        }
     }
 }
 
@@ -479,15 +484,15 @@ final class CaptureResultController: NSObject {
     private var pendingScrub: Double?
     /// Card-item rects in hosting-view coordinates, reported by the view
     /// during demo runs — resolved to screen rects on demand.
-    private var demoLocalAnchors: [String: CGRect] = [:]
+    private var demoLocalAnchors: [DemoControlID: CGRect] = [:]
 
     var currentURL: URL? { url }
 
-    /// Demo choreography: a chip's / the image's / the trim strip's current
-    /// screen rect, by key (chip help string, "__image__", "__timeline__").
-    func demoItemRect(_ key: String) -> CGRect? {
+    /// Demo choreography: a card control's current screen rect, addressed
+    /// independently from its localized visible help text.
+    func demoItemRect(_ id: DemoControlID) -> CGRect? {
         guard let panel, panel.isVisible,
-              let local = demoLocalAnchors[key] else { return nil }
+              let local = demoLocalAnchors[id] else { return nil }
         return Geometry.demoAnchorScreenRect(local: local, panelFrame: panel.frame)
     }
 

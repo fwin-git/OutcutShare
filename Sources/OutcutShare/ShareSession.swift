@@ -259,14 +259,14 @@ final class ShareSession {
         hotbar.debugToggleFollowMenu()
     }
 
-    /// Demo choreography: screen rects of hotbar buttons / capture-card
-    /// items, keyed by their help strings (see DemoHarness).
-    func demoHotbarItemRect(_ help: String) -> CGRect? {
-        hotbar.demoItemRect(help)
+    /// Demo choreography: current control rects addressed by stable
+    /// technical identities rather than localized visible strings.
+    func demoHotbarItemRect(_ id: DemoControlID) -> CGRect? {
+        hotbar.demoItemRect(id)
     }
 
-    func demoCardItemRect(_ key: String) -> CGRect? {
-        resultPreview.demoItemRect(key)
+    func demoCardItemRect(_ id: DemoControlID) -> CGRect? {
+        resultPreview.demoItemRect(id)
     }
 
     /// Hotbar OCR: reads the current shared output and puts the recognized

@@ -36,6 +36,8 @@ final class LocalizationTests: XCTestCase {
 
         try writeStrings(
             [
+                "menu.startRecording": "Start Recording",
+                "menu.stopRecording": "Stop Recording",
                 "menu.selectRegion": "Select Region & Share",
                 "preset.defaultName": "Preset %d",
                 "settings.general.shareWindowDefaultTitle":
@@ -46,6 +48,8 @@ final class LocalizationTests: XCTestCase {
         )
         try writeStrings(
             [
+                "menu.startRecording": "Aufnahme starten",
+                "menu.stopRecording": "Aufnahme beenden",
                 "menu.selectRegion": "Bereich auswählen und teilen",
                 "preset.defaultName": "Voreinstellung %d",
                 "settings.general.shareWindowDefaultTitle":
@@ -109,6 +113,31 @@ final class LocalizationTests: XCTestCase {
             ),
             "Outcut Share (Bereich teilen)"
         )
+    }
+
+    func testRecordingIdentitySurvivesLocalizedStateChanges() {
+        let englishStart = HotbarRecordingPresentation(
+            isRecording: false,
+            bundle: fixtureBundle,
+            localeIdentifier: "en"
+        )
+        let germanStart = HotbarRecordingPresentation(
+            isRecording: false,
+            bundle: fixtureBundle,
+            localeIdentifier: "de"
+        )
+        let germanStop = HotbarRecordingPresentation(
+            isRecording: true,
+            bundle: fixtureBundle,
+            localeIdentifier: "de"
+        )
+
+        XCTAssertEqual(englishStart.controlID, .hotbarRecording)
+        XCTAssertEqual(germanStart.controlID, .hotbarRecording)
+        XCTAssertEqual(germanStop.controlID, .hotbarRecording)
+        XCTAssertEqual(englishStart.help, "Start Recording")
+        XCTAssertEqual(germanStart.help, "Aufnahme starten")
+        XCTAssertEqual(germanStop.help, "Aufnahme beenden")
     }
 
     func testAppOwnedLocalizedErrorsUseCatalogMessages() {
