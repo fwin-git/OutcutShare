@@ -6,7 +6,7 @@ ASSET_INFO := build/AppIconInfo.plist
 LOCALIZATION_CATALOGS := Resources/Localization/Localizable.xcstrings \
 	Resources/Localization/InfoPlist.xcstrings
 
-VERSION  ?= 1.15.0
+VERSION  ?= 1.16.0
 BUILD    := $(shell git rev-list --count HEAD 2>/dev/null || echo 0)
 HASH     := $(shell git rev-parse --short HEAD 2>/dev/null || echo dev)
 
