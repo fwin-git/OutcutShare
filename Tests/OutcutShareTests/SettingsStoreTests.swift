@@ -261,6 +261,14 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(store.appLanguage, "")
     }
 
+    func testAppLanguageUpdatesLiveOverride() {
+        let store = SettingsStore(defaults: defaults)
+        store.appLanguage = "ja"
+        XCTAssertEqual(L10n.languageOverride, "ja")
+        store.appLanguage = ""
+        XCTAssertNotEqual(L10n.languageOverride, "ja")
+    }
+
     func testAppLanguageWritesAndClearsAppleLanguagesOverride() {
         let store = SettingsStore(defaults: defaults)
         store.appLanguage = "ja"

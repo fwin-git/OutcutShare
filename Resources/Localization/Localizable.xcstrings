@@ -11354,67 +11354,67 @@
       }
     },
     "settings.general.languageCaption": {
-      "comment": "User-facing text: Takes effect the next time Outcut Share launches.",
+      "comment": "User-facing text: Applies immediately; system panels switch after a relaunch.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Takes effect the next time Outcut Share launches."
+            "value": "Applies immediately; system panels switch after a relaunch."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wird beim nächsten Start von Outcut Share übernommen."
+            "value": "Gilt sofort; Systemdialoge wechseln nach einem Neustart."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prend effet au prochain lancement d’Outcut Share."
+            "value": "S’applique immédiatement ; les panneaux système changent après un redémarrage."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se aplica la próxima vez que se abra Outcut Share."
+            "value": "Se aplica de inmediato; los paneles del sistema cambian tras un reinicio."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "下次启动 Outcut Share 时生效。"
+            "value": "立即生效；系统面板在重新启动后切换。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "次回 Outcut Share の起動時に適用されます。"
+            "value": "すぐに適用されます。システムパネルは再起動後に切り替わります。"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Entra em vigor na próxima vez que o Outcut Share for aberto."
+            "value": "Aplicado imediatamente; os painéis do sistema mudam após reiniciar."
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "다음에 Outcut Share를 실행할 때 적용됩니다."
+            "value": "즉시 적용됩니다. 시스템 패널은 재시작 후 전환됩니다."
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "下次啟動 Outcut Share 時生效。"
+            "value": "立即生效；系統面板在重新啟動後切換。"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ha effetto al prossimo avvio di Outcut Share."
+            "value": "Si applica subito; i pannelli di sistema cambiano dopo un riavvio."
           }
         }
       }

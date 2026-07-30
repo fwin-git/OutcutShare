@@ -319,6 +319,12 @@ final class SettingsStore: ObservableObject {
             } else {
                 defaults.set([appLanguage], forKey: "AppleLanguages")
             }
+            // Before notifyChange: observers re-render against the new
+            // language. "System default" resolves the system's language
+            // explicitly — the bundle default would stay on the launch
+            // language until a relaunch.
+            L10n.languageOverride = appLanguage.isEmpty
+                ? L10n.systemPreferredLocale() : appLanguage
             notifyChange()
         }
     }

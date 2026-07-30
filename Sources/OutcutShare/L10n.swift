@@ -269,6 +269,25 @@ enum L10n {
     static let supportedLocales = ["en", "de", "fr", "es", "zh-Hans", "ja",
                                    "pt-BR", "ko", "zh-Hant", "it"]
 
+    /// Live UI language, mirrored from `SettingsStore.appLanguage` so a
+    /// settings change re-resolves strings without a relaunch; nil keeps
+    /// the language the process launched with. Explicit `localeIdentifier`
+    /// arguments always win over this.
+    static var languageOverride: String?
+
+    /// The system's preferred shipped locale, read from the global domain:
+    /// the process-cached `Locale.preferredLanguages` would still report
+    /// the launch-time state after a live switch back to "System default".
+    static func systemPreferredLocale() -> String? {
+        let global = CFPreferencesCopyValue("AppleLanguages" as CFString,
+                                            kCFPreferencesAnyApplication,
+                                            kCFPreferencesCurrentUser,
+                                            kCFPreferencesAnyHost) as? [String]
+            ?? Locale.preferredLanguages
+        return Bundle.preferredLocalizations(from: supportedLocales,
+                                             forPreferences: global).first
+    }
+
     /// A locale's name in its own language ("Deutsch", "日本語"), for the
     /// language picker — endonyms need no per-UI-language translation.
     static func nativeLanguageName(for identifier: String) -> String {
@@ -283,9 +302,10 @@ enum L10n {
         localeIdentifier: String? = nil,
         arguments: [CVarArg] = []
     ) -> String {
+        let effective = localeIdentifier ?? languageOverride
         let resolvedBundle = localizedBundle(
             in: bundle,
-            localeIdentifier: localeIdentifier
+            localeIdentifier: effective
         )
         let format = resolvedBundle.localizedString(
             forKey: key.rawValue,
@@ -293,7 +313,7 @@ enum L10n {
             table: "Localizable"
         )
         guard !arguments.isEmpty else { return format }
-        let locale = localeIdentifier.map(Locale.init(identifier:)) ?? .current
+        let locale = effective.map(Locale.init(identifier:)) ?? .current
         return String(format: format, locale: locale, arguments: arguments)
     }
 

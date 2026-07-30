@@ -452,10 +452,13 @@ final class HotbarController {
     /// Footprint of the horizontal bar — the auto-side decision always
     /// reasons about whether THAT would fit below/above.
     private var lastHorizontalSize: CGSize?
+    /// Localized label widths change with the language — refit on change.
+    private var lastLanguage: String
 
     init(session: ShareSession, settings: SettingsStore) {
         self.session = session
         self.settings = settings
+        self.lastLanguage = settings.appLanguage
     }
 
     func show(region: CGRect, screen: NSScreen) {
@@ -564,6 +567,13 @@ final class HotbarController {
         model.previewOn = settings.previewWindowEnabled
         model.regionless = session?.isVirtualMonitor ?? false
         applyScale(CGFloat(settings.hotbarScale))
+        if lastLanguage != settings.appLanguage {
+            lastLanguage = settings.appLanguage
+            if let panel, panel.isVisible {
+                panel.setContentSize(measuredBarSize())
+                position()
+            }
+        }
     }
 
     /// A scale change resizes the whole bar: refit the panel around the new

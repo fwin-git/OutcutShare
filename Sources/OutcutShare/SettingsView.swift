@@ -364,6 +364,8 @@ private struct GeneralPage: View {
 }
 
 private struct PermissionsPage: View {
+    // Observed only so a live language change re-renders the strings.
+    @ObservedObject var settings: SettingsStore
     @StateObject private var model = PermissionsModel()
 
     var body: some View {
@@ -520,6 +522,9 @@ private struct RecordingPage: View {
 }
 
 private struct AboutPage: View {
+    // Observed only so a live language change re-renders the strings.
+    @ObservedObject var settings: SettingsStore
+
     var body: some View {
         VStack(spacing: 12) {
             Image(nsImage: NSApplication.shared.applicationIconImage)
@@ -697,9 +702,12 @@ final class SettingsWindowController {
     private var window: NSWindow?
     private var tabController: SettingsTabViewController?
     private var closeObserver: NSObjectProtocol?
+    private var languageObserver: NSObjectProtocol?
+    private var lastLanguage: String
 
     init(settings: SettingsStore) {
         self.settings = settings
+        self.lastLanguage = settings.appLanguage
     }
 
     var isLoaded: Bool { window != nil }
@@ -729,6 +737,10 @@ final class SettingsWindowController {
         if let closeObserver {
             NotificationCenter.default.removeObserver(closeObserver)
             self.closeObserver = nil
+        }
+        if let languageObserver {
+            NotificationCenter.default.removeObserver(languageObserver)
+            self.languageObserver = nil
         }
         if let tabController {
             while let item = tabController.tabViewItems.first {
@@ -770,6 +782,44 @@ final class SettingsWindowController {
                 self.windowDidClose()
             }
         }
+        languageObserver = NotificationCenter.default.addObserver(
+            forName: settingsChangedNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.languageMayHaveChanged() }
+        }
+    }
+
+    /// SwiftUI page content follows the store, but the tab labels and the
+    /// window title are AppKit state set at build time — re-apply them when
+    /// the language changes.
+    private func languageMayHaveChanged() {
+        guard settings.appLanguage != lastLanguage else { return }
+        lastLanguage = settings.appLanguage
+        // Deferred: the change originates inside a control on one of the
+        // pages — swapping the tab items out from under its action would
+        // re-enter AppKit.
+        DispatchQueue.main.async { [weak self] in self?.relocalizeTabs() }
+    }
+
+    /// Toolbar buttons copy the tab items' labels at insertion; removing
+    /// and re-adding the same items (same page controllers, SwiftUI state
+    /// intact) is what makes the new labels stick.
+    private func relocalizeTabs() {
+        guard let window, let tabController else { return }
+        let selected = tabController.selectedTabViewItemIndex
+        let items = tabController.tabViewItems
+        for item in items {
+            tabController.removeTabViewItem(item)
+        }
+        for (tab, item) in zip(SettingsTab.allCases, items) {
+            item.label = tab.title
+            item.image = NSImage(systemSymbolName: tab.symbolName,
+                                 accessibilityDescription: tab.title)
+            item.viewController?.title = tab.title
+            tabController.addTabViewItem(item)
+        }
+        tabController.selectedTabViewItemIndex = selected
+        window.title = SettingsTab.allCases[selected].title
     }
 
     private func pageController(for tab: SettingsTab) -> NSViewController {
@@ -801,11 +851,11 @@ final class SettingsWindowController {
                     .frame(width: Self.contentWidth, height: 400)))
         case .permissions:
             controller = NSHostingController(
-                rootView: AnyView(PermissionsPage()
+                rootView: AnyView(PermissionsPage(settings: settings)
                     .frame(width: Self.contentWidth, height: 330)))
         case .about:
             controller = NSHostingController(
-                rootView: AnyView(AboutPage()
+                rootView: AnyView(AboutPage(settings: settings)
                     .frame(width: Self.contentWidth, height: 260)))
         }
         controller.sizingOptions = .preferredContentSize

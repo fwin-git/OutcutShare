@@ -55,6 +55,31 @@ Keys: `settings.general.language`, `settings.general.languageSystem`,
 `settings.general.languageCaption`. `L10n` gains `supportedLocales` and
 `nativeLanguageName(for:)`.
 
+### Live switching (added 2026-07-30)
+
+A language change applies immediately, no relaunch: `L10n.languageOverride`
+(set from `appLanguage.didSet` before `notifyChange()`) feeds every
+`L10n.string` call without an explicit `localeIdentifier`; "System
+default" resolves via `systemPreferredLocale()` (CFPreferences global-
+domain read — process-cached `Locale` state would report the launch
+language). Surfaces:
+
+- SwiftUI settings pages re-render through their observed store;
+  `PermissionsPage`/`AboutPage` observe it solely for this.
+- Settings window tab labels/title: `SettingsWindowController` watches
+  `settingsChangedNotification`, and on a language change removes and
+  re-adds the (unchanged) tab items with new labels — toolbar buttons
+  copy labels at insertion — deferred one runloop to avoid re-entering
+  the picker's action.
+- Status menu: `relocalize()` re-resolves all static item titles on every
+  `menuNeedsUpdate` (dynamic ones were already re-set in `refresh()`).
+- Hotbar: `refresh()` tracks the language and refits the panel (label
+  widths change).
+- Permissions window re-applies its title per `show()`.
+
+System-provided panels (color picker, open/save) keep the launch language
+until relaunch — the caption says so.
+
 ## Applying the scale to the bar
 
 - `HotbarModel` gains `@Published var scale: CGFloat = 1`. Both

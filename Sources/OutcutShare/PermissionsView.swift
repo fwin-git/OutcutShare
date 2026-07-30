@@ -162,7 +162,6 @@ final class PermissionsWindowController {
                 self?.window?.close()
             })
             let window = NSWindow(contentViewController: hosting)
-            window.title = L10n.string(.permissionsWindowTitle)
             window.styleMask = [.titled, .closable]
             window.isReleasedWhenClosed = false
             window.center()
@@ -174,6 +173,8 @@ final class PermissionsWindowController {
             }
         }
         model.startPolling()
+        // Re-applied per show so a live language change reaches the title.
+        window?.title = L10n.string(.permissionsWindowTitle)
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
     }
