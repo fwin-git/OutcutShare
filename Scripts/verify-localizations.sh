@@ -5,7 +5,7 @@ app="${1:?usage: Scripts/verify-localizations.sh <app-path>}"
 resources="$app/Contents/Resources"
 executable="$app/Contents/MacOS/OutcutShare"
 
-locales=(en de fr es zh-Hans ja)
+locales=(en de fr es zh-Hans ja pt-BR ko zh-Hant it)
 expected=(
     "Select Region & Share"
     "Bereich auswählen und teilen"
@@ -13,6 +13,10 @@ expected=(
     "Seleccionar región y compartir"
     "选择区域并共享"
     "範囲を選択して共有"
+    "Selecionar região e compartilhar"
+    "영역 선택 및 공유"
+    "選取區域並分享"
+    "Seleziona area e condividi"
 )
 
 [[ -x "$executable" ]] || {

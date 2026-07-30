@@ -20,7 +20,10 @@ final class LocalizationCatalogTests: XCTestCase {
         let value: String
     }
 
-    private let supportedLocales = Set(["en", "de", "fr", "es", "zh-Hans", "ja"])
+    private let supportedLocales = Set([
+        "en", "de", "fr", "es", "zh-Hans", "ja",
+        "pt-BR", "ko", "zh-Hant", "it",
+    ])
 
     func testEveryAppStringIsFinalizedForEverySupportedLocale() throws {
         let catalog = try loadCatalog(named: "Localizable")

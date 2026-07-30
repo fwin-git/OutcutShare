@@ -12,6 +12,10 @@
 		<string>es</string>
 		<string>zh-Hans</string>
 		<string>ja</string>
+		<string>pt-BR</string>
+		<string>ko</string>
+		<string>zh-Hant</string>
+		<string>it</string>
 	</array>
 	<key>CFBundleExecutable</key>
 	<string>OutcutShare</string>

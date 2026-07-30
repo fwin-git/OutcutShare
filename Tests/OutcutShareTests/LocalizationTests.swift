@@ -86,7 +86,7 @@ final class LocalizationTests: XCTestCase {
             L10n.string(
                 .menuSelectRegion,
                 bundle: fixtureBundle,
-                localeIdentifier: "it"
+                localeIdentifier: "nl"
             ),
             "Select Region & Share"
         )
