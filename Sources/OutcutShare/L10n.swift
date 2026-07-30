@@ -154,6 +154,8 @@ enum L10n {
         case settingsAppearanceDimming = "settings.appearance.dimming"
         case settingsAppearanceDotted = "settings.appearance.dotted"
         case settingsAppearanceHighlightCursor = "settings.appearance.highlightCursor"
+        case settingsAppearanceHotbar = "settings.appearance.hotbar"
+        case settingsAppearanceHotbarSize = "settings.appearance.hotbarSize"
         case settingsAppearancePoints = "settings.appearance.points"
         case settingsAppearancePercent = "settings.appearance.percent"
         case settingsAppearanceShowBorder = "settings.appearance.showBorder"

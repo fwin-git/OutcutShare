@@ -357,6 +357,20 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    /// Multiplier on the hotbar's fonts, icons, tooltips and dropdown;
+    /// 1.0 (the original sizes) is the minimum.
+    @Published var hotbarScale: Double {
+        didSet {
+            let clamped = min(max(hotbarScale, 1.0), 2.0)
+            if clamped != hotbarScale {
+                hotbarScale = clamped
+                return
+            }
+            defaults.set(hotbarScale, forKey: "hotbarScale")
+            notifyChange()
+        }
+    }
+
     /// Floating live preview of the shared output ("what viewers see"),
     /// toggled from the hotbar. Off by default.
     @Published var previewWindowEnabled: Bool {
@@ -515,6 +529,8 @@ final class SettingsStore: ObservableObject {
         self.zoomFactor = defaults.object(forKey: "zoomFactor") == nil
             ? 2.0 : defaults.double(forKey: "zoomFactor")
         self.hotbarEnabled = defaults.bool(forKey: "hotbarEnabled")
+        self.hotbarScale = defaults.object(forKey: "hotbarScale") == nil
+            ? 1.0 : defaults.double(forKey: "hotbarScale")
         self.previewWindowEnabled = defaults.bool(forKey: "previewWindowEnabled")
         self.shareWindowTitle = defaults.string(forKey: "shareWindowTitle")
             ?? Self.defaultShareWindowTitle

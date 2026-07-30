@@ -639,6 +639,19 @@ private struct AppearancePage: View {
                               range: 0...30)
                     .disabled(!settings.showRegionBorder)
             }
+            Section(L10n.string(.settingsAppearanceHotbar)) {
+                LabeledContent(L10n.string(.settingsAppearanceHotbarSize)) {
+                    HStack {
+                        Slider(value: $settings.hotbarScale, in: 1.0...2.0)
+                        Text(L10n.string(
+                            .settingsAppearancePercent,
+                            arguments: [Int((settings.hotbarScale * 100).rounded())]
+                        ))
+                            .monospacedDigit()
+                            .frame(width: 44, alignment: .trailing)
+                    }
+                }
+            }
         }
         .formStyle(.grouped)
     }
@@ -769,7 +782,7 @@ final class SettingsWindowController {
         case .appearance:
             controller = NSHostingController(
                 rootView: AnyView(AppearancePage(settings: settings)
-                    .frame(width: Self.contentWidth, height: 780)))
+                    .frame(width: Self.contentWidth, height: 870)))
         case .shortcuts:
             controller = NSHostingController(
                 rootView: AnyView(ShortcutsPage(settings: settings)

@@ -79,6 +79,7 @@ windows there like on any screen.
 | Show click ripples | Click animation — viewers only | on |
 | Show border around region | Frame just outside the region | on |
 | Border color / style / thickness / radius | Any color incl. opacity · solid, dashed, dotted · 1–10 pt · 0–30 pt | red · dashed · 3 pt · 8 pt |
+| Hotbar size | Scales the hotbar's icons, text, tooltips and dropdown, 100–200 % | 100 % |
 
 Dimming and border are local-only: they're excluded from what viewers see.
 

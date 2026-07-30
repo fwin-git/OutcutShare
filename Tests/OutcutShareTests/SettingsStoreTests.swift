@@ -240,6 +240,22 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(store.borderThickness, 10, accuracy: 0.0001)
     }
 
+    func testHotbarScaleDefaultAndPersistence() {
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertEqual(store.hotbarScale, 1.0, accuracy: 0.0001)
+        store.hotbarScale = 1.5
+        let reloaded = SettingsStore(defaults: defaults)
+        XCTAssertEqual(reloaded.hotbarScale, 1.5, accuracy: 0.0001)
+    }
+
+    func testHotbarScaleClamped() {
+        let store = SettingsStore(defaults: defaults)
+        store.hotbarScale = 0.5
+        XCTAssertEqual(store.hotbarScale, 1.0, accuracy: 0.0001)
+        store.hotbarScale = 3.0
+        XCTAssertEqual(store.hotbarScale, 2.0, accuracy: 0.0001)
+    }
+
     func testHexColorRoundTrip() {
         let color = NSColor(hexRGBA: "#3366CC80")
         XCTAssertNotNil(color)
