@@ -24,6 +24,15 @@ Locale identifiers are part of the bundle contract. Keep the exact identifiers:
 script localizations. Do not replace them with broader or region-specific
 identifiers without intentionally adding a new supported locale.
 
+## Choosing the language
+
+The app follows the system language by default. Settings → General →
+System offers a Language dropdown (languages listed as endonyms) that
+writes the standard per-app `AppleLanguages` override and applies live via
+`L10n.languageOverride` — menus, windows and the hotbar switch without a
+relaunch; system-provided panels follow after one. "System default"
+removes the override.
+
 ## How localized copy reaches the app
 
 The source of truth is split between the typed Swift key list and two Apple
