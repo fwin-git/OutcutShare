@@ -14,10 +14,9 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate {
         var errorDescription: String? {
             switch self {
             case .permissionDenied:
-                return "OutcutShare needs Screen Recording permission. "
-                    + "Grant it under System Settings → Privacy & Security → Screen Recording, then try again."
+                return L10n.string(.errorCapturePermission)
             case .displayNotFound:
-                return "The display containing the region is no longer available."
+                return L10n.string(.errorCaptureDisplayUnavailable)
             }
         }
     }

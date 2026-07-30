@@ -41,7 +41,7 @@ struct HotbarActions {
     var drag: () -> Void
     var endDrag: () -> Void
     /// Demo runs only: resolved bar-item rects (hosting-view coordinates).
-    var reportItemBounds: ([String: CGRect]) -> Void = { _ in }
+    var reportItemBounds: ([DemoControlID: CGRect]) -> Void = { _ in }
 }
 
 /// One row of the follow dropdown, with its own hover highlight.
@@ -86,6 +86,14 @@ private struct BarItemBounds: PreferenceKey {
     }
 }
 
+private struct DemoBarItemBounds: PreferenceKey {
+    static let defaultValue: [DemoControlID: Anchor<CGRect>] = [:]
+    static func reduce(value: inout [DemoControlID: Anchor<CGRect>],
+                       nextValue: () -> [DemoControlID: Anchor<CGRect>]) {
+        value.merge(nextValue()) { $1 }
+    }
+}
+
 struct HotbarView: View {
     /// Sentinel for hover exits that must clear whatever label is showing.
     static let anyLabel = "__any__"
@@ -126,12 +134,16 @@ struct HotbarView: View {
         .overlayPreferenceValue(BarItemBounds.self) { anchors in
             GeometryReader { geo in
                 flyouts(anchors: anchors, geo: geo)
-                    // Demo choreography clicks real buttons — it needs their
-                    // resolved rects (inert outside demo runs).
+            }
+        }
+        .overlayPreferenceValue(DemoBarItemBounds.self) { anchors in
+            GeometryReader { geo in
+                Color.clear
                     .onChange(of: anchors.mapValues { geo[$0] }, initial: true) { _, rects in
                         if DemoState.active { actions.reportItemBounds(rects) }
                     }
             }
+            .allowsHitTesting(false)
         }
     }
 
@@ -142,7 +154,7 @@ struct HotbarView: View {
                          geo: GeometryProxy) -> some View {
         let barRect = anchors["__bar__"].map { geo[$0] }
             ?? CGRect(origin: .zero, size: geo.size)
-        let chevron = anchors["Choose follow mode"].map { geo[$0] }
+        let chevron = anchors[L10n.string(.hotbarChooseFollowMode)].map { geo[$0] }
         return ZStack(alignment: .topLeading) {
             if model.followMenuOpen && !model.regionless {
                 if model.vertical {
@@ -224,6 +236,7 @@ struct HotbarView: View {
 
     @ViewBuilder
     private var barItems: some View {
+            let moveRotateHelp = L10n.string(.hotbarMoveRotate)
             Image(systemName: "line.3.horizontal")
                 .foregroundStyle(.secondary)
                 .frame(width: 18)
@@ -248,32 +261,38 @@ struct HotbarView: View {
                             actions.endDrag()
                         }
                 )
-                .onHover { hover(hover: $0, label: "Move (drag) / rotate (click)") }
+                .onHover { hover(hover: $0, label: moveRotateHelp) }
                 .anchorPreference(key: BarItemBounds.self, value: .bounds) {
-                    ["Move (drag) / rotate (click)": $0]
+                    [moveRotateHelp: $0]
                 }
 
-            barButton("stop.fill", help: "Stop sharing", action: actions.stop)
+            barButton("stop.fill", help: L10n.string(.menuStopSharing), action: actions.stop)
             barButton(model.isPaused ? "play.fill" : "pause.fill",
-                      help: model.isPaused ? "Resume sharing" : "Pause sharing",
+                      help: model.isPaused
+                        ? L10n.string(.menuResumeSharing)
+                        : L10n.string(.menuPauseSharing),
                       active: model.isPaused, action: actions.pause)
+            let recording = HotbarRecordingPresentation(isRecording: model.isRecording)
             barButton(model.isRecording ? "stop.circle.fill" : "record.circle",
-                      help: model.isRecording ? "Stop recording" : "Start recording",
+                      help: recording.help,
+                      demoID: recording.controlID,
                       tint: model.isRecording ? .red : nil, action: actions.record)
-            barButton("camera", help: "Screenshot shared region",
+            barButton("camera", help: L10n.string(.hotbarScreenshot),
+                      demoID: .hotbarScreenshot,
                       action: actions.screenshot)
-            barButton(ocrSymbol, help: "Copy text in region (OCR)",
+            barButton(ocrSymbol, help: L10n.string(.hotbarCopyText),
                       action: actions.copyText)
             if !model.regionless {
-                barButton("cursorarrow.rays", help: "Presenter highlights",
+                barButton("cursorarrow.rays", help: L10n.string(.hotbarPresenterHighlights),
                           active: model.highlightsOn, action: actions.highlights)
             }
-            barButton("eye", help: "Preview shared output",
+            barButton("eye", help: L10n.string(.hotbarPreview),
                       active: model.previewOn, action: actions.preview)
             if !model.regionless {
-                barButton("arrow.up.left.and.arrow.down.right", help: "Move / resize region",
+                barButton("arrow.up.left.and.arrow.down.right",
+                          help: L10n.string(.hotbarMoveResize),
                           action: actions.adjust)
-                barButton("plus.square.on.square", help: "Save region as preset",
+                barButton("plus.square.on.square", help: L10n.string(.hotbarSavePreset),
                           action: actions.savePreset)
                 followControl
             }
@@ -290,17 +309,17 @@ struct HotbarView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
-            .onHover { hover(hover: $0, label: "Hide hotbar") }
+            .onHover { hover(hover: $0, label: L10n.string(.hotbarHide)) }
             .anchorPreference(key: BarItemBounds.self, value: .bounds) {
-                ["Hide hotbar": $0]
+                [L10n.string(.hotbarHide): $0]
             }
     }
 
     private var ocrSymbol: String {
         switch model.ocrState {
-        case .done: return "checkmark"
-        case .empty: return "questionmark"
-        default: return "text.viewfinder"
+        case .done: "checkmark"
+        case .empty: "questionmark"
+        default: "text.viewfinder"
         }
     }
 
@@ -309,8 +328,12 @@ struct HotbarView: View {
     @ViewBuilder
     private var followControl: some View {
         let scope = barButton("scope",
-                              help: model.followOn ? "Stop following"
-                                                   : "Follow \(shortLabel(model.followTarget))",
+                              help: model.followOn
+                                ? L10n.string(.hotbarStopFollowing)
+                                : L10n.string(
+                                    .hotbarFollowTarget,
+                                    arguments: [shortLabel(model.followTarget)]
+                                ),
                               active: model.followOn, action: actions.follow)
         let menuButton = Button(action: actions.followMenu) {
             HStack(spacing: 2) {
@@ -328,9 +351,9 @@ struct HotbarView: View {
         .buttonStyle(.plain)
         .foregroundStyle(model.followOn ? AnyShapeStyle(Color.accentColor)
                                         : AnyShapeStyle(.secondary))
-        .onHover { hover(hover: $0, label: "Choose follow mode") }
+        .onHover { hover(hover: $0, label: L10n.string(.hotbarChooseFollowMode)) }
         .anchorPreference(key: BarItemBounds.self, value: .bounds) {
-            ["Choose follow mode": $0]
+            [L10n.string(.hotbarChooseFollowMode): $0]
         }
 
         if model.vertical {
@@ -362,14 +385,17 @@ struct HotbarView: View {
     }
 
     private func shortLabel(_ mode: FollowMode) -> String {
-        mode == .cursor ? "Cursor" : "Window"
+        mode == .cursor
+            ? L10n.string(.hotbarTargetCursor)
+            : L10n.string(.hotbarTargetWindow)
     }
 
     private func hover(hover: Bool, label: String) {
         actions.hover(hover, label)
     }
 
-    private func barButton(_ symbol: String, help: String, active: Bool = false,
+    private func barButton(_ symbol: String, help: String,
+                           demoID: DemoControlID? = nil, active: Bool = false,
                            tint: Color? = nil, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
@@ -380,6 +406,10 @@ struct HotbarView: View {
         .foregroundStyle(tint ?? (active ? Color.accentColor : Color.primary))
         .onHover { hover(hover: $0, label: help) }
         .anchorPreference(key: BarItemBounds.self, value: .bounds) { [help: $0] }
+        .anchorPreference(key: DemoBarItemBounds.self, value: .bounds) { anchor in
+            guard let demoID else { return [:] }
+            return [demoID: anchor]
+        }
     }
 }
 
@@ -405,7 +435,7 @@ final class HotbarController {
     private var barActions: HotbarActions?
     /// Bar-item rects in hosting-view coordinates, reported by the view
     /// during demo runs — resolved to screen rects on demand.
-    private var demoLocalAnchors: [String: CGRect] = [:]
+    private var demoLocalAnchors: [DemoControlID: CGRect] = [:]
     /// Footprint of the horizontal bar — the auto-side decision always
     /// reasons about whether THAT would fit below/above.
     private var lastHorizontalSize: CGSize?
@@ -491,11 +521,11 @@ final class HotbarController {
         return panel.frame
     }
 
-    /// Demo choreography: a bar button's current screen rect, by its help
-    /// string — resolved on demand so panel moves never go stale.
-    func demoItemRect(_ help: String) -> CGRect? {
+    /// Demo choreography: a bar button's current screen rect, addressed
+    /// independently from its localized visible help text.
+    func demoItemRect(_ id: DemoControlID) -> CGRect? {
         guard let panel, panel.isVisible,
-              let local = demoLocalAnchors[help] else { return nil }
+              let local = demoLocalAnchors[id] else { return nil }
         return Geometry.demoAnchorScreenRect(local: local, panelFrame: panel.frame)
     }
 

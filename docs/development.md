@@ -13,6 +13,10 @@ first *Apple Development* identity when one exists (override with
 `make app CODESIGN_ID=…`) so the Screen Recording grant survives rebuilds;
 otherwise it falls back to ad-hoc signing.
 
+Every new or changed user-facing feature must ship with finalized copy for all
+supported languages. See [localization](localization.md) for the catalogs,
+runtime lookup, contributor workflow and verification gates.
+
 ## Debug flags
 
 End-to-end verification without clicking through the UI:

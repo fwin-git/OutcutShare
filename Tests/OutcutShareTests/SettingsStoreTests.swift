@@ -69,13 +69,29 @@ final class SettingsStoreTests: XCTestCase {
 
     @MainActor
     func testPauseScreenContentResolution() {
-        // No customization → stock text, no image.
-        let stock = PauseScreenContent.resolve(message: "", imagePath: "")
-        XCTAssertEqual(stock.text, "Sharing is paused")
+        var defaultMessageRequests = 0
+        let localizedDefault = {
+            defaultMessageRequests += 1
+            return "Die Freigabe ist pausiert"
+        }
+        let stock = PauseScreenContent.resolve(
+            message: "",
+            imagePath: "",
+            defaultMessage: localizedDefault
+        )
+        XCTAssertEqual(stock.text, "Die Freigabe ist pausiert")
         XCTAssertNil(stock.image)
-        // Custom message.
-        XCTAssertEqual(PauseScreenContent.resolve(message: " brb ☕️ ", imagePath: "").text,
-                       "brb ☕️")
+        XCTAssertEqual(defaultMessageRequests, 1)
+
+        XCTAssertEqual(
+            PauseScreenContent.resolve(
+                message: " brb ☕️ ",
+                imagePath: "",
+                defaultMessage: localizedDefault
+            ).text,
+            "brb ☕️"
+        )
+        XCTAssertEqual(defaultMessageRequests, 1)
         // An image path that can't be loaded falls back to the text screen.
         let broken = PauseScreenContent.resolve(message: "hi", imagePath: "/nope/missing.png")
         XCTAssertNil(broken.image)

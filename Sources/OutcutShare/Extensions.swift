@@ -6,9 +6,9 @@ enum AppVersion {
         guard Bundle.main.bundlePath.hasSuffix(".app"),
               let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
               let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String else {
-            return "dev build"
+            return L10n.string(.appVersionDevBuild)
         }
-        return "\(version) (\(build))"
+        return L10n.string(.appVersionBuild, arguments: [version, build])
     }
 }
 

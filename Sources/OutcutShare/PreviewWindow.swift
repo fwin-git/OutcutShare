@@ -199,7 +199,7 @@ final class PreviewWindowController: NSObject {
         let grabConfig = NSImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
             .applying(.init(paletteColors: [chipForeground]))
         grabber?.image = NSImage(systemSymbolName: "line.3.horizontal",
-                                 accessibilityDescription: "Move preview")?
+                                 accessibilityDescription: L10n.string(.previewMove))?
             .withSymbolConfiguration(grabConfig)
         refresh()
         updateControlButton()
@@ -208,13 +208,15 @@ final class PreviewWindowController: NSObject {
     /// Syncs the pause button with the session state (called via notifyUI).
     func refresh() {
         let paused = session?.isPaused ?? false
+        let pauseHelp = paused
+            ? L10n.string(.menuResumeSharing)
+            : L10n.string(.menuPauseSharing)
         let config = NSImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
             .applying(.init(paletteColors: [paused ? .systemYellow : chipForeground]))
         pauseButton?.image = NSImage(systemSymbolName: paused ? "play.fill" : "pause.fill",
-                                     accessibilityDescription: paused ? "Resume sharing"
-                                                                      : "Pause sharing")?
+                                     accessibilityDescription: pauseHelp)?
             .withSymbolConfiguration(config)
-        pauseButton?.toolTip = paused ? "Resume sharing" : "Pause sharing"
+        pauseButton?.toolTip = pauseHelp
     }
 
     /// Called from the capture sample queue (same pattern as LiveFrameWindow).
@@ -292,7 +294,7 @@ final class PreviewWindowController: NSObject {
         guard on != (pullOutHintLayer != nil) else { return }
         if on, let view = panel?.contentView {
             let layer = Self.makeEdgeGlow(color: .controlAccentColor,
-                                          caption: "Drag the window out of the screen",
+                                          caption: L10n.string(.monitorDragWindowOut),
                                           bounds: view.bounds,
                                           scale: panel?.backingScaleFactor ?? 2)
             view.layer?.addSublayer(layer)
@@ -309,7 +311,7 @@ final class PreviewWindowController: NSObject {
         guard on != (controlExitHintLayer != nil) else { return }
         if on, let view = panel?.contentView {
             let layer = Self.makeEdgeGlow(color: .systemTeal,
-                                          caption: "Move to any edge of the screen to return",
+                                          caption: L10n.string(.monitorReturnAtEdge),
                                           bounds: view.bounds,
                                           scale: panel?.backingScaleFactor ?? 2)
             view.layer?.addSublayer(layer)
@@ -537,7 +539,7 @@ final class PreviewWindowController: NSObject {
         let grabConfig = NSImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
             .applying(.init(paletteColors: [.white]))
         grabber.image = NSImage(systemSymbolName: "line.3.horizontal",
-                                accessibilityDescription: "Move preview")?
+                                accessibilityDescription: L10n.string(.previewMove))?
             .withSymbolConfiguration(grabConfig)
         grabber.wantsLayer = true
         grabber.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.55).cgColor
@@ -545,7 +547,7 @@ final class PreviewWindowController: NSObject {
         grabber.frame = CGRect(x: Self.cornerMargin, y: 0,
                                width: Self.cornerControlSize, height: Self.cornerControlSize)
         grabber.autoresizingMask = [.minYMargin]
-        grabber.toolTip = "Move preview"
+        grabber.toolTip = L10n.string(.previewMove)
         contentView.addSubview(grabber)
         self.grabber = grabber
 
@@ -734,11 +736,11 @@ final class PreviewWindowController: NSObject {
         let config = NSImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
             .applying(.init(paletteColors: [on ? .systemYellow : chipForeground]))
         controlButton?.image = NSImage(systemSymbolName: "cursorarrow",
-                                       accessibilityDescription: "Control the monitor")?
+                                       accessibilityDescription: L10n.string(.monitorControl))?
             .withSymbolConfiguration(config)
         controlButton?.toolTip = on
-            ? "Control mode on — clicks pass through to the monitor"
-            : "Control the monitor (clicks pass through)"
+            ? L10n.string(.monitorControlOn)
+            : L10n.string(.monitorControlOff)
     }
 }
 

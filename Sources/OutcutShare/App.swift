@@ -23,6 +23,14 @@ enum SettingsMigration {
 struct OutcutShareApp {
     @MainActor
     static func main() {
+        let localizationPrefix = "--localization-test="
+        if let argument = CommandLine.arguments.first(where: {
+            $0.hasPrefix(localizationPrefix)
+        }) {
+            let locale = String(argument.dropFirst(localizationPrefix.count))
+            print(L10n.string(.menuSelectRegion, localeIdentifier: locale))
+            return
+        }
         SettingsMigration.run()
         if let vdArg = CommandLine.arguments.first(where: { $0.hasPrefix("--vd-test") }) {
             virtualDisplayTest(forceHiDPI: vdArg.hasSuffix("=2x"))

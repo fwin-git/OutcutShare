@@ -53,7 +53,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                                    in: settings.presets) {
                 session.sharePreset(preset)
             } else {
-                presentURLError("No preset matches \"\(name ?? id ?? "")\".")
+                presentURLError(L10n.string(
+                    .alertURLNoPreset,
+                    arguments: [name ?? id ?? ""]
+                ))
             }
         case .stop: session.stop()
         case .togglePause: session.togglePause()
@@ -61,7 +64,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .follow(let mode): session.setFollow(mode: mode)
         case .shareMode(let mode):
             guard session.isIdle else {
-                presentURLError("Stop sharing first to switch the share mode.")
+                presentURLError(L10n.string(.alertURLStopSharingFirst))
                 return
             }
             settings.shareMode = mode
@@ -81,9 +84,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func presentURLError(_ message: String) {
         let alert = NSAlert()
-        alert.messageText = "Outcut Share"
+        alert.messageText = L10n.string(.alertAppTitle)
         alert.informativeText = message
-        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: L10n.string(.commonOK))
         NSApp.activate(ignoringOtherApps: true)
         alert.runModal()
     }

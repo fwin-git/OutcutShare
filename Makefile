@@ -3,6 +3,8 @@ BINARY   := .build/release/OutcutShare
 ASSETS   := Resources/Assets.xcassets
 ASSET_FILES := $(shell find $(ASSETS) -type f)
 ASSET_INFO := build/AppIconInfo.plist
+LOCALIZATION_CATALOGS := Resources/Localization/Localizable.xcstrings \
+	Resources/Localization/InfoPlist.xcstrings
 
 VERSION  ?= 1.15.0
 BUILD    := $(shell git rev-list --count HEAD 2>/dev/null || echo 0)
@@ -21,13 +23,18 @@ endif
 
 app: $(APP)
 
-$(APP): Support/Info.plist $(ASSET_FILES) $(shell find Sources -type f) Package.swift Makefile
+$(APP): Support/Info.plist $(ASSET_FILES) $(LOCALIZATION_CATALOGS) \
+		$(shell find Sources -type f) Package.swift Makefile Scripts/verify-localizations.sh
 	swift build -c release
 	rm -rf $(APP)
 	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources
 	cp $(BINARY) $(APP)/Contents/MacOS/OutcutShare
 	cp Support/Info.plist $(APP)/Contents/Info.plist
 	cp Resources/DemoBackdrop.jpg $(APP)/Contents/Resources/
+	xcrun xcstringstool compile Resources/Localization/Localizable.xcstrings \
+		--output-directory $(APP)/Contents/Resources
+	xcrun xcstringstool compile Resources/Localization/InfoPlist.xcstrings \
+		--output-directory $(APP)/Contents/Resources
 	xcrun actool \
 		--compile $(APP)/Contents/Resources \
 		--platform macosx \
@@ -44,6 +51,7 @@ $(APP): Support/Info.plist $(ASSET_FILES) $(shell find Sources -type f) Package.
 		-c "Set :CFBundleShortVersionString $(VERSION)" \
 		-c "Set :CFBundleVersion $(BUILD).$(HASH)" \
 		$(APP)/Contents/Info.plist
+	Scripts/verify-localizations.sh $(APP)
 	codesign --force -s "$(CODESIGN_ID)" $(APP)
 	@echo "Built $(APP) v$(VERSION) ($(BUILD).$(HASH), signed as $(CODESIGN_ID))"
 

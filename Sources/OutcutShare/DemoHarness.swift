@@ -734,11 +734,11 @@ final class DemoDirector {
 
         // Beat 1: screenshot from the hotbar; the card folds out beneath it.
         keystrokeHUD?.show(key: "Screenshot", caption: "One click on the hotbar")
-        guard let camera = session.demoHotbarItemRect("Screenshot shared region") else {
+        guard let camera = session.demoHotbarItemRect(.hotbarScreenshot) else {
             throw DemoError.missingDemoWindow
         }
         await driver.click(at: CGPoint(x: camera.midX, y: camera.midY))
-        let image = try await waitForCardItem("__image__")
+        let image = try await waitForCardItem(.captureImage)
         await driver.move(to: CGPoint(x: image.midX, y: image.midY), over: 0.5)
         await driver.pause(1.0)
 
@@ -756,7 +756,7 @@ final class DemoDirector {
 
         // Beat 3: record the region.
         keystrokeHUD?.show(key: "Record", caption: "The region straight to .mp4")
-        guard let record = session.demoHotbarItemRect("Start recording") else {
+        guard let record = session.demoHotbarItemRect(.hotbarRecording) else {
             throw DemoError.missingDemoWindow
         }
         await driver.click(at: CGPoint(x: record.midX, y: record.midY))
@@ -773,22 +773,22 @@ final class DemoDirector {
                               over: 1.1)
         }
         await driver.pause(0.7)
-        guard let stop = session.demoHotbarItemRect("Stop recording") else {
+        guard let stop = session.demoHotbarItemRect(.hotbarRecording) else {
             throw DemoError.missingDemoWindow
         }
         await driver.click(at: CGPoint(x: stop.midX, y: stop.midY))
-        let video = try await waitForCardItem("__image__")
+        let video = try await waitForCardItem(.captureImage)
         await driver.move(to: CGPoint(x: video.midX, y: video.midY), over: 0.5)
         await driver.pause(0.6)
 
         // Beat 4: trim right on the card — the handles scrub the preview.
         keystrokeHUD?.show(key: "Trim", caption: "Cut it right on the card")
-        guard let scissors = session.demoCardItemRect("Trim recording") else {
+        guard let scissors = session.demoCardItemRect(.captureTrim) else {
             throw DemoError.missingDemoWindow
         }
         await driver.click(at: CGPoint(x: scissors.midX, y: scissors.midY))
         await driver.pause(1.2) // the card grows, the filmstrip loads
-        guard let strip = session.demoCardItemRect("__timeline__") else {
+        guard let strip = session.demoCardItemRect(.captureTimeline) else {
             throw DemoError.missingDemoWindow
         }
         // The strip's gesture grabs the nearer handle: right end → out.
@@ -806,7 +806,7 @@ final class DemoDirector {
                           over: 1.0, dragging: true)
         await driver.release(at: CGPoint(x: strip.minX + strip.width * 0.18, y: stripY))
         await driver.pause(0.5)
-        guard let save = session.demoCardItemRect("Save trimmed copy") else {
+        guard let save = session.demoCardItemRect(.captureSaveTrimmedCopy) else {
             throw DemoError.missingDemoWindow
         }
         await driver.click(at: CGPoint(x: save.midX, y: save.midY))
@@ -961,11 +961,11 @@ final class DemoDirector {
     }
 
     /// Polls a card anchor until the card is up and its slide-in settled.
-    private func waitForCardItem(_ key: String) async throws -> CGRect {
+    private func waitForCardItem(_ id: DemoControlID) async throws -> CGRect {
         var last: CGRect?
         for _ in 0..<60 {
             try? await Task.sleep(nanoseconds: 100_000_000)
-            if let rect = session.demoCardItemRect(key) {
+            if let rect = session.demoCardItemRect(id) {
                 if let l = last, l == rect { return rect } // two stable reads
                 last = rect
             }

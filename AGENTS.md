@@ -181,6 +181,12 @@ Accessibility) — anything drag/hover-based needs the user's hands.
 
 - Swift 5 language mode (`nonisolated(unsafe)` where AppKit/queues demand),
   `@MainActor` on UI classes, zero warnings policy.
+- **Every new or changed user-facing feature must be properly localized for
+  every supported language in the same change.** Add visible copy through
+  `L10n.Key` and `Resources/Localization/Localizable.xcstrings`, never as a
+  production string literal; all locale values must be finalized and preserve
+  placeholder signatures. See `docs/localization.md` for the complete workflow
+  and verification gates.
 - Settings: every option is a `@Published` var on `SettingsStore` with
   `didSet` → `defaults.set` + `notifyChange()`; enums are `String`-raw.
   Live consumers observe `settingsChangedNotification`. Session-applied

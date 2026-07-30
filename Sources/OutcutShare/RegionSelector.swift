@@ -365,7 +365,10 @@ private final class SelectionView: NSView {
     }
 
     private func drawSizeLabel(for selection: CGRect) {
-        let text = "\(Int(selection.width)) × \(Int(selection.height))"
+        let text = L10n.string(
+            .selectorDimensions,
+            arguments: [Int(selection.width), Int(selection.height)]
+        )
         let attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium),
             .foregroundColor: NSColor.white,
@@ -384,8 +387,8 @@ private final class SelectionView: NSView {
 
     private func drawHint() {
         let text = pickMode
-            ? "Click a window to share it — Space returns to drag selection, Esc cancels"
-            : "Drag to select — Space picks a window · hold ⇧ locks aspect · hold ⌃ snaps to standard sizes · Esc cancels"
+            ? L10n.string(.selectorPickWindow)
+            : L10n.string(.selectorDrag)
         let attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: 15, weight: .medium),
             .foregroundColor: NSColor.white,

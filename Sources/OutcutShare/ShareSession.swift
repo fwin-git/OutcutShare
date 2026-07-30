@@ -198,7 +198,7 @@ final class ShareSession {
                                systemAudio: settings.recordSystemAudio,
                                microphone: settings.recordMicrophone)
         } catch {
-            presentError(error, title: "Recording couldn't start")
+            presentError(error, title: L10n.string(.alertRecordingStartFailed))
             return
         }
         self.recorder = recorder
@@ -249,7 +249,7 @@ final class ShareSession {
                                    near: hotbar.currentFrame ?? currentRegionRect,
                                    on: currentScreen ?? NSScreen.screens.first)
             } catch {
-                presentError(error, title: "Screenshot couldn't be saved")
+                presentError(error, title: L10n.string(.alertScreenshotSaveFailed))
             }
         }
     }
@@ -259,14 +259,14 @@ final class ShareSession {
         hotbar.debugToggleFollowMenu()
     }
 
-    /// Demo choreography: screen rects of hotbar buttons / capture-card
-    /// items, keyed by their help strings (see DemoHarness).
-    func demoHotbarItemRect(_ help: String) -> CGRect? {
-        hotbar.demoItemRect(help)
+    /// Demo choreography: current control rects addressed by stable
+    /// technical identities rather than localized visible strings.
+    func demoHotbarItemRect(_ id: DemoControlID) -> CGRect? {
+        hotbar.demoItemRect(id)
     }
 
-    func demoCardItemRect(_ key: String) -> CGRect? {
-        resultPreview.demoItemRect(key)
+    func demoCardItemRect(_ id: DemoControlID) -> CGRect? {
+        resultPreview.demoItemRect(id)
     }
 
     /// Hotbar OCR: reads the current shared output and puts the recognized
@@ -360,11 +360,8 @@ final class ShareSession {
             }
         default:
             presentError(NSError(domain: "OutcutShare", code: 4, userInfo: [
-                NSLocalizedDescriptionKey: "The recording continues without the "
-                    + "microphone. Allow it under System Settings → Privacy & "
-                    + "Security → Microphone, or disable the mic toggle in "
-                    + "Settings → Recording."]),
-                title: "Microphone access is denied")
+                NSLocalizedDescriptionKey: L10n.string(.errorMicrophoneDeniedDescription)
+            ]), title: L10n.string(.alertMicrophoneDenied))
         }
     }
 
@@ -378,7 +375,7 @@ final class ShareSession {
             try mic.start()
             self.mic = mic
         } catch {
-            presentError(error, title: "Microphone couldn't start")
+            presentError(error, title: L10n.string(.alertMicrophoneStartFailed))
         }
     }
     private var activeMonitorSize: CGSize = .zero
@@ -531,7 +528,7 @@ final class ShareSession {
         do {
             let size = settings.virtualMonitorSize
             let vd = try VirtualDisplay(sizeInPoints: size, scale: 1,
-                                        name: "Outcut Share Monitor",
+                                        name: L10n.string(.virtualMonitorName),
                                         forceHiDPI: settings.crispOutput)
             virtualDisplay = vd
             var virtualScreen = try await vd.waitForScreen()
@@ -653,7 +650,8 @@ final class ShareSession {
             switch mode {
             case .virtualDisplay:
                 let vd = try VirtualDisplay(sizeInPoints: region.rect.size,
-                                            scale: sourceScale, name: "Outcut Share",
+                                            scale: sourceScale,
+                                            name: L10n.string(.virtualDisplayName),
                                             forceHiDPI: settings.crispOutput)
                 virtualDisplay = vd
                 let virtualScreen = try await vd.waitForScreen()
@@ -828,7 +826,7 @@ final class ShareSession {
         teardown()
         state = .idle
         if let error {
-            presentError(error, title: "Sharing stopped")
+            presentError(error, title: L10n.string(.alertSharingStopped))
         }
     }
 
@@ -896,7 +894,10 @@ final class ShareSession {
         }
     }
 
-    private func presentError(_ error: Error, title: String = "OutcutShare couldn't start sharing") {
+    private func presentError(
+        _ error: Error,
+        title: String = L10n.string(.alertSharingStartFailed)
+    ) {
         if case CaptureEngine.CaptureError.permissionDenied = error {
             onPermissionsNeeded?()
             return
@@ -905,7 +906,7 @@ final class ShareSession {
         alert.messageText = title
         alert.informativeText = error.localizedDescription
         NSApp.activate(ignoringOtherApps: true)
-        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: L10n.string(.commonOK))
         alert.runModal()
     }
 }

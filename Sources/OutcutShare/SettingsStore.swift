@@ -39,10 +39,10 @@ enum DragOutModifier: String, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .shift: return "⇧ Shift"
-        case .option: return "⌥ Option"
-        case .command: return "⌘ Command"
-        case .control: return "⌃ Control"
+        case .shift: return L10n.string(.modifierShift)
+        case .option: return L10n.string(.modifierOption)
+        case .command: return L10n.string(.modifierCommand)
+        case .control: return L10n.string(.modifierControl)
         }
     }
 
@@ -394,7 +394,9 @@ final class SettingsStore: ObservableObject {
         }
     }
 
-    static let defaultShareWindowTitle = "Outcut Share (Share Region)"
+    static var defaultShareWindowTitle: String {
+        L10n.string(.settingsGeneralShareWindowDefaultTitle)
+    }
 
     /// Title sharing apps show for the hidden share window in their window
     /// pickers. Empty/whitespace falls back to the default.

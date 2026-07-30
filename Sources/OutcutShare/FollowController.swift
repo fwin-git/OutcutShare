@@ -7,9 +7,9 @@ enum FollowMode: String, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .off: return "Off"
-        case .activeWindow: return "Active Window"
-        case .cursor: return "Cursor"
+        case .off: return L10n.string(.followOff)
+        case .activeWindow: return L10n.string(.followActiveWindow)
+        case .cursor: return L10n.string(.followCursor)
         }
     }
 }

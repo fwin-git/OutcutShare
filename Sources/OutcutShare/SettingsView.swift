@@ -7,27 +7,27 @@ enum SettingsTab: String, CaseIterable {
 
     var title: String {
         switch self {
-        case .general: return "General"
-        case .appearance: return "Appearance"
-        case .privacy: return "Privacy"
-        case .recording: return "Recording"
-        case .presets: return "Presets"
-        case .shortcuts: return "Shortcuts"
-        case .permissions: return "Permissions"
-        case .about: return "About"
+        case .general: return L10n.string(.settingsTabGeneral)
+        case .appearance: return L10n.string(.settingsTabAppearance)
+        case .privacy: return L10n.string(.settingsTabPrivacy)
+        case .recording: return L10n.string(.settingsTabRecording)
+        case .presets: return L10n.string(.settingsTabPresets)
+        case .shortcuts: return L10n.string(.settingsTabShortcuts)
+        case .permissions: return L10n.string(.settingsTabPermissions)
+        case .about: return L10n.string(.settingsTabAbout)
         }
     }
 
     var symbolName: String {
         switch self {
-        case .general: return "gearshape"
-        case .appearance: return "paintbrush"
-        case .privacy: return "hand.raised"
-        case .recording: return "record.circle"
-        case .presets: return "square.grid.2x2"
-        case .shortcuts: return "keyboard"
-        case .permissions: return "checkmark.shield"
-        case .about: return "info.circle"
+        case .general: "gearshape"
+        case .appearance: "paintbrush"
+        case .privacy: "hand.raised"
+        case .recording: "record.circle"
+        case .presets: "square.grid.2x2"
+        case .shortcuts: "keyboard"
+        case .permissions: "checkmark.shield"
+        case .about: "info.circle"
         }
     }
 }
@@ -47,45 +47,52 @@ private struct PrivacyPage: View {
 
     var body: some View {
         Form {
-            Section("Preview — while paused") {
+            Section(L10n.string(.settingsPrivacyPreviewPaused)) {
                 RegionPreviewCanvas(settings: settings, paused: true, showsCursor: false,
                                 showsNotificationDemo: true)
             }
-            Section("Pausing") {
-                Picker("When paused, viewers see", selection: $settings.pauseStyle) {
-                    Text("Frozen last frame").tag(PauseStyle.freeze)
-                    Text("Privacy screen").tag(PauseStyle.privacyScreen)
+            Section(L10n.string(.settingsPrivacyPausing)) {
+                Picker(L10n.string(.settingsPrivacyViewerSees), selection: $settings.pauseStyle) {
+                    Text(L10n.string(.settingsPrivacyPauseFreeze)).tag(PauseStyle.freeze)
+                    Text(L10n.string(.settingsPrivacyPausePrivacyScreen))
+                        .tag(PauseStyle.privacyScreen)
                 }
                 .pickerStyle(.menu)
-                TextField("Pause message", text: $settings.pauseMessage,
-                          prompt: Text("Sharing is paused"))
+                TextField(
+                    L10n.string(.settingsPrivacyPauseMessage),
+                    text: $settings.pauseMessage,
+                    prompt: Text(L10n.string(.settingsPrivacyPauseMessageDefault))
+                )
                 HStack {
-                    Text("Pause image")
+                    Text(L10n.string(.settingsPrivacyPauseImage))
                     Spacer()
                     Text(settings.pauseImagePath.isEmpty
-                         ? "None — icon and message" : settings.pauseImagePath)
+                         ? L10n.string(.settingsPrivacyNoneIconMessage)
+                         : settings.pauseImagePath)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
                     if !settings.pauseImagePath.isEmpty {
-                        Button("Clear") { settings.pauseImagePath = "" }
+                        Button(L10n.string(.commonClear)) { settings.pauseImagePath = "" }
                     }
-                    Button("Choose…") { choosePauseImage() }
+                    Button(L10n.string(.commonChoose)) { choosePauseImage() }
                 }
-                Text("An image replaces the icon and message on the privacy screen.")
+                Text(L10n.string(.settingsPrivacyPauseImageCaption))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Section("Notifications") {
-                Toggle("Hide notification banners from viewers", isOn: $settings.hideNotificationBanners)
-                Text("Banners still appear on your screen — they're removed only from the shared picture.")
+            Section(L10n.string(.settingsPrivacyNotifications)) {
+                Toggle(
+                    L10n.string(.settingsPrivacyHideNotifications),
+                    isOn: $settings.hideNotificationBanners
+                )
+                Text(L10n.string(.settingsPrivacyNotificationsCaption))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Section("Hidden apps") {
+            Section(L10n.string(.settingsPrivacyHiddenApps)) {
                 if settings.hiddenApps.isEmpty {
-                    Text("No hidden apps. Windows of apps you add here never appear "
-                         + "in the shared picture — viewers see what's behind them.")
+                    Text(L10n.string(.settingsPrivacyNoHiddenApps))
                         .foregroundStyle(.secondary)
                 }
                 ForEach(settings.hiddenApps) { app in
@@ -109,7 +116,7 @@ private struct PrivacyPage: View {
                         .foregroundStyle(.secondary)
                     }
                 }
-                Button("Add App…") { showAppPicker = true }
+                Button(L10n.string(.settingsPrivacyAddApp)) { showAppPicker = true }
             }
         }
         .formStyle(.grouped)
@@ -138,7 +145,7 @@ private struct GeneralPage: View {
                                     demoActive: demoModel.playing, demoModel: demoModel)
             } header: {
                 HStack {
-                    Text("Preview")
+                    Text(L10n.string(.commonPreview))
                     Spacer()
                     DemoProgressRing(progress: demoModel.progress,
                                      playing: demoModel.playing) {
@@ -147,85 +154,100 @@ private struct GeneralPage: View {
                     .focusEffectDisabled()
                 }
             }
-            Section("Sharing") {
-                Picker("Share as", selection: $settings.shareMode) {
-                    Text("Virtual Display").tag(ShareMode.virtualDisplay)
-                    Text("Hidden Window").tag(ShareMode.hiddenWindow)
-                    Text("Virtual Monitor").tag(ShareMode.virtualMonitor)
+            Section(L10n.string(.settingsGeneralSharing)) {
+                Picker(L10n.string(.settingsGeneralShareAs), selection: $settings.shareMode) {
+                    Text(L10n.string(.settingsGeneralVirtualDisplay))
+                        .tag(ShareMode.virtualDisplay)
+                    Text(L10n.string(.settingsGeneralHiddenWindow))
+                        .tag(ShareMode.hiddenWindow)
+                    Text(L10n.string(.settingsGeneralVirtualMonitor))
+                        .tag(ShareMode.virtualMonitor)
                 }
                 .pickerStyle(.menu)
                 Text(shareModeCaption)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if settings.shareMode == .virtualMonitor {
-                    Picker("Monitor resolution", selection: monitorResolutionBinding) {
+                    Picker(
+                        L10n.string(.settingsGeneralMonitorResolution),
+                        selection: monitorResolutionBinding
+                    ) {
                         ForEach(Self.monitorResolutions, id: \.self) { res in
-                            Text(res).tag(res)
+                            Text(verbatim: res).tag(res)
                         }
                     }
                     .pickerStyle(.menu)
-                    Picker("Layout grid with", selection: $settings.dragOutModifier) {
+                    Picker(
+                        L10n.string(.settingsGeneralLayoutGridWith),
+                        selection: $settings.dragOutModifier
+                    ) {
                         ForEach(DragOutModifier.allCases, id: \.self) { modifier in
                             Text(modifier.displayName).tag(modifier)
                         }
                     }
                     .pickerStyle(.menu)
-                    Text("In the preview: drag a window to move it — drop anywhere on the "
-                         + "monitor, or off the panel to bring it back to your real screen. "
-                         + "Hold \(settings.dragOutModifier.displayName) for the 3 × 3 layout "
-                         + "grid: drop in a cell, or sweep across cells to span a block. The "
-                         + "cursor button switches to control mode — clicks pass through to "
-                         + "the monitor.")
+                    Text(L10n.string(
+                        .settingsGeneralMonitorInstructions,
+                        arguments: [settings.dragOutModifier.displayName]
+                    ))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 if settings.shareMode == .hiddenWindow {
-                    TextField("Share window title", text: $settings.shareWindowTitle,
-                              prompt: Text(SettingsStore.defaultShareWindowTitle))
-                    Text("The name sharing apps list for the share window in their window pickers.")
+                    TextField(
+                        L10n.string(.settingsGeneralShareWindowTitle),
+                        text: $settings.shareWindowTitle,
+                        prompt: Text(SettingsStore.defaultShareWindowTitle)
+                    )
+                    Text(L10n.string(.settingsGeneralShareWindowCaption))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Toggle("Crisp text (Retina output)", isOn: $settings.crispOutput)
+                Toggle(L10n.string(.settingsGeneralCrispText), isOn: $settings.crispOutput)
                     .disabled(settings.shareMode == .hiddenWindow)
-                Text("Renders the shared monitor at 2× pixel density: sharpest with Retina "
-                     + "sources, reduces compression artifacts otherwise. Uses more bandwidth. "
-                     + "Virtual Display mode only.")
+                Text(L10n.string(.settingsGeneralCrispCaption))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Picker("Capture frame rate", selection: $settings.frameRate) {
-                    Text("30 fps").tag(30)
-                    Text("60 fps").tag(60)
+                Picker(
+                    L10n.string(.settingsGeneralCaptureFrameRate),
+                    selection: $settings.frameRate
+                ) {
+                    Text(L10n.string(.settingsGeneralFrameRate30)).tag(30)
+                    Text(L10n.string(.settingsGeneralFrameRate60)).tag(60)
                 }
                 .pickerStyle(.segmented)
-                Text("Applies to both the shared picture and recordings.")
+                Text(L10n.string(.settingsGeneralCaptureFrameRateCaption))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Section {
                 VStack(alignment: .leading, spacing: 12) {
-                    Picker("Follow", selection: $settings.followMode) {
+                    Picker(L10n.string(.menuFollow), selection: $settings.followMode) {
                         ForEach(FollowMode.allCases, id: \.self) { mode in
                             Text(mode.displayName).tag(mode)
                         }
                     }
                     .pickerStyle(.segmented)
-                    Picker("Movement", selection: $settings.followBehavior) {
-                        Text("Snap").tag(FollowBehavior.snap)
-                        Text("Smooth glide").tag(FollowBehavior.glide)
+                    Picker(L10n.string(.settingsGeneralMovement), selection: $settings.followBehavior) {
+                        Text(L10n.string(.settingsGeneralMovementSnap)).tag(FollowBehavior.snap)
+                        Text(L10n.string(.settingsGeneralMovementGlide)).tag(FollowBehavior.glide)
                     }
                     .pickerStyle(.segmented)
-                    Toggle("Resize region to the followed window", isOn: $settings.followResizes)
+                    Toggle(
+                        L10n.string(.settingsGeneralFollowResize),
+                        isOn: $settings.followResizes
+                    )
                 }
             } header: {
                 HStack {
-                    Text("Follow mode")
+                    Text(L10n.string(.settingsGeneralFollowMode))
                     Spacer()
                     Button {
                         demoModel.playing.toggle()
                     } label: {
-                        Label(demoModel.playing ? "Pause preview animation"
-                                                : "Play preview animation",
+                        Label(demoModel.playing
+                              ? L10n.string(.settingsGeneralPausePreview)
+                              : L10n.string(.settingsGeneralPlayPreview),
                               systemImage: demoModel.playing ? "pause.fill" : "play.fill")
                     }
                     .buttonStyle(.plain)
@@ -234,42 +256,40 @@ private struct GeneralPage: View {
                     .foregroundStyle(.tint)
                 }
             }
-            Section("Viewer zoom") {
-                Picker("Magnification", selection: $settings.zoomFactor) {
-                    Text("1.5×").tag(1.5)
-                    Text("2×").tag(2.0)
-                    Text("3×").tag(3.0)
+            Section(L10n.string(.settingsGeneralViewerZoom)) {
+                Picker(L10n.string(.settingsGeneralMagnification), selection: $settings.zoomFactor) {
+                    Text(verbatim: "1.5×").tag(1.5)
+                    Text(verbatim: "2×").tag(2.0)
+                    Text(verbatim: "3×").tag(3.0)
                 }
                 .pickerStyle(.segmented)
-                Text("Zoom In / Out (⌃⌥⌘Z) magnifies the shared picture toward your "
-                     + "cursor and gently tracks it — your own screen never changes.")
+                Text(L10n.string(.settingsGeneralZoomCaption))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Section("Companions") {
-                Toggle("Show floating hotbar while sharing", isOn: $settings.hotbarEnabled)
-                Text("Quick actions next to the region. Drag the ≡ grabber to reposition; ✕ hides it until re-enabled.")
+            Section(L10n.string(.settingsGeneralCompanions)) {
+                Toggle(L10n.string(.settingsGeneralHotbarToggle), isOn: $settings.hotbarEnabled)
+                Text(L10n.string(.settingsGeneralHotbarCaption))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Toggle("Show shared-output preview while sharing", isOn: $settings.previewWindowEnabled)
-                Text("A small floating window with exactly what viewers see — no need to keep "
-                     + "Zoom or Teams open. Docks next to the region, drags anywhere, resizes "
-                     + "within its aspect ratio; its corner button pauses sharing.")
+                Toggle(
+                    L10n.string(.settingsGeneralPreviewToggle),
+                    isOn: $settings.previewWindowEnabled
+                )
+                Text(L10n.string(.settingsGeneralPreviewCaption))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Section("System") {
-                Toggle("Launch at login", isOn: launchAtLoginBinding)
+            Section(L10n.string(.settingsGeneralSystem)) {
+                Toggle(L10n.string(.settingsGeneralLaunchAtLogin), isOn: launchAtLoginBinding)
                     .disabled(!LoginItem.available)
                 if !LoginItem.available {
-                    Text("Available when running the built app bundle.")
+                    Text(L10n.string(.settingsGeneralLaunchUnavailable))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Toggle("Show Dock icon while active", isOn: $settings.dockIconWhileActive)
-                Text("Adds the app to the Dock, ⌘-Tab switcher and Force Quit while "
-                     + "you're sharing or this settings window is open. Otherwise "
-                     + "Outcut Share stays a menu-bar-only app.")
+                Toggle(L10n.string(.settingsGeneralDockIcon), isOn: $settings.dockIconWhileActive)
+                Text(L10n.string(.settingsGeneralDockCaption))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -280,12 +300,14 @@ private struct GeneralPage: View {
     private var shareModeCaption: String {
         switch settings.shareMode {
         case .virtualDisplay:
-            return "The region appears as an extra monitor — pick it under “share screen”."
+            return L10n.string(.settingsGeneralShareModeVirtualDisplayCaption)
         case .hiddenWindow:
-            return "The region mirrors into an invisible window named “\(settings.effectiveShareWindowTitle)” — pick it under “share window”."
+            return L10n.string(
+                .settingsGeneralShareModeHiddenCaption,
+                arguments: [settings.effectiveShareWindowTitle]
+            )
         case .virtualMonitor:
-            return "A separate empty screen — drag windows onto it and only they are shared. "
-                + "A large preview panel shows what's on it; share it under “share screen”."
+            return L10n.string(.settingsGeneralShareModeVirtualMonitorCaption)
         }
     }
 
@@ -321,13 +343,16 @@ private struct PermissionsPage: View {
 
     var body: some View {
         Form {
-            Section("System permissions") {
+            Section(L10n.string(.settingsPermissionsSystem)) {
                 PermissionsStatusView(model: model)
                     .padding(.vertical, 4)
             }
             if model.status.allSatisfied {
                 Section {
-                    Label("All set — you're ready to share.", systemImage: "checkmark.seal.fill")
+                    Label(
+                        L10n.string(.permissionsReady),
+                        systemImage: "checkmark.seal.fill"
+                    )
                         .foregroundStyle(.green)
                 }
             }
@@ -350,7 +375,9 @@ private struct DemoProgressRing: View {
             ring
         }
         .buttonStyle(.plain)
-        .help(playing ? "Pause preview animation" : "Play preview animation")
+        .help(playing
+              ? L10n.string(.settingsGeneralPausePreview)
+              : L10n.string(.settingsGeneralPlayPreview))
     }
 
     private var ring: some View {
@@ -375,60 +402,68 @@ private struct RecordingPage: View {
 
     var body: some View {
         Form {
-            Section("Recording") {
+            Section(L10n.string(.settingsRecordingRecording)) {
                 HStack {
-                    Text("Save recordings to")
+                    Text(L10n.string(.settingsRecordingSaveRecordings))
                     Spacer()
-                    Text(settings.recordingFolder.isEmpty
-                         ? "~/Movies/OutcutShare" : settings.recordingFolder)
+                    Text(verbatim: settings.recordingFolder.isEmpty
+                         ? "~/Movies/OutcutShare"
+                         : settings.recordingFolder)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
-                    Button("Choose…") { chooseRecordingFolder() }
+                    Button(L10n.string(.commonChoose)) { chooseRecordingFolder() }
                 }
-                Text("Start/stop with ⌃⌥⌘R, the hotbar, or the menu bar while sharing. "
-                     + "Recordings use the capture frame rate set under General and pause "
-                     + "together with privacy pause.")
+                Text(L10n.string(.settingsRecordingRecordingCaption))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Toggle("Record system audio", isOn: $settings.recordSystemAudio)
-                Toggle("Record microphone", isOn: $settings.recordMicrophone)
-                Text("System audio is what the captured apps play (Outcut Share itself is "
-                     + "excluded). The microphone asks for permission on its first recording; "
-                     + "privacy pause silences both tracks.")
+                Toggle(
+                    L10n.string(.settingsRecordingRecordSystemAudio),
+                    isOn: $settings.recordSystemAudio
+                )
+                Toggle(
+                    L10n.string(.settingsRecordingRecordMicrophone),
+                    isOn: $settings.recordMicrophone
+                )
+                Text(L10n.string(.settingsRecordingAudioCaption))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Section("Screenshots") {
+            Section(L10n.string(.settingsRecordingScreenshots)) {
                 HStack {
-                    Text("Save screenshots to")
+                    Text(L10n.string(.settingsRecordingSaveScreenshots))
                     Spacer()
-                    Text(settings.screenshotFolder.isEmpty
-                         ? "~/Pictures/OutcutShare" : settings.screenshotFolder)
+                    Text(verbatim: settings.screenshotFolder.isEmpty
+                         ? "~/Pictures/OutcutShare"
+                         : settings.screenshotFolder)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
-                    Button("Choose…") { chooseScreenshotFolder() }
+                    Button(L10n.string(.commonChoose)) { chooseScreenshotFolder() }
                 }
-                Picker("Maximum size", selection: $settings.screenshotMaxSize) {
-                    Text("Original").tag(0)
-                    Text("1024 px").tag(1024)
-                    Text("2048 px").tag(2048)
-                    Text("4096 px").tag(4096)
+                Picker(L10n.string(.settingsRecordingMaxSize),
+                       selection: $settings.screenshotMaxSize) {
+                    Text(L10n.string(.commonOriginal)).tag(0)
+                    Text(verbatim: "1024 px").tag(1024)
+                    Text(verbatim: "2048 px").tag(2048)
+                    Text(verbatim: "4096 px").tag(4096)
                 }
                 .pickerStyle(.menu)
                 HStack {
-                    Text("Quality")
+                    Text(L10n.string(.settingsRecordingQuality))
                     Slider(value: $settings.screenshotQuality, in: 0.5...1.0)
                     Text(settings.screenshotQuality >= 0.999
-                         ? "Lossless PNG" : "JPEG \(Int(settings.screenshotQuality * 100)) %")
+                         ? L10n.string(.settingsRecordingQualityLossless)
+                         : L10n.string(
+                            .settingsRecordingQualityJPEG,
+                            arguments: [Int(settings.screenshotQuality * 100)]
+                         ))
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
                         .frame(width: 96, alignment: .trailing)
                 }
-                Toggle("Add a smooth drop shadow", isOn: $settings.screenshotShadow)
-                Text("Taken from the hotbar's camera button while sharing — the picture is "
-                     + "exactly the shared output, including privacy exclusions.")
+                Toggle(L10n.string(.settingsRecordingShadow), isOn: $settings.screenshotShadow)
+                Text(L10n.string(.settingsRecordingScreenshotCaption))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -466,10 +501,10 @@ private struct AboutPage: View {
                 .resizable()
                 .interpolation(.high)
                 .frame(width: 96, height: 96)
-                .accessibilityLabel("Outcut Share app icon")
-            Text("Outcut Share")
+                .accessibilityLabel(L10n.string(.settingsAboutAppIcon))
+            Text(L10n.string(.alertAppTitle))
                 .font(.title2.weight(.semibold))
-            Text("Version \(AppVersion.display)")
+            Text(L10n.string(.settingsAboutVersion, arguments: [AppVersion.display]))
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -501,17 +536,22 @@ private struct PresetsPage: View {
 
     var body: some View {
         Form {
-            Section("Saved presets") {
+            Section(L10n.string(.settingsPresetsSaved)) {
                 if settings.presets.isEmpty {
-                    Text("No presets yet. While sharing, choose menu bar → Presets → "
-                         + "“Save Current Region as Preset…”.")
+                    Text(L10n.string(.settingsPresetsEmpty))
                         .foregroundStyle(.secondary)
                 }
                 ForEach($settings.presets) { $preset in
                     HStack {
-                        TextField("Name", text: $preset.name)
+                        TextField(L10n.string(.settingsPresetsName), text: $preset.name)
                         Spacer()
-                        Text("\(Int(preset.region.width)) × \(Int(preset.region.height))")
+                        Text(L10n.string(
+                            .settingsPresetsDimensions,
+                            arguments: [
+                                Int(preset.region.width),
+                                Int(preset.region.height)
+                            ]
+                        ))
                             .monospacedDigit()
                             .foregroundStyle(.secondary)
                         Button {
@@ -525,7 +565,7 @@ private struct PresetsPage: View {
                 }
             }
             Section {
-                Text("The first nine presets are shared instantly with ⌃⌥⌘1–9.")
+                Text(L10n.string(.settingsPresetsCaption))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -539,12 +579,15 @@ private struct AppearancePage: View {
 
     var body: some View {
         Form {
-            Section("Preview") {
+            Section(L10n.string(.commonPreview)) {
                 RegionPreviewCanvas(settings: settings)
             }
-            Section("Dimming") {
-                Toggle("Dim screen outside region", isOn: $settings.dimmingEnabled)
-                LabeledContent("Dim amount") {
+            Section(L10n.string(.settingsAppearanceDimming)) {
+                Toggle(
+                    L10n.string(.settingsAppearanceDimOutside),
+                    isOn: $settings.dimmingEnabled
+                )
+                LabeledContent(L10n.string(.settingsAppearanceDimAmount)) {
                     HStack {
                         Slider(value: $settings.dimOpacity, in: 0...0.9,
                                onEditingChanged: { editing in
@@ -557,30 +600,43 @@ private struct AppearancePage: View {
                                    }
                                })
                             .disabled(!settings.dimmingEnabled)
-                        Text("\(Int((settings.dimOpacity * 100).rounded())) %")
+                        Text(L10n.string(
+                            .settingsAppearancePercent,
+                            arguments: [Int((settings.dimOpacity * 100).rounded())]
+                        ))
                             .monospacedDigit()
                             .frame(width: 44, alignment: .trailing)
                     }
                 }
             }
-            Section("Cursor emphasis (viewers only)") {
-                Toggle("Highlight cursor", isOn: $settings.cursorHighlight)
-                Toggle("Show click ripples", isOn: $settings.clickRipples)
+            Section(L10n.string(.settingsAppearanceCursorEmphasis)) {
+                Toggle(L10n.string(.settingsAppearanceHighlightCursor),
+                       isOn: $settings.cursorHighlight)
+                Toggle(L10n.string(.settingsAppearanceClickRipples),
+                       isOn: $settings.clickRipples)
             }
-            Section("Region border") {
-                Toggle("Show border around region", isOn: $settings.showRegionBorder)
-                ColorPicker("Color", selection: borderColorBinding, supportsOpacity: true)
+            Section(L10n.string(.settingsAppearanceBorder)) {
+                Toggle(L10n.string(.settingsAppearanceShowBorder),
+                       isOn: $settings.showRegionBorder)
+                ColorPicker(L10n.string(.settingsAppearanceColor),
+                            selection: borderColorBinding,
+                            supportsOpacity: true)
                     .disabled(!settings.showRegionBorder)
-                Picker("Style", selection: $settings.borderStyle) {
-                    Text("Solid").tag(BorderStyle.solid)
-                    Text("Dashed").tag(BorderStyle.dashed)
-                    Text("Dotted").tag(BorderStyle.dotted)
+                Picker(L10n.string(.settingsAppearanceStyle),
+                       selection: $settings.borderStyle) {
+                    Text(L10n.string(.settingsAppearanceSolid)).tag(BorderStyle.solid)
+                    Text(L10n.string(.settingsAppearanceDashed)).tag(BorderStyle.dashed)
+                    Text(L10n.string(.settingsAppearanceDotted)).tag(BorderStyle.dotted)
                 }
                 .pickerStyle(.segmented)
                 .disabled(!settings.showRegionBorder)
-                labeledSlider("Thickness", value: $settings.borderThickness, range: 1...10)
+                labeledSlider(L10n.string(.settingsAppearanceThickness),
+                              value: $settings.borderThickness,
+                              range: 1...10)
                     .disabled(!settings.showRegionBorder)
-                labeledSlider("Corner radius", value: $settings.borderRadius, range: 0...30)
+                labeledSlider(L10n.string(.settingsAppearanceCornerRadius),
+                              value: $settings.borderRadius,
+                              range: 0...30)
                     .disabled(!settings.showRegionBorder)
             }
         }
@@ -596,7 +652,10 @@ private struct AppearancePage: View {
                                range: ClosedRange<Double>) -> some View {
         HStack {
             Slider(value: value, in: range) { Text(label) }
-            Text("\(Int(value.wrappedValue.rounded())) pt")
+            Text(L10n.string(
+                .settingsAppearancePoints,
+                arguments: [Int(value.wrappedValue.rounded())]
+            ))
                 .monospacedDigit()
                 .frame(width: 40, alignment: .trailing)
         }
@@ -607,6 +666,8 @@ private struct AppearancePage: View {
 /// follows the selected pane, and the window animates to each pane's size.
 @MainActor
 final class SettingsWindowController {
+    static let contentWidth: CGFloat = 720
+
     private let settings: SettingsStore
     private var window: NSWindow?
     private var tabController: SettingsTabViewController?
@@ -691,28 +752,36 @@ final class SettingsWindowController {
         switch tab {
         case .general:
             controller = NSHostingController(
-                rootView: AnyView(GeneralPage(settings: settings).frame(width: 560, height: 1105)))
+                rootView: AnyView(GeneralPage(settings: settings)
+                    .frame(width: Self.contentWidth, height: 1105)))
         case .privacy:
             controller = NSHostingController(
-                rootView: AnyView(PrivacyPage(settings: settings).frame(width: 560, height: 800)))
+                rootView: AnyView(PrivacyPage(settings: settings)
+                    .frame(width: Self.contentWidth, height: 800)))
         case .recording:
             controller = NSHostingController(
-                rootView: AnyView(RecordingPage(settings: settings).frame(width: 560, height: 520)))
+                rootView: AnyView(RecordingPage(settings: settings)
+                    .frame(width: Self.contentWidth, height: 520)))
         case .presets:
             controller = NSHostingController(
-                rootView: AnyView(PresetsPage(settings: settings).frame(width: 560, height: 360)))
+                rootView: AnyView(PresetsPage(settings: settings)
+                    .frame(width: Self.contentWidth, height: 360)))
         case .appearance:
             controller = NSHostingController(
-                rootView: AnyView(AppearancePage(settings: settings).frame(width: 560, height: 780)))
+                rootView: AnyView(AppearancePage(settings: settings)
+                    .frame(width: Self.contentWidth, height: 780)))
         case .shortcuts:
             controller = NSHostingController(
-                rootView: AnyView(ShortcutsPage(settings: settings).frame(width: 560, height: 400)))
+                rootView: AnyView(ShortcutsPage(settings: settings)
+                    .frame(width: Self.contentWidth, height: 400)))
         case .permissions:
             controller = NSHostingController(
-                rootView: AnyView(PermissionsPage().frame(width: 560, height: 330)))
+                rootView: AnyView(PermissionsPage()
+                    .frame(width: Self.contentWidth, height: 330)))
         case .about:
             controller = NSHostingController(
-                rootView: AnyView(AboutPage().frame(width: 560, height: 260)))
+                rootView: AnyView(AboutPage()
+                    .frame(width: Self.contentWidth, height: 260)))
         }
         controller.sizingOptions = .preferredContentSize
         // NSTabViewController propagates the selected child's title to the

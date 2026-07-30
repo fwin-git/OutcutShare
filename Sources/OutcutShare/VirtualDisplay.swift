@@ -12,11 +12,11 @@ final class VirtualDisplay {
         var errorDescription: String? {
             switch self {
             case .apiUnavailable:
-                return "This macOS version does not provide the virtual display API OutcutShare relies on."
+                return L10n.string(.errorVirtualDisplayAPIUnavailable)
             case .creationFailed:
-                return "The virtual display could not be created."
+                return L10n.string(.errorVirtualDisplayCreationFailed)
             case .screenNeverAppeared:
-                return "The virtual display was created but never came online."
+                return L10n.string(.errorVirtualDisplayOffline)
             }
         }
     }

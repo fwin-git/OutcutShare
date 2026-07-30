@@ -42,14 +42,13 @@ struct ShortcutsPage: View {
 
     var body: some View {
         Form {
-            Section("Global shortcuts") {
+            Section(L10n.string(.settingsShortcutsGlobal)) {
                 ForEach(HotkeyAction.allCases, id: \.self) { action in
                     row(for: action)
                 }
             }
             Section {
-                Text("Shortcuts work system-wide while OutcutShare is running. "
-                     + "Any key combination can be recorded — Esc cancels recording.")
+                Text(L10n.string(.settingsShortcutsCaption))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -64,7 +63,7 @@ struct ShortcutsPage: View {
                 Text(action.displayName)
                 Spacer()
                 if recorder.recordingAction == action {
-                    Text("Press keys…")
+                    Text(L10n.string(.settingsShortcutsPressKeys))
                         .foregroundStyle(.orange)
                 } else if let combo = settings.hotkey(for: action) {
                     Text(combo.displayString)
@@ -73,9 +72,11 @@ struct ShortcutsPage: View {
                         .padding(.vertical, 2)
                         .background(.quaternary, in: RoundedRectangle(cornerRadius: 5))
                 } else {
-                    Text("none").foregroundStyle(.secondary)
+                    Text(L10n.string(.settingsShortcutsNone)).foregroundStyle(.secondary)
                 }
-                Button(recorder.recordingAction == action ? "Cancel" : "Record") {
+                Button(recorder.recordingAction == action
+                       ? L10n.string(.commonCancel)
+                       : L10n.string(.settingsShortcutsRecord)) {
                     if recorder.recordingAction == action {
                         recorder.cancel()
                     } else {
@@ -92,7 +93,7 @@ struct ShortcutsPage: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
                 .disabled(settings.hotkey(for: action) == nil)
-                .help("Remove shortcut")
+                .help(L10n.string(.settingsShortcutsRemove))
             }
             warnings(for: action)
         }
@@ -102,15 +103,19 @@ struct ShortcutsPage: View {
     private func warnings(for action: HotkeyAction) -> some View {
         if let combo = settings.hotkey(for: action) {
             if HotkeyAction.duplicates(in: settings.hotkeys).contains(combo) {
-                Label("Also assigned to \(conflictNames(for: action, combo: combo)) — "
-                      + "only the first assignment is active.",
+                Label(L10n.string(
+                    .settingsShortcutsConflict,
+                    arguments: [conflictNames(for: action, combo: combo)]
+                ),
                       systemImage: "exclamationmark.triangle.fill")
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
             if combo.isRisky {
-                Label("No modifier key — this swallows every “\(KeyCombo.keyName(for: combo.keyCode))” "
-                      + "keystroke system-wide.",
+                Label(L10n.string(
+                    .settingsShortcutsRisky,
+                    arguments: [KeyCombo.keyName(for: combo.keyCode)]
+                ),
                       systemImage: "exclamationmark.circle")
                     .font(.caption)
                     .foregroundStyle(.secondary)

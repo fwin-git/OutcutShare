@@ -33,7 +33,10 @@ final class RecordingEngine: @unchecked Sendable {
         input.expectsMediaDataInRealTime = true
         guard writer.canAdd(input) else {
             throw NSError(domain: "OutcutShare", code: 1,
-                          userInfo: [NSLocalizedDescriptionKey: "Cannot configure video writer."])
+                          userInfo: [
+                            NSLocalizedDescriptionKey:
+                                L10n.string(.recordingErrorConfigureVideoWriter)
+                          ])
         }
         writer.add(input)
         if systemAudio {
@@ -54,7 +57,10 @@ final class RecordingEngine: @unchecked Sendable {
         }
         guard writer.startWriting() else {
             throw writer.error ?? NSError(domain: "OutcutShare", code: 2,
-                                          userInfo: [NSLocalizedDescriptionKey: "Recording could not start."])
+                                          userInfo: [
+                                            NSLocalizedDescriptionKey:
+                                                L10n.string(.recordingErrorStart)
+                                          ])
         }
         self.writer = writer
         self.input = input

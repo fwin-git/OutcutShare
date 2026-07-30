@@ -7,25 +7,27 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     private let settingsWindow: SettingsWindowController
     private let permissions: PermissionsWindowController
 
-    private let selectItem = NSMenuItem(title: "Select Region & Share",
+    private let selectItem = NSMenuItem(title: L10n.string(.menuSelectRegion),
                                         action: #selector(selectRegion), keyEquivalent: "s")
-    private let shareLastItem = NSMenuItem(title: "Share Last Region",
+    private let shareLastItem = NSMenuItem(title: L10n.string(.menuShareLastRegion),
                                            action: #selector(shareLast), keyEquivalent: "l")
-    private let presetsItem = NSMenuItem(title: "Presets", action: nil, keyEquivalent: "")
-    private let zoomItem = NSMenuItem(title: "Zoom In (Viewers)",
+    private let presetsItem = NSMenuItem(title: L10n.string(.menuPresets),
+                                         action: nil, keyEquivalent: "")
+    private let zoomItem = NSMenuItem(title: L10n.string(.menuZoomInViewers),
                                       action: #selector(toggleZoom), keyEquivalent: "")
-    private let moveItem = NSMenuItem(title: "Move / Resize Region",
+    private let moveItem = NSMenuItem(title: L10n.string(.menuMoveResizeRegion),
                                       action: #selector(moveRegion), keyEquivalent: "m")
-    private let followItem = NSMenuItem(title: "Follow", action: nil, keyEquivalent: "")
-    private let hotbarItem = NSMenuItem(title: "Show Hotbar",
+    private let followItem = NSMenuItem(title: L10n.string(.menuFollow),
+                                        action: nil, keyEquivalent: "")
+    private let hotbarItem = NSMenuItem(title: L10n.string(.menuShowHotbar),
                                         action: #selector(toggleHotbar), keyEquivalent: "")
-    private let pauseItem = NSMenuItem(title: "Pause Sharing",
+    private let pauseItem = NSMenuItem(title: L10n.string(.menuPauseSharing),
                                        action: #selector(togglePause), keyEquivalent: "p")
-    private let capturesItem = NSMenuItem(title: "Recent Captures", action: nil,
-                                          keyEquivalent: "")
-    private let recordItem = NSMenuItem(title: "Start Recording",
+    private let capturesItem = NSMenuItem(title: L10n.string(.menuRecentCaptures),
+                                          action: nil, keyEquivalent: "")
+    private let recordItem = NSMenuItem(title: L10n.string(.menuStartRecording),
                                         action: #selector(toggleRecording), keyEquivalent: "r")
-    private let stopItem = NSMenuItem(title: "Stop Sharing",
+    private let stopItem = NSMenuItem(title: L10n.string(.menuStopSharing),
                                       action: #selector(stopSharing), keyEquivalent: ".")
 
     init(session: ShareSession, permissions: PermissionsWindowController) {
@@ -49,13 +51,13 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         moveItem.target = self
         pauseItem.target = self
         stopItem.target = self
-        presetsItem.submenu = NSMenu(title: "Presets")
+        presetsItem.submenu = NSMenu(title: L10n.string(.menuPresets))
         menu.addItem(selectItem)
         menu.addItem(shareLastItem)
         menu.addItem(presetsItem)
         menu.addItem(moveItem)
         menu.addItem(zoomItem)
-        let followMenu = NSMenu(title: "Follow")
+        let followMenu = NSMenu(title: L10n.string(.menuFollow))
         followMenu.autoenablesItems = false
         for mode in FollowMode.allCases {
             let item = NSMenuItem(title: mode.displayName,
@@ -71,24 +73,27 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         menu.addItem(pauseItem)
         recordItem.target = self
         menu.addItem(recordItem)
-        capturesItem.submenu = NSMenu(title: "Recent Captures")
+        capturesItem.submenu = NSMenu(title: L10n.string(.menuRecentCaptures))
         menu.addItem(capturesItem)
         menu.addItem(stopItem)
         menu.addItem(.separator())
-        let settingsItem = NSMenuItem(title: "Settings…",
+        let settingsItem = NSMenuItem(title: L10n.string(.menuSettings),
                                       action: #selector(openSettings), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(settingsItem)
-        let permissionsItem = NSMenuItem(title: "Permissions…",
+        let permissionsItem = NSMenuItem(title: L10n.string(.menuPermissions),
                                          action: #selector(openPermissions), keyEquivalent: "")
         permissionsItem.target = self
         menu.addItem(permissionsItem)
         menu.addItem(.separator())
-        let versionItem = NSMenuItem(title: "OutcutShare \(AppVersion.display)",
+        let versionItem = NSMenuItem(title: L10n.string(
+            .menuVersion,
+            arguments: [AppVersion.display]
+        ),
                                      action: nil, keyEquivalent: "")
         versionItem.isEnabled = false
         menu.addItem(versionItem)
-        let quitItem = NSMenuItem(title: "Quit OutcutShare",
+        let quitItem = NSMenuItem(title: L10n.string(.menuQuit),
                                   action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quitItem)
         statusItem.menu = menu
@@ -107,14 +112,15 @@ final class StatusBarController: NSObject, NSMenuDelegate {
             symbol = session.isActive ? "rectangle.inset.filled.badge.record" : "rectangle.dashed"
         }
         statusItem.button?.image = NSImage(systemSymbolName: symbol,
-                                           accessibilityDescription: "OutcutShare")
+                                           accessibilityDescription: L10n.string(.appName))
         selectItem.title = SettingsStore.shared.shareMode == .virtualMonitor
-            ? "Start Virtual Monitor & Share" : "Select Region & Share"
+            ? L10n.string(.menuStartVirtualMonitor) : L10n.string(.menuSelectRegion)
         selectItem.isEnabled = session.state == .idle
         shareLastItem.isEnabled = session.state == .idle && SettingsStore.shared.lastRegion != nil
         moveItem.isEnabled = session.isActive && !session.isVirtualMonitor
         zoomItem.isEnabled = session.isActive && !session.isVirtualMonitor
-        zoomItem.title = session.isZoomedIn ? "Zoom Out (Viewers)" : "Zoom In (Viewers)"
+        zoomItem.title = session.isZoomedIn
+            ? L10n.string(.menuZoomOutViewers) : L10n.string(.menuZoomInViewers)
         if let items = followItem.submenu?.items {
             for item in items {
                 item.state = (item.representedObject as? String)
@@ -123,9 +129,11 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         }
         hotbarItem.state = SettingsStore.shared.hotbarEnabled ? .on : .off
         pauseItem.isEnabled = session.isActive
-        pauseItem.title = session.isPaused ? "Resume Sharing" : "Pause Sharing"
+        pauseItem.title = session.isPaused
+            ? L10n.string(.menuResumeSharing) : L10n.string(.menuPauseSharing)
         recordItem.isEnabled = session.isActive
-        recordItem.title = session.isRecording ? "Stop Recording" : "Start Recording"
+        recordItem.title = session.isRecording
+            ? L10n.string(.menuStopRecording) : L10n.string(.menuStartRecording)
         recordItem.image = NSImage(systemSymbolName: session.isRecording
                                        ? "record.circle.fill" : "record.circle",
                                    accessibilityDescription: nil)
@@ -150,7 +158,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
             SettingsStore.shared.recentCaptures = existing
         }
         if existing.isEmpty {
-            let empty = NSMenuItem(title: "No captures yet", action: nil, keyEquivalent: "")
+            let empty = NSMenuItem(title: L10n.string(.menuNoCaptures),
+                                   action: nil, keyEquivalent: "")
             empty.isEnabled = false
             submenu.addItem(empty)
         }
@@ -166,13 +175,13 @@ final class StatusBarController: NSObject, NSMenuDelegate {
             submenu.addItem(item)
         }
         submenu.addItem(.separator())
-        let recordings = NSMenuItem(title: "Open Recordings Folder",
+        let recordings = NSMenuItem(title: L10n.string(.menuOpenRecordingsFolder),
                                     action: #selector(openRecordingsFolder),
                                     keyEquivalent: "")
         recordings.target = self
         recordings.image = NSImage(systemSymbolName: "folder", accessibilityDescription: nil)
         submenu.addItem(recordings)
-        let screenshots = NSMenuItem(title: "Open Screenshots Folder",
+        let screenshots = NSMenuItem(title: L10n.string(.menuOpenScreenshotsFolder),
                                      action: #selector(openScreenshotsFolder),
                                      keyEquivalent: "")
         screenshots.target = self
@@ -215,7 +224,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         if !presets.isEmpty {
             submenu.addItem(.separator())
         }
-        let save = NSMenuItem(title: "Save Current Region as Preset…",
+        let save = NSMenuItem(title: L10n.string(.menuSaveCurrentRegionPreset),
                               action: #selector(savePreset), keyEquivalent: "")
         save.target = self
         save.isEnabled = session.isActive
@@ -288,17 +297,22 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 enum PresetPrompt {
     static func run(session: ShareSession) {
         let alert = NSAlert()
-        alert.messageText = "Save Region as Preset"
-        alert.informativeText = "Name for the current region:"
+        alert.messageText = L10n.string(.presetPromptTitle)
+        alert.informativeText = L10n.string(.presetPromptMessage)
         let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 240, height: 24))
-        field.stringValue = "Preset \(SettingsStore.shared.presets.count + 1)"
+        field.stringValue = L10n.string(
+            .presetDefaultName,
+            arguments: [SettingsStore.shared.presets.count + 1]
+        )
         alert.accessoryView = field
-        alert.addButton(withTitle: "Save")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: L10n.string(.presetPromptSave))
+        alert.addButton(withTitle: L10n.string(.commonCancel))
         alert.window.initialFirstResponder = field
         NSApp.activate(ignoringOtherApps: true)
         guard alert.runModal() == .alertFirstButtonReturn else { return }
         let name = field.stringValue.trimmingCharacters(in: .whitespaces)
-        session.saveCurrentRegionAsPreset(named: name.isEmpty ? "Preset" : name)
+        session.saveCurrentRegionAsPreset(
+            named: name.isEmpty ? L10n.string(.presetFallbackName) : name
+        )
     }
 }

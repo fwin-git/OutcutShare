@@ -48,7 +48,8 @@ struct KeyCombo: Equatable, Hashable {
     ]
 
     private static let specialKeyCodes: [UInt32: String] = [
-        49: "Space", 36: "↩", 76: "⌤", 53: "⎋", 51: "⌫", 117: "⌦", 48: "⇥",
+        49: L10n.string(.hotkeySpace),
+        36: "↩", 76: "⌤", 53: "⎋", 51: "⌫", 117: "⌦", 48: "⇥",
         123: "←", 124: "→", 125: "↓", 126: "↑", 115: "↖", 119: "↘", 116: "⇞", 121: "⇟",
     ]
 
@@ -70,7 +71,8 @@ struct KeyCombo: Equatable, Hashable {
         if let name = functionKeyCodes[keyCode] ?? specialKeyCodes[keyCode] {
             return name
         }
-        return layoutKeyName(for: keyCode) ?? "Key\(keyCode)"
+        return layoutKeyName(for: keyCode)
+            ?? L10n.string(.hotkeyKeyFallback, arguments: [Int(keyCode)])
     }
 
     /// Character produced by the key in the user's current keyboard layout.
@@ -110,13 +112,13 @@ enum HotkeyAction: String, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .selectRegion: return "Select Region & Share"
-        case .adjustRegion: return "Move / Resize Region"
-        case .stopSharing: return "Stop Sharing"
-        case .shareLastRegion: return "Share Last Region"
-        case .togglePause: return "Pause / Resume Sharing"
-        case .toggleRecording: return "Start / Stop Recording"
-        case .toggleZoom: return "Zoom In / Out (Viewers)"
+        case .selectRegion: return L10n.string(.hotkeySelectRegion)
+        case .adjustRegion: return L10n.string(.hotkeyAdjustRegion)
+        case .stopSharing: return L10n.string(.hotkeyStopSharing)
+        case .shareLastRegion: return L10n.string(.hotkeyShareLastRegion)
+        case .togglePause: return L10n.string(.hotkeyTogglePause)
+        case .toggleRecording: return L10n.string(.hotkeyToggleRecording)
+        case .toggleZoom: return L10n.string(.hotkeyToggleZoom)
         }
     }
 
