@@ -259,6 +259,16 @@ final class ShareSession {
         hotbar.debugToggleFollowMenu()
     }
 
+    /// Demo choreography: screen rects of hotbar buttons / capture-card
+    /// items, keyed by their help strings (see DemoHarness).
+    func demoHotbarItemRect(_ help: String) -> CGRect? {
+        hotbar.demoItemRect(help)
+    }
+
+    func demoCardItemRect(_ key: String) -> CGRect? {
+        resultPreview.demoItemRect(key)
+    }
+
     /// Hotbar OCR: reads the current shared output and puts the recognized
     /// text on the clipboard. Returns whether any text was found.
     func copyRegionTextToClipboard() async -> Bool {

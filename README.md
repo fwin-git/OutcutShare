@@ -33,6 +33,16 @@ clip mirrors what viewers see). Modifiers refine the shape:
 - **Space** while dragging freezes the size and moves the selection
   instead.
 
+### Viewer zoom & live presets
+
+![Viewer zoom tracking the cursor and a preset glide, mirrored into a mock call](docs/media/demo-zoom.gif)
+
+While sharing, **⌃⌥⌘Z** glides viewers into a 1.5–3× zoom toward your
+cursor and then tracks it — your own screen never changes (the mock call
+in the clip shows what viewers see). Saved presets move the live region
+the same way: **⌃⌥⌘1–9** glides it to another spot, and the share never
+drops.
+
 ### Follow mode
 
 ![Follow modes tracking the active window and the cursor](docs/media/demo-follow.gif)
@@ -49,6 +59,26 @@ targets — the clip shows Active Window first, then Cursor:
   moving once the cursor gets within 80 pt of an edge.
 - Movement is either **snap** (instant) or **glide** (eased) —
   *Settings → Follow movement*.
+
+### Screenshots, recording & trim
+
+![Capture workflow: screenshot to a preview card, drag-out into a chat, record, drag-to-trim](docs/media/demo-capture.gif)
+
+The hotbar's camera button saves a styled still of the shared picture and
+pops a preview card under the bar; the file drags straight out of the
+card — into a chat, a mail, Finder. The record button captures the region
+to .mp4 (with system audio and optional microphone); when it stops, the
+card returns with the clip and the scissors chip opens drag-to-trim: the
+handles scrub a filmstrip preview, ✓ saves the trimmed copy.
+
+### Privacy pause
+
+![Privacy pause: viewers get a blurred screen with a custom note, the presenter's screen stays live](docs/media/demo-pause.gif)
+
+**⌃⌥⌘P** freezes the share while you handle something private: viewers
+get a frozen frame or a blurred privacy screen — with your own message or
+image — and your own screen never changes. Resume picks the share back up
+instantly, right where it was.
 
 ### Virtual Monitor
 
@@ -69,9 +99,19 @@ on it unless you put it there.
   brings the cursor back.
 - **Stopping** returns all windows to your real screen.
 
-*(All clips are recorded by the app itself — `--demo=region|follow|monitor`
-produces them on a synthetic stage with fake content, see
-[development](docs/development.md).)*
+### Raycast extension
+
+![Outcut Share commands in Raycast's root search](docs/media/raycast.png)
+
+Everything you reach for mid-presentation — sharing, presets, pause,
+recording, modes — is also a Raycast command, with aliases and hotkeys
+like any other. Each one is an `outcutshare://` deep link underneath, so
+any automation tool can do the same. → [raycast & URL scheme](docs/raycast.md)
+
+*(All clips are recorded by the app itself —
+`--demo=region|zoom|follow|capture|pause|monitor` produces them on a
+synthetic stage with fake content, and `--demo=raycast` captures the
+still — see [development](docs/development.md).)*
 
 ## Install
 

@@ -46,6 +46,10 @@ final class DemoContentWindows {
 final class DemoMeetMock {
     private let window: NSWindow
     private nonisolated(unsafe) let mirrorLayer = CALayer()
+    /// Kept for the privacy screen's blurred backdrop — same input the
+    /// real output window uses.
+    private nonisolated(unsafe) var lastSurface: IOSurfaceRef?
+    private var privacyLayer: CALayer?
 
     init(frame: CGRect) {
         window = NSWindow(contentRect: frame,
@@ -138,10 +142,29 @@ final class DemoMeetMock {
 
     /// Fed from the session's capture queue.
     nonisolated func display(surface: IOSurfaceRef) {
+        lastSurface = surface
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         mirrorLayer.contents = surface
         CATransaction.commit()
+    }
+
+    /// The pause demo: viewers' privacy screen, built by the SAME factory
+    /// the real output window uses — the mirror shows exactly their view
+    /// (frames stop flowing while paused, so nothing overwrites it).
+    func showPrivacyScreen() {
+        hidePrivacyScreen()
+        let container = PrivacyScreenLayer.make(
+            bounds: mirrorLayer.bounds, lastSurface: lastSurface,
+            contentsScale: window.backingScaleFactor,
+            content: .fromSettings(.shared))
+        mirrorLayer.addSublayer(container)
+        privacyLayer = container
+    }
+
+    func hidePrivacyScreen() {
+        privacyLayer?.removeFromSuperlayer()
+        privacyLayer = nil
     }
 
     /// Live-selection mirroring: while the user still drags, the mirror
@@ -207,17 +230,36 @@ private struct DemoMetricsView: View {
 }
 
 private struct DemoChatView: View {
+    /// A capture dragged out of the preview card lands here as a real
+    /// cross-process file drop — the payoff shot of the capture demo.
+    @State private var droppedImage: NSImage?
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             bubble("Demo starts in 5 — everyone ready?", mine: false)
             bubble("Screen's set up 👍", mine: true)
             bubble("Remember: share only the monitor.", mine: false)
             bubble("That's the whole point 😄", mine: true)
+            if let image = droppedImage {
+                HStack {
+                    Spacer(minLength: 30)
+                    Image(nsImage: image)
+                        .resizable().scaledToFit()
+                        .frame(maxWidth: 190)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+            }
             Spacer()
         }
         .padding(14)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color(nsColor: .windowBackgroundColor))
+        .dropDestination(for: URL.self) { urls, _ in
+            guard let url = urls.first,
+                  let image = NSImage(contentsOf: url) else { return false }
+            droppedImage = image
+            return true
+        }
     }
 
     private func bubble(_ text: String, mine: Bool) -> some View {

@@ -19,6 +19,8 @@ opens it. The extension **stays available after you quit the dev server**
 "Outcut Share" in the Raycast root search; assign aliases or hotkeys to
 them in Raycast → Settings → Extensions like for any command.
 
+![Outcut Share commands in Raycast's root search](media/raycast.png)
+
 ## Commands
 
 | Command | Does |

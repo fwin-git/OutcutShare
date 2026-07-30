@@ -40,6 +40,8 @@ struct HotbarActions {
     var beginDrag: () -> Void
     var drag: () -> Void
     var endDrag: () -> Void
+    /// Demo runs only: resolved bar-item rects (hosting-view coordinates).
+    var reportItemBounds: ([String: CGRect]) -> Void = { _ in }
 }
 
 /// One row of the follow dropdown, with its own hover highlight.
@@ -85,6 +87,9 @@ private struct BarItemBounds: PreferenceKey {
 }
 
 struct HotbarView: View {
+    /// Sentinel for hover exits that must clear whatever label is showing.
+    static let anyLabel = "__any__"
+
     @ObservedObject var model: HotbarModel
     let actions: HotbarActions
     @State private var dragging = false
@@ -121,6 +126,11 @@ struct HotbarView: View {
         .overlayPreferenceValue(BarItemBounds.self) { anchors in
             GeometryReader { geo in
                 flyouts(anchors: anchors, geo: geo)
+                    // Demo choreography clicks real buttons — it needs their
+                    // resolved rects (inert outside demo runs).
+                    .onChange(of: anchors.mapValues { geo[$0] }, initial: true) { _, rects in
+                        if DemoState.active { actions.reportItemBounds(rects) }
+                    }
             }
         }
     }
@@ -199,6 +209,12 @@ struct HotbarView: View {
         }
         .background(.ultraThinMaterial, in: Capsule())
         .overlay(Capsule().strokeBorder(.white.opacity(0.15)))
+        // Leaving the BAR always clears the tooltip: a button whose help
+        // text flips while hovered (record ↔ stop) otherwise strands its
+        // old label — the per-button exit no longer matches it.
+        .onHover { inside in
+            if !inside { hover(hover: false, label: Self.anyLabel) }
+        }
         // transform (not set): the capsule's entry must MERGE with the
         // items' anchors bubbling up from inside it.
         .transformAnchorPreference(key: BarItemBounds.self, value: .bounds) {
@@ -399,6 +415,9 @@ final class HotbarController {
     private var verticalOverride: Bool?
     /// Kept for the measuring hosting controller (see measuredBarSize).
     private var barActions: HotbarActions?
+    /// Bar-item rects in hosting-view coordinates, reported by the view
+    /// during demo runs — resolved to screen rects on demand.
+    private var demoLocalAnchors: [String: CGRect] = [:]
     /// Footprint of the horizontal bar — the auto-side decision always
     /// reasons about whether THAT would fit below/above.
     private var lastHorizontalSize: CGSize?
@@ -484,6 +503,14 @@ final class HotbarController {
         return panel.frame
     }
 
+    /// Demo choreography: a bar button's current screen rect, by its help
+    /// string — resolved on demand so panel moves never go stale.
+    func demoItemRect(_ help: String) -> CGRect? {
+        guard let panel, panel.isVisible,
+              let local = demoLocalAnchors[help] else { return nil }
+        return Geometry.demoAnchorScreenRect(local: local, panelFrame: panel.frame)
+    }
+
     func refresh() {
         model.isPaused = session?.isPaused ?? false
         model.isRecording = session?.isRecording ?? false
@@ -545,7 +572,7 @@ final class HotbarController {
     private func hoverChanged(hovering: Bool, label: String) {
         if hovering {
             model.hoverLabel = label
-        } else if model.hoverLabel == label {
+        } else if label == HotbarView.anyLabel || model.hoverLabel == label {
             model.hoverLabel = nil
         }
         if model.vertical {
@@ -637,7 +664,8 @@ final class HotbarController {
             endDrag: { [weak self] in
                 self?.dragAnchor = nil
                 self?.manualOrigin = self?.panel?.frame.origin
-            })
+            },
+            reportItemBounds: { [weak self] in self?.demoLocalAnchors = $0 })
 
         let hosting = NSHostingView(rootView: HotbarView(model: model, actions: actions))
         // Keep this panel out of window auto-layout entirely: with the
