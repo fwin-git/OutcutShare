@@ -207,4 +207,5 @@ permission; a guided row appears when it's needed.
 | [Selection & resize modifiers](docs/resize-modifiers.md) | Space/⇧/⌃ in both overlays, edge handles |
 | [How it works & caveats](docs/how-it-works.md) | Hidden window, virtual displays, capture pipeline, limitations |
 | [Settings reference](docs/settings.md) | Every option on all pages, incl. the Virtual Monitor |
+| [Localization](docs/localization.md) | Supported languages, adding copy or locales, verification |
 | [Development](docs/development.md) | Build, debug flags, cutting releases |
