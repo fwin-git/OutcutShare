@@ -20,6 +20,9 @@ enum URLCommand: Equatable {
     case follow(FollowMode)
     case shareMode(ShareMode)
     case toggle(URLToggleOption)
+    /// Outside-region dim strength: 0 disables dimming, > 0 sets the
+    /// amount and enables it (values above the 90 % slider max clamp).
+    case dim(percent: Double)
 
     static func parse(_ url: URL) -> URLCommand? {
         guard url.scheme?.lowercased() == "outcutshare" else { return nil }
@@ -50,6 +53,11 @@ enum URLCommand: Equatable {
             guard let option = params["option"].flatMap(URLToggleOption.init(caseInsensitive:))
             else { return nil }
             return .toggle(option)
+        case "dim":
+            guard let percent = params["percent"].flatMap(Double.init),
+                  (0...100).contains(percent)
+            else { return nil }
+            return .dim(percent: percent)
         default:
             return nil
         }

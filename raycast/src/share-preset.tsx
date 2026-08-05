@@ -7,7 +7,13 @@ export default function SharePreset() {
   const [state, setState] = useState<AppState | null>(null);
   useEffect(() => {
     readAppState().then(setState, () =>
-      setState({ presets: [], followMode: "off", shareMode: "virtualDisplay" }),
+      setState({
+        presets: [],
+        followMode: "off",
+        shareMode: "virtualDisplay",
+        dimPercent: 60,
+        dimmingEnabled: true,
+      }),
     );
   }, []);
   return (

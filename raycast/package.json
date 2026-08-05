@@ -18,7 +18,8 @@
     { "name": "toggle-preview", "title": "Toggle Preview Window", "description": "Show or hide the floating viewers-see-this panel.", "mode": "no-view" },
     { "name": "toggle-hotbar", "title": "Toggle Hotbar", "description": "Show or hide the floating quick-action bar.", "mode": "no-view" },
     { "name": "toggle-cursor-highlights", "title": "Toggle Cursor Highlights", "description": "Cursor halo and click ripples for viewers.", "mode": "no-view" },
-    { "name": "toggle-dimming", "title": "Toggle Dimming", "description": "Dim everything outside the region locally.", "mode": "no-view" }
+    { "name": "toggle-dimming", "title": "Toggle Dimming", "description": "Dim everything outside the region locally.", "mode": "no-view" },
+    { "name": "set-dim-amount", "title": "Set Dim Amount", "description": "Set the outside-region dim strength with presets or a typed percent; 0 turns dimming off.", "mode": "view" }
   ],
   "dependencies": {
     "@raycast/api": "^1.88.4"

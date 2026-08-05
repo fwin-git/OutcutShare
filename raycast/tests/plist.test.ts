@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { extractStringKey, parsePresets } from "../src/plist";
+import { extractBoolKey, extractRealKey, extractStringKey, parsePresets } from "../src/plist";
 
 const SAMPLE_PRESETS = [
   {
@@ -33,7 +33,11 @@ const FULL = plistWith(`	<key>followMode</key>
 	${wrap(Buffer.from(JSON.stringify(SAMPLE_PRESETS)).toString("base64"))}
 	</data>
 	<key>shareMode</key>
-	<string>virtualMonitor</string>`);
+	<string>virtualMonitor</string>
+	<key>dimOpacity</key>
+	<real>0.45</real>
+	<key>dimmingEnabled</key>
+	<false/>`);
 
 test("extractStringKey finds a top-level string", () => {
   assert.equal(extractStringKey(FULL, "followMode"), "cursor");
@@ -59,4 +63,18 @@ test("parsePresets returns [] when the key is absent", () => {
 test("parsePresets returns [] on malformed payloads", () => {
   const bad = plistWith("\t<key>presets</key>\n\t<data>!!!not-base64!!!</data>");
   assert.deepEqual(parsePresets(bad), []);
+});
+
+test("extractRealKey reads <real> values and rejects garbage", () => {
+  assert.equal(extractRealKey(FULL, "dimOpacity"), 0.45);
+  assert.equal(extractRealKey(FULL, "missing"), null);
+  const bad = plistWith("\t<key>dimOpacity</key>\n\t<real>soon</real>");
+  assert.equal(extractRealKey(bad, "dimOpacity"), null);
+});
+
+test("extractBoolKey reads self-closing <true/>/<false/> tags", () => {
+  assert.equal(extractBoolKey(FULL, "dimmingEnabled"), false);
+  const on = plistWith("\t<key>dimmingEnabled</key>\n\t<true/>");
+  assert.equal(extractBoolKey(on, "dimmingEnabled"), true);
+  assert.equal(extractBoolKey(FULL, "missing"), null);
 });
