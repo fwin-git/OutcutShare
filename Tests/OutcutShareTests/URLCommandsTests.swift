@@ -59,6 +59,22 @@ final class URLCommandsTests: XCTestCase {
         XCTAssertNil(parse("outcutshare://toggle"))
     }
 
+    func testDimPercent() {
+        XCTAssertEqual(parse("outcutshare://dim?percent=45"), .dim(percent: 45))
+        XCTAssertEqual(parse("outcutshare://dim?percent=0"), .dim(percent: 0))
+        XCTAssertEqual(parse("outcutshare://dim?percent=100"), .dim(percent: 100))
+        XCTAssertEqual(parse("outcutshare://dim?percent=42.5"), .dim(percent: 42.5))
+        XCTAssertEqual(parse("outcutshare://DIM?Percent=45"), .dim(percent: 45))
+    }
+
+    func testDimRejectsMissingAndInvalidPercent() {
+        XCTAssertNil(parse("outcutshare://dim"))
+        XCTAssertNil(parse("outcutshare://dim?percent="))
+        XCTAssertNil(parse("outcutshare://dim?percent=high"))
+        XCTAssertNil(parse("outcutshare://dim?percent=-5"))
+        XCTAssertNil(parse("outcutshare://dim?percent=101"))
+    }
+
     func testRejectsUnknownCommandAndForeignScheme() {
         XCTAssertNil(parse("outcutshare://quit"))
         XCTAssertNil(parse("https://select"))

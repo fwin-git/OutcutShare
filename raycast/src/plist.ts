@@ -12,7 +12,7 @@ function escapeRegExp(s: string): string {
 
 /** First match wins — fine here: the keys we read are unique, top-level
  *  keys of the exported com.outcutshare.app domain. */
-function extractValue(plist: string, key: string, tag: "string" | "data"): string | null {
+function extractValue(plist: string, key: string, tag: "string" | "data" | "real"): string | null {
   const re = new RegExp(`<key>${escapeRegExp(key)}</key>\\s*<${tag}>([\\s\\S]*?)</${tag}>`);
   const match = plist.match(re);
   return match ? match[1] : null;
@@ -20,6 +20,20 @@ function extractValue(plist: string, key: string, tag: "string" | "data"): strin
 
 export function extractStringKey(plist: string, key: string): string | null {
   return extractValue(plist, key, "string");
+}
+
+export function extractRealKey(plist: string, key: string): number | null {
+  const raw = extractValue(plist, key, "real");
+  if (raw === null) return null;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : null;
+}
+
+/** Booleans export as self-closing <true/> / <false/> tags. */
+export function extractBoolKey(plist: string, key: string): boolean | null {
+  const re = new RegExp(`<key>${escapeRegExp(key)}</key>\\s*<(true|false)\\s*/>`);
+  const match = plist.match(re);
+  return match ? match[1] === "true" : null;
 }
 
 export function parsePresets(plist: string): Preset[] {

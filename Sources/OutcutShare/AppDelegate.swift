@@ -79,6 +79,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 settings.clickRipples = enabled
             case .dimming: settings.dimmingEnabled.toggle()
             }
+        case .dim(let percent):
+            if percent == 0 {
+                // Keeps the stored amount, so toggling dimming back on
+                // returns to the previous strength.
+                settings.dimmingEnabled = false
+            } else {
+                settings.dimOpacity = percent / 100 // store clamps to 0.9
+                settings.dimmingEnabled = true
+            }
         }
     }
 

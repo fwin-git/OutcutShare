@@ -1,9 +1,10 @@
 # Raycast extension & the outcutshare:// URL scheme
 
 Trigger Outcut Share from [Raycast](https://raycast.com) — or from any
-automation tool, via `outcutshare://` deep links. Style and appearance
-settings stay in the app; this is about the actions you reach for
-mid-presentation.
+automation tool, via `outcutshare://` deep links. The focus is the
+actions you reach for mid-presentation — including presenter-facing
+appearance like the outside-region dim; the deeper style settings stay
+in the app.
 
 ## Setup
 
@@ -37,6 +38,7 @@ them in Raycast → Settings → Extensions like for any command.
 | Toggle Hotbar | The floating quick-action bar |
 | Toggle Cursor Highlights | Cursor halo + click ripples (viewers only) |
 | Toggle Dimming | Local dim outside the region |
+| Set Dim Amount | Preset dim strengths or a typed percent (0–90), current value check-marked — 0 turns dimming off |
 
 The list commands read the app's saved state directly, so they work even
 while the app isn't running — opening an entry launches it.
@@ -59,9 +61,12 @@ launched automatically if it isn't running.
 | `outcutshare://follow?mode=off\|activeWindow\|cursor` | Set follow mode |
 | `outcutshare://share-mode?mode=virtualDisplay\|hiddenWindow\|virtualMonitor` | Switch share mode — **only while not sharing**; otherwise the app shows an alert |
 | `outcutshare://toggle?option=preview\|hotbar\|cursorHighlights\|dimming` | Flip a presenter option |
+| `outcutshare://dim?percent=0-100` | Set the local dim strength: 0 turns dimming off (the stored amount survives), > 0 sets the amount **and** enables dimming; values above the 90 % slider max clamp |
 
 Command and parameter values are case-insensitive; unknown or malformed
-URLs are ignored. An unknown preset shows an alert naming the query.
+URLs are ignored — for `dim` that includes a missing, non-numeric or
+out-of-range (below 0 / above 100) `percent`. An unknown preset shows an
+alert naming the query.
 
 ## Caveats
 
