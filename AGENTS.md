@@ -208,6 +208,7 @@ Resources/Assets.xcassets/  app icon (compiled via actool in make app)
 Support/Info.plist          bundle template (version stamped by Makefile)
 Scripts/changelog.sh        feat/fix → consumer changelog
 Scripts/release.sh          conventional-commit version bump + tag + push
+Scripts/notarize.sh         Developer ID re-sign + notarize + staple (make notarize)
 .github/workflows/          ci.yml (tests) + release.yml (tag → release)
 docs/                       user-facing docs, linked from README
 raycast/                    Raycast extension (TypeScript; URL-scheme client)

@@ -19,7 +19,7 @@ ifeq ($(strip $(CODESIGN_ID)),)
 CODESIGN_ID := -
 endif
 
-.PHONY: app test run clean release
+.PHONY: app test run clean release notarize
 
 app: $(APP)
 
@@ -66,3 +66,6 @@ clean:
 
 release:
 	Scripts/release.sh
+
+notarize: app
+	Scripts/notarize.sh
